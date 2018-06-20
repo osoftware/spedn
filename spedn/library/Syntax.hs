@@ -4,10 +4,6 @@ import Data.Word
 
 type Name = String
 
-data Num = Num Int deriving (Show)
-
-data Bin = Bin [Word8] deriving (Show)
-
 data VarType = VarBool | VarNum | VarBin deriving (Show)
 
 data UnaryOp
@@ -17,29 +13,48 @@ data UnaryOp
 
 data BinaryOp 
     = Add
+    | Sub
     | Mul
     | Div
     | Mod
     | And
     | Or
     | Xor
+    | BoolAnd
+    | BoolOr
+    | Eq
+    | Neq
+    | NumEq
+    | NumNeq
+    | Lt
+    | Lte
+    | Gt
+    | Gte
     | Cat
+    | Split
     deriving (Show)
 
 data Expr
     = BoolConst Bool
-    | NumConst Syntax.Num
-    | BinConst Bin
+    | NumConst Integer
+    | BinConst [Word8]
+    | Var Name
     | UnaryExpr UnaryOp Expr
     | BinaryExpr BinaryOp Expr Expr
     | TernaryExpr Expr Expr Expr
+    | Call Name [Expr]
     deriving (Show)
 
+isSplit :: Expr -> Bool
+isSplit (BinaryExpr Split _ _) = True
+isSplit _ = False
+
 data Statement
-    =  Seq [Statement]
-    | Var VarType Name Expr
+    = Assign VarType Name Expr
+    | SplitAssign VarType (Name, Name) Expr
     | Verify Expr
-    | If Expr Statement Statement
+    | If Expr Statement (Maybe Statement)
+    | Block [Statement]
     | Return Expr
     deriving (Show)
 
@@ -48,6 +63,7 @@ data Challenge = Challenge Name [Param] Statement deriving (Show)
 data Param = Param VarType Name deriving (Show)
 
 data Contract = Contract
-    { params :: [Param]
-    , challenges :: [Challenge]
+    { contractName       :: !Name
+    , contractParams     :: ![Param]
+    , contractChallenges :: ![Challenge]
     } deriving (Show)
