@@ -24,6 +24,8 @@ library:
   dependencies:
   - base
   - megaparsec
+  - mtl
+  - containers
   source-dirs: library
 
 executables:

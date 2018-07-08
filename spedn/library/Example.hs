@@ -1,11 +1,13 @@
 -- | An example module.
 module Example (main) where
 
-import Syntax
+import           Syntax
 
 -- | An example function.
 main :: IO ()
-main = putStrLn . show $ 
+main = print $
     If (UnaryExpr Not (BoolConst True))
-        (Assign VarBool "test" (BoolConst True))
-        (Just (Assign VarBool "test" (BoolConst False)))
+        (Assign Bool "test" (BoolConst True))
+        (Just (Assign Bool "test" (BoolConst False)))
+
+

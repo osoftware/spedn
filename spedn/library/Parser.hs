@@ -1,10 +1,10 @@
 module Parser where
 
-import Text.Megaparsec
-import Text.Megaparsec.Expr
+import           Text.Megaparsec
+import           Text.Megaparsec.Expr
 
-import Syntax
-import Lexer
+import           Lexer
+import           Syntax
 
 sourceFile :: Parser Contract
 sourceFile = between spaceConsumer eof contract
@@ -21,8 +21,7 @@ params :: Parser [Param]
 params = parens $ sepBy param comma
 
 param :: Parser Param
-param = do
-    return $ Param VarNum "a"
+param = return $ Param Num "a"
 
 challenge :: Parser Challenge
 challenge = do
@@ -47,9 +46,9 @@ assign = do
     eq
     val <- expr
     semi
-    return $ Assign VarNum n val
+    return $ Assign Num n val
 
-    
+
 split :: Parser Statement
 split = do
     keyword "var"
@@ -61,9 +60,9 @@ split = do
     eq
     val <- expr
     semi
-    if isSplit(val)
-      then return $ SplitAssign VarBin vars val
-      else fail $ "expected @ operator but found ;"
+    if isSplit val
+      then return $ SplitAssign Bin vars val
+      else fail "expected @ operator but found ;"
 
 verify :: Parser Statement
 verify = do
@@ -81,7 +80,7 @@ ifElse = do
     return $ If cond trueBranch falseBranch
 
 elseBranch :: Parser (Maybe Statement)
-elseBranch = do 
+elseBranch = do
     keyword "else"
     x <- statement
     return $ Just x
@@ -100,16 +99,16 @@ operators = [ [ Prefix $ UnaryExpr Minus <$ symbol "-"
             , [ InfixL $ BinaryExpr Add <$ symbol "+"
               , InfixL $ BinaryExpr Sub <$ symbol "-"
               ]
-            , [ InfixL $ BinaryExpr Cat   <$ symbol "."
+            , [ InfixL $ BinaryExpr Cat <$ symbol "."
               ]
             , [ InfixN $ BinaryExpr Lt  <$ operator "<"
               , InfixN $ BinaryExpr Lte <$ symbol "<="
               , InfixN $ BinaryExpr Gt  <$ operator ">"
               , InfixN $ BinaryExpr Gte <$ symbol ">="
               ]
-            , [ InfixL $ BinaryExpr Eq <$ operator "=="
-              , InfixL $ BinaryExpr Neq <$ operator "!="
-              , InfixL $ BinaryExpr NumEq <$ symbol "==="
+            , [ InfixL $ BinaryExpr Eq     <$ operator "=="
+              , InfixL $ BinaryExpr Neq    <$ operator "!="
+              , InfixL $ BinaryExpr NumEq  <$ symbol "==="
               , InfixL $ BinaryExpr NumNeq <$ symbol "!=="
               ]
             , [ InfixL $ BinaryExpr And <$ operator "&"
@@ -121,7 +120,7 @@ operators = [ [ Prefix $ UnaryExpr Minus <$ symbol "-"
             , [ InfixL $ BinaryExpr BoolAnd <$ symbol "&&"
               ]
             , [ InfixL $ BinaryExpr BoolOr  <$ symbol "||"
-              ] 
+              ]
             , [ InfixN $ BinaryExpr Split <$ symbol "@"
               ]
             ]
@@ -131,4 +130,4 @@ term = parens expr
     <|> BoolConst True <$ keyword "true"
     <|> BoolConst False <$ keyword "false"
     <|> try (Call <$> name <*> (parens $ sepBy expr comma))
-    <|> Var <$> name
+    <|> Var <$> name <* notFollowedBy (symbol "(")

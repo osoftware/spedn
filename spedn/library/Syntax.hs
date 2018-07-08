@@ -1,17 +1,28 @@
 module Syntax where
 
-import Data.Word
+import           Data.Word
 
 type Name = String
 
-data VarType = VarBool | VarNum | VarBin deriving (Show)
+infixr 5 :->
+data Type
+    = Bool
+    | Num
+    | Bin
+    | PubKey
+    | Sig
+    | Time
+    | TimeSpan
+    | [Type] :-> Type
+    | Void
+    deriving (Eq, Show)
 
 data UnaryOp
     = Not
     | Minus
-    deriving (Show)
+    deriving (Eq, Show)
 
-data BinaryOp 
+data BinaryOp
     = Add
     | Sub
     | Mul
@@ -32,38 +43,38 @@ data BinaryOp
     | Gte
     | Cat
     | Split
-    deriving (Show)
+    deriving (Eq, Show)
 
 data Expr
     = BoolConst Bool
-    | NumConst Integer
+    | NumConst Int
     | BinConst [Word8]
     | Var Name
     | UnaryExpr UnaryOp Expr
     | BinaryExpr BinaryOp Expr Expr
     | TernaryExpr Expr Expr Expr
     | Call Name [Expr]
-    deriving (Show)
+    deriving (Eq, Show)
 
 isSplit :: Expr -> Bool
 isSplit (BinaryExpr Split _ _) = True
-isSplit _ = False
+isSplit _                      = False
 
 data Statement
-    = Assign VarType Name Expr
-    | SplitAssign VarType (Name, Name) Expr
+    = Assign Type Name Expr
+    | SplitAssign Type (Name, Name) Expr
     | Verify Expr
     | If Expr Statement (Maybe Statement)
     | Block [Statement]
-    | Return Expr
-    deriving (Show)
+    deriving (Eq, Show)
 
-data Challenge = Challenge Name [Param] Statement deriving (Show)
+data Challenge = Challenge Name [Param] Statement deriving (Eq, Show)
 
-data Param = Param VarType Name deriving (Show)
+data Param = Param Type Name deriving (Eq, Show)
 
 data Contract = Contract
     { contractName       :: !Name
     , contractParams     :: ![Param]
     , contractChallenges :: ![Challenge]
-    } deriving (Show)
+    } deriving (Eq, Show)
+
