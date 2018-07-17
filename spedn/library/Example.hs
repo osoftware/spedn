@@ -1,13 +1,9 @@
 -- | An example module.
 module Example (main) where
 
-import           Syntax
+import           Parser
+import           Text.Megaparsec
 
 -- | An example function.
 main :: IO ()
-main = print $
-    If (UnaryExpr Not (BoolConst True))
-        (Assign Bool "test" (BoolConst True))
-        (Just (Assign Bool "test" (BoolConst False)))
-
-
+main = parseTest contract "contract X() { challenge spend(bin x) { verify true || false; } }"

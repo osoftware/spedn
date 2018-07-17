@@ -10,10 +10,6 @@ import           Syntax
 
 type Parser = Parsec Void String
 
-data Annotated a s = Annotated SourcePos a s deriving (Show)
-
-type Untyped s = Annotated () s
-
 spaceConsumer :: Parser ()
 spaceConsumer = L.space space1 line block
   where
@@ -54,7 +50,7 @@ keyword :: String -> Parser ()
 keyword w = lexeme . try $ string w *> notFollowedBy alphaNumChar
 
 keywords :: [String]
-keywords = ["contract","challenge","if","then","else","verify","true","false","var"]
+keywords = ["contract","challenge","if","then","else","verify","true","false","int","bin"]
 
 name :: Parser Name
 name = lexeme . try $ do

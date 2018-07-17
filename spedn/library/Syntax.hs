@@ -1,3 +1,7 @@
+{-# LANGUAGE DeriveFoldable    #-}
+{-# LANGUAGE DeriveFunctor     #-}
+{-# LANGUAGE DeriveTraversable #-}
+
 module Syntax where
 
 import           Data.Word
@@ -5,6 +9,7 @@ import           Data.Word
 type Name = String
 
 infixr 5 :->
+infixr 5 :.
 data Type
     = Bool
     | Num
@@ -13,7 +18,8 @@ data Type
     | Sig
     | Time
     | TimeSpan
-    | [Type] :-> Type
+    | [Type] :-> Type -- | Function
+    | Type :. Type    -- | Tuple
     | Void
     deriving (Eq, Show)
 
@@ -45,36 +51,32 @@ data BinaryOp
     | Split
     deriving (Eq, Show)
 
-data Expr
-    = BoolConst Bool
-    | NumConst Int
-    | BinConst [Word8]
-    | Var Name
-    | UnaryExpr UnaryOp Expr
-    | BinaryExpr BinaryOp Expr Expr
-    | TernaryExpr Expr Expr Expr
-    | Call Name [Expr]
-    deriving (Eq, Show)
+data Expr a
+    = BoolConst Bool a
+    | NumConst Int a
+    | BinConst [Word8] a
+    | Var Name a
+    | UnaryExpr UnaryOp (Expr a) a
+    | BinaryExpr BinaryOp (Expr a) (Expr a) a
+    | TernaryExpr (Expr a) (Expr a) (Expr a) a
+    | Call Name [Expr a] a
+    deriving (Eq, Show, Functor, Foldable, Traversable)
 
-isSplit :: Expr -> Bool
-isSplit (BinaryExpr Split _ _) = True
-isSplit _                      = False
+data Statement a
+    = Assign Type Name (Expr a) a
+    | SplitAssign Type (Name, Name) (Expr a) a
+    | Verify (Expr a) a
+    | If (Expr a) (Statement a) (Maybe (Statement a)) a
+    | Block [Statement a] a
+    deriving (Eq, Show, Functor, Foldable, Traversable)
 
-data Statement
-    = Assign Type Name Expr
-    | SplitAssign Type (Name, Name) Expr
-    | Verify Expr
-    | If Expr Statement (Maybe Statement)
-    | Block [Statement]
-    deriving (Eq, Show)
+data Challenge a = Challenge Name [Param a] (Statement a) a deriving (Eq, Show)
 
-data Challenge = Challenge Name [Param] Statement deriving (Eq, Show)
+data Param a = Param Type Name a deriving (Eq, Show)
 
-data Param = Param Type Name deriving (Eq, Show)
-
-data Contract = Contract
+data Contract a = Contract
     { contractName       :: !Name
-    , contractParams     :: ![Param]
-    , contractChallenges :: ![Challenge]
+    , contractParams     :: ![Param a]
+    , contractChallenges :: ![Challenge a]
+    , contractAnnotation :: a
     } deriving (Eq, Show)
-

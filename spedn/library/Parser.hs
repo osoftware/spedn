@@ -4,80 +4,97 @@ import           Text.Megaparsec
 import           Text.Megaparsec.Expr
 
 import           Lexer
-import           Syntax
+import qualified Syntax               as S
+
+type Contract = S.Contract SourcePos
+type Param = S.Param SourcePos
+type Challenge = S.Challenge SourcePos
+type Statement = S.Statement SourcePos
+type Expr = S.Expr SourcePos
 
 sourceFile :: Parser Contract
 sourceFile = between spaceConsumer eof contract
 
+annotate :: Parser (SourcePos -> a) -> Parser a
+annotate parser = do
+    pos <- getPosition
+    x <- parser
+    return $ x pos
+
 contract :: Parser Contract
-contract = do
+contract = annotate $ do
     keyword "contract"
     n <- name
     ps <- params
     cs <- braces $ many challenge
-    return $ Contract n ps cs
+    return $ S.Contract n ps cs
 
 params :: Parser [Param]
 params = parens $ sepBy param comma
 
 param :: Parser Param
-param = return $ Param Num "a"
+param = annotate $ do
+    t <- varType
+    n <- name
+    return $ S.Param t n
+
+varType :: Parser S.Type
+varType = choice [ keyword "int" >> pure S.Num
+                 , keyword "bin" >> pure S.Bin
+                 ]
 
 challenge :: Parser Challenge
-challenge = do
+challenge = annotate $ do
     keyword "challenge"
     n <- name
     ps <- parens $ sepBy1 param comma
     body <- block
-    return $ Challenge n ps body
+    return $ S.Challenge n ps body
 
 block :: Parser Statement
-block = do
+block = annotate $ do
     stmts <- braces $ many statement
-    return $ Block stmts
+    return $ S.Block stmts
 
 statement :: Parser Statement
 statement = assign <|> split <|> verify <|> ifElse <|> block
 
 assign :: Parser Statement
-assign = do
-    keyword "var"
+assign = annotate $ do
+    t <- varType
     n <- name
-    eq
-    val <- expr
-    semi
-    return $ Assign Num n val
+    val <- rval
+    return $ S.Assign t n val
 
 
 split :: Parser Statement
-split = do
-    keyword "var"
+split = annotate $ do
+    t <- varType
     vars <- brackets $ do
       l <- name
       comma
       r <- name
       return (l, r)
-    eq
-    val <- expr
-    semi
-    if isSplit val
-      then return $ SplitAssign Bin vars val
-      else fail "expected @ operator but found ;"
+    val <- rval
+    return $ S.SplitAssign (t S.:. t) vars val
+
+rval :: Parser Expr
+rval = eq *> expr <* semi
 
 verify :: Parser Statement
-verify = do
+verify = annotate $ do
     keyword "verify"
     val <- expr
     semi
-    return $ Verify val
+    return $ S.Verify val
 
 ifElse :: Parser Statement
-ifElse = do
+ifElse = annotate $ do
     keyword "if"
     cond <- parens expr
     trueBranch <- statement
     falseBranch <- try $ elseBranch <|> return Nothing
-    return $ If cond trueBranch falseBranch
+    return $ S.If cond trueBranch falseBranch
 
 elseBranch :: Parser (Maybe Statement)
 elseBranch = do
@@ -89,45 +106,58 @@ expr :: Parser Expr
 expr = makeExprParser term operators
 
 operators :: [[Operator Parser Expr]]
-operators = [ [ Prefix $ UnaryExpr Minus <$ symbol "-"
-              , Prefix $ UnaryExpr Not   <$ symbol "!"
+operators = [ [ prefix S.Minus $ symbol "-"
+              , prefix S.Not $ symbol "!"
               ]
-            , [ InfixL $ BinaryExpr Mul <$ symbol "*"
-              , InfixL $ BinaryExpr Div <$ symbol "/"
-              , InfixL $ BinaryExpr Mod <$ symbol "%"
+            , [ infixL S.Mul $ symbol "*"
+              , infixL S.Div $ symbol "/"
+              , infixL S.Mod $ symbol "%"
               ]
-            , [ InfixL $ BinaryExpr Add <$ symbol "+"
-              , InfixL $ BinaryExpr Sub <$ symbol "-"
+            , [ infixL S.Add $ symbol "+"
+              , infixL S.Sub $ symbol "-"
               ]
-            , [ InfixL $ BinaryExpr Cat <$ symbol "."
+            , [ infixL S.Cat $ symbol "."
               ]
-            , [ InfixN $ BinaryExpr Lt  <$ operator "<"
-              , InfixN $ BinaryExpr Lte <$ symbol "<="
-              , InfixN $ BinaryExpr Gt  <$ operator ">"
-              , InfixN $ BinaryExpr Gte <$ symbol ">="
+            , [ infixN S.Lt  $ operator "<"
+              , infixN S.Lte $ symbol "<="
+              , infixN S.Gt  $ operator ">"
+              , infixN S.Gte $ symbol ">="
               ]
-            , [ InfixL $ BinaryExpr Eq     <$ operator "=="
-              , InfixL $ BinaryExpr Neq    <$ operator "!="
-              , InfixL $ BinaryExpr NumEq  <$ symbol "==="
-              , InfixL $ BinaryExpr NumNeq <$ symbol "!=="
+            , [ infixL S.Eq     $ operator "=="
+              , infixL S.Neq    $ operator "!="
+              , infixL S.NumEq  $ symbol "==="
+              , infixL S.NumNeq $ symbol "!=="
               ]
-            , [ InfixL $ BinaryExpr And <$ operator "&"
+            , [ infixL S.And $ operator "&"
               ]
-            , [ InfixL $ BinaryExpr Xor <$ symbol   "^"
+            , [ infixL S.Xor $ symbol   "^"
               ]
-            , [ InfixL $ BinaryExpr Or  <$ operator "|"
+            , [ infixL S.Or  $ operator "|"
               ]
-            , [ InfixL $ BinaryExpr BoolAnd <$ symbol "&&"
+            , [ infixL S.BoolAnd $ symbol "&&"
               ]
-            , [ InfixL $ BinaryExpr BoolOr  <$ symbol "||"
+            , [ infixL S.BoolOr $ symbol "||"
               ]
-            , [ InfixN $ BinaryExpr Split <$ symbol "@"
+            , [ infixN S.Split $ symbol "@"
               ]
             ]
+  where
+    prefix op parser = Prefix $ do
+        pos <- getPosition <* parser
+        return $ \ e -> S.UnaryExpr op e pos
+
+    infixL op parser = InfixL $ do
+        pos <- getPosition <* parser
+        return $ \ l r -> S.BinaryExpr op l r pos
+
+    infixN op parser = InfixN $ do
+        pos <- getPosition <* parser
+        return $ \ l r -> S.BinaryExpr op l r pos
 
 term :: Parser Expr
-term = parens expr
-    <|> BoolConst True <$ keyword "true"
-    <|> BoolConst False <$ keyword "false"
-    <|> try (Call <$> name <*> (parens $ sepBy expr comma))
-    <|> Var <$> name <* notFollowedBy (symbol "(")
+term = choice [ parens expr
+              , annotate (S.BoolConst True <$ keyword "true")
+              , annotate (S.BoolConst False <$ keyword "false")
+              , annotate (try (S.Call <$> name <*> parens (sepBy expr comma)))
+              , annotate (S.Var <$> name <* notFollowedBy (symbol "("))
+              ]
