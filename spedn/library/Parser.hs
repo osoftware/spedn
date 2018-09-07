@@ -5,6 +5,7 @@ import           Text.Megaparsec.Expr
 
 import           Lexer
 import qualified Syntax               as S
+import           Syntax (Type((:.)))
 
 type Contract = S.Contract SourcePos
 type Param = S.Param SourcePos
@@ -76,7 +77,7 @@ split = annotate $ do
       r <- name
       return (l, r)
     val <- rval
-    return $ S.SplitAssign (t S.:. t) vars val
+    return $ S.SplitAssign (t :. t) vars val
 
 rval :: Parser Expr
 rval = eq *> expr <* semi

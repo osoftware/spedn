@@ -20,6 +20,7 @@ data Type
     | TimeSpan
     | [Type] :-> Type -- | Function
     | Type :. Type    -- | Tuple
+    | List Type
     | Void
     deriving (Eq, Show)
 
