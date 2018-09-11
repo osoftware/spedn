@@ -9,60 +9,65 @@ import           Errors
 import           Syntax
 
 type Check = Either Error
-type Checker = StateT Env Check
-type TypeChecker n a = Checker (n (Type, a))
+type Checker = State Env
+type TypeChecker n a = Checker (n (Check Type, Env, a))
 
 checkContract :: Contract a -> TypeChecker Contract a
 checkContract (Contract n ps cs a) = do
     ps' <- mapM checkParam ps
+    env <- get
     cs' <- mapM checkChallenge cs
-    return $ Contract n ps' cs' (Void, a)
+    return $ Contract n ps' cs' (Right Void, env, a)
 
 checkChallenge :: Challenge a -> TypeChecker Challenge a
 checkChallenge (Challenge n ps s a) = do
     enterM
     ps' <- mapM checkParam ps
+    env <- get
     s' <- checkStatement s
-    return $ Challenge n ps' s' (Void, a)
+    return $ Challenge n ps' s' (Right Void, env, a)
 
 checkParam :: Param a -> TypeChecker Param a
 checkParam (Param t n a) = do
     env <- get
-    addM n (VarDescr t (height env))
-    return $ Param t n (t, a)
+    env' <- addM n (VarDescr t (height env))
+    return $ Param t n (Right t, env', a)
 
 checkStatement :: Statement a -> TypeChecker Statement a
 checkStatement (Assign t n e a) = do
     env <- get
-    t' <- lift $ expect t (typeof env e)
+    let t' = expect t (typeof env e)
     e' <- checkExpr e
-    addM n (VarDescr t (height env))
-    return $ Assign t n e' (t', a)
+    env' <- addM n (VarDescr t (height env))
+    return $ Assign t n e' (t', env', a)
 checkStatement (SplitAssign t (l, r) e a) = do
     env <- get
-    t' <- lift $ expect t (typeof env e)
+    let t' = expect t (typeof env e)
     e' <- checkExpr e
-    addM l (VarDescr t (height env))
-    addM r (VarDescr t (height env + 1))
-    return $ SplitAssign t (l, r) e' (t', a)
+    _ <- addM l (VarDescr t (height env))
+    env' <- addM r (VarDescr t (height env + 1))
+    return $ SplitAssign t (l, r) e' (t', env', a)
 checkStatement (Verify e a) = do
+    env <- get
+    let check = expect Bool (typeof env e)
     e' <- checkExpr e
-    return $ Verify e' (Void, a)
+    return $ Verify e' (check, env, a)
 checkStatement (If cond t f a) = do
     env <- get
-    _ <- lift $ expect Bool (typeof env cond)
+    let check = expect Bool (typeof env cond)
     cond' <- checkExpr cond
     t' <- checkBranch t
     case f of
-        Nothing -> return $ If cond' t' Nothing (Void, a)
+        Nothing -> return $ If cond' t' Nothing (check, env, a)
         Just f' -> do
             f'' <- checkBranch f'
-            return $ If cond' t' (Just f'') (Void, a)
+            return $ If cond' t' (Just f'') (check, env, a)
 checkStatement (Block stmts a) = do
     enterM
+    env <- get
     stmts' <- mapM checkStatement stmts
     leaveM
-    return $ Block stmts' (Void, a)
+    return $ Block stmts' (Right Void, env, a)
 
 checkBranch :: Statement a -> TypeChecker Statement a
 checkBranch stmt = do
@@ -72,31 +77,36 @@ checkBranch stmt = do
     return stmt'
 
 checkExpr :: Expr a -> TypeChecker Expr a
-checkExpr (BoolConst v a) = return $ BoolConst v (Bool, a)
-checkExpr (NumConst v a) = return $ NumConst v (Num, a)
-checkExpr (BinConst v a) = return $ BinConst v (Bin, a)
+checkExpr (BoolConst v a) = get >>= \env -> return $ BoolConst v (Right Bool, env, a)
+checkExpr (NumConst v a) = get >>= \env -> return $ NumConst v (Right Num, env, a)
+checkExpr (BinConst v a) = get >>= \env -> return $ BinConst v (Right Bin, env, a)
 checkExpr expr@(Var n a) = do
+    env <- get
     t <- typeofM expr
-    return $ Var n (t, a)
+    return $ Var n (t, env, a)
 checkExpr expr@(UnaryExpr op e a) = do
+    env <- get
     t <- typeofM expr
     e' <- checkExpr e
-    return $ UnaryExpr op e' (t, a)
+    return $ UnaryExpr op e' (t, env, a)
 checkExpr expr@(BinaryExpr op l r a) = do
+    env <- get
     t <- typeofM expr
     l' <- checkExpr l
     r' <- checkExpr r
-    return $ BinaryExpr op l' r' (t, a)
+    return $ BinaryExpr op l' r' (t, env, a)
 checkExpr expr@(TernaryExpr cond tr fl a) = do
+    env <- get
     t <- typeofM expr
     cond' <- checkExpr cond
     tr' <- checkExpr tr
     fl' <- checkExpr fl
-    return $ TernaryExpr cond' tr' fl' (t, a)
+    return $ TernaryExpr cond' tr' fl' (t, env, a)
 checkExpr expr@(Call n args a) = do
+    env <- get
     t <- typeofM expr
     args' <- mapM checkExpr args
-    return $ Call n args' (t, a)
+    return $ Call n args' (t, env, a)
 
 enterM :: Checker ()
 enterM = do
@@ -108,16 +118,17 @@ leaveM = do
     env <- get
     put $ leave env
 
-addM :: Name -> Descr -> Checker ()
+addM :: Name -> Descr -> Checker Env
 addM n d = do
     env <- get
-    env' <- lift $ add env n d
-    put env'
+    case add env n d of
+        Left _  -> return env
+        Right e -> put e >> return e
 
-typeofM :: Expr a -> StateT Env (Either Error) Type
+typeofM :: Expr a -> State Env (Either Error Type)
 typeofM expr = do
     env <- get
-    lift $ typeof env expr
+    return $ typeof env expr
 
 typeof :: Env -> Expr a -> Check Type
 typeof _ (BoolConst _ _)            = return Bool

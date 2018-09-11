@@ -1,9 +1,15 @@
 -- | An example module.
 module Example (main) where
 
-import           Parser
-import           Text.Megaparsec
+import           Compiler
+
 
 -- | An example function.
 main :: IO ()
-main = parseTest contract "contract X() { challenge spend(bin x) { verify true || false; } }"
+main = print $ compile
+    "contract X(bin a) { \n\
+    \  challenge spend(bin x) { \n\
+    \    verify a || x; \n\
+    \    verify a; \n\
+    \  } \n\
+    \}"

@@ -13,6 +13,7 @@ type Loc = Int
 data Descr
     = VarDescr Type Loc
     | FunDescr Type
+    deriving (Show)
 
 getType :: Descr -> Type
 getType (VarDescr t _) = t
