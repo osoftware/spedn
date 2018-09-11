@@ -146,8 +146,11 @@ typeof env (BinaryExpr op l r _)
                                         Right other -> throwError $ TypeMismatch Num other
                                         err         -> err
     | op == Cat                   = both Bin (typeof env l) (typeof env r)
-    | op `elem` [Add, Sub, Mul, Div, Mod, NumEq, NumNeq, Gt, Gte, Lt, Lte]
+    | op `elem` [Add, Sub, Div, Mod]
                                   = both Num (typeof env l) (typeof env r)
+    | op `elem` [NumEq, NumNeq, Gt, Gte, Lt, Lte]
+                                  = both Num (typeof env l) (typeof env r) >> return Bool
+    | op `elem` [Eq, Neq]         = bothSame (typeof env l) (typeof env r) >> return Bool
     | op `elem` [BoolAnd, BoolOr] = both Bool (typeof env l) (typeof env r)
     | otherwise                   = bothSame (typeof env l) (typeof env r)
 typeof env (TernaryExpr cond t f _) = expect Bool (typeof env cond) >> bothSame (typeof env t) (typeof env f)
