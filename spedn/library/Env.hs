@@ -8,21 +8,10 @@ import           Data.Maybe
 import           Errors
 import           Syntax
 
-type Loc = Int
-
-data Descr
-    = VarDescr Type Loc
-    | FunDescr Type
-    deriving (Show)
-
-getType :: Descr -> Type
-getType (VarDescr t _) = t
-getType (FunDescr t)   = t
-
-type SymbolTable = Map.Map Name Descr
+type SymbolTable = Map.Map Name Type
 
 globals :: SymbolTable
-globals = Map.fromList $ (\(n, t) -> (n, FunDescr t)) <$>
+globals = Map.fromList
     [ ("min",           [Num, Num]              :-> Num)
     , ("max",           [Num, Num]              :-> Num)
     , ("within",        [Num, Num, Num]         :-> Bool)
@@ -48,18 +37,14 @@ enter scopes = Map.empty : scopes
 leave :: Env -> Env
 leave = tail
 
-lookup :: Env -> Name -> Maybe Descr
+lookup :: Env -> Name -> Maybe Type
 lookup [] _             = Nothing
 lookup (scope:scopes) n = Map.lookup n scope <|> Env.lookup scopes n
 
 inScope :: Env -> Name -> Bool
 inScope e n = isJust $ Env.lookup e n
 
-add :: Env -> Name -> Descr -> Either Error Env
-add [] name descr                                        = add [Map.empty] name descr
-add env@(s:ss) name descr | isJust (Env.lookup env name) = throwError $ NameConflict name
-                          | otherwise                    = return $ Map.insert name descr s : ss
-
-height :: Env -> Int
-height (s:ss) = length s + height ss
-height _      = 0
+add :: Env -> Name -> Type -> Either Error Env
+add [] n t                                     = add [Map.empty] n t
+add env@(s:ss) n t | isJust (Env.lookup env n) = throwError $ NameConflict n
+                   | otherwise                 = return $ Map.insert n t s : ss

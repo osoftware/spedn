@@ -29,23 +29,22 @@ checkChallenge (Challenge n ps s a) = do
 
 checkParam :: Param a -> TypeChecker Param a
 checkParam (Param t n a) = do
-    env <- get
-    env' <- addM n (VarDescr t (height env))
-    return $ Param t n (Right t, env', a)
+    env <- addM n t
+    return $ Param t n (Right t, env, a)
 
 checkStatement :: Statement a -> TypeChecker Statement a
 checkStatement (Assign t n e a) = do
     env <- get
     let t' = expect t (typeof env e)
     e' <- checkExpr e
-    env' <- addM n (VarDescr t (height env))
+    env' <- addM n t
     return $ Assign t n e' (t', env', a)
 checkStatement (SplitAssign t (l, r) e a) = do
     env <- get
     let t' = expect t (typeof env e)
     e' <- checkExpr e
-    _ <- addM l (VarDescr t (height env))
-    env' <- addM r (VarDescr t (height env + 1))
+    _ <- addM l t
+    env' <- addM r t
     return $ SplitAssign t (l, r) e' (t', env', a)
 checkStatement (Verify e a) = do
     env <- get
@@ -118,7 +117,7 @@ leaveM = do
     env <- get
     put $ leave env
 
-addM :: Name -> Descr -> Checker Env
+addM :: Name -> Type -> Checker Env
 addM n d = do
     env <- get
     case add env n d of
@@ -135,8 +134,8 @@ typeof _ (BoolConst _ _)            = return Bool
 typeof _ (NumConst _ _)             = return Num
 typeof _ (BinConst _ _)             = return Bin
 typeof env (Var varName _)          = case Env.lookup env varName of
-                                        Just (VarDescr t _) -> return t
-                                        _                   -> throwError $ NotInScope varName
+                                        Just t -> return t
+                                        _      -> throwError $ NotInScope varName
 typeof env (UnaryExpr Not expr _)   = expect Bool $ typeof env expr
 typeof env (UnaryExpr Minus expr _) = expect Num $ typeof env expr
 typeof env (BinaryExpr op l r _)
@@ -156,10 +155,10 @@ typeof env (BinaryExpr op l r _)
 typeof env (TernaryExpr cond t f _) = expect Bool (typeof env cond) >> bothSame (typeof env t) (typeof env f)
 typeof env (Call fName args _)      = let argtypes = typeof env <$> args
                                       in case Env.lookup env fName of
-                                          Just (FunDescr(ts :-> t)) -> if funSigMatches ts argtypes
-                                                                       then return t
-                                                                       else throwError $ TypeMismatch (ts :-> t) (rights argtypes :-> t)
-                                          _                         -> throwError $ NotInScope fName
+                                          Just (ts :-> t) -> if funSigMatches ts argtypes
+                                                             then return t
+                                                             else throwError $ TypeMismatch (ts :-> t) (rights argtypes :-> t)
+                                          _               -> throwError $ NotInScope fName
 
 expect :: Type -> Check Type -> Check Type
 expect t (Right a) = if t == a then return t else throwError $ TypeMismatch t a
