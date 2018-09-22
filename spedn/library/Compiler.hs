@@ -1,21 +1,27 @@
 module Compiler where
 
 import           Control.Monad.State
+import           Control.Monad.Writer
 import           Text.Megaparsec
 
 import           Env
 import           Errors
+import           IR
 import           Lexer
 import           Parser
 import           Syntax
 import           TypeChecker
 
-compiler :: Parser (TypeChecker Contract SourcePos)
-compiler = checkContract <$> contract
+parser :: Parser (TypeChecker Contract SourcePos)
+parser = checkContract <$> contract
 
-compile :: String -> Either Error (Contract (Check Type, Env, SourcePos))
-compile code = case parse compiler "test.bch" code of
-    Right ast -> Right $ evalState ast []
+compileToAst :: String -> Either Error (Contract (Check Type, Env, SourcePos))
+compileToAst code = case parse parser "test.bch" code of
+    Right ast -> Right $ evalState ast [globals]
     Left err  -> Left $ SyntaxError $ parseErrorPretty err
 
+compileToIR :: Contract a -> IR
+compileToIR c = execWriter $ evalStateT (contractCompiler c) []
 
+compile :: String -> Either Error IR
+compile code = compileToIR <$> compileToAst code
