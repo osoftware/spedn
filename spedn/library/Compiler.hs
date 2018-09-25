@@ -9,6 +9,7 @@ import           Errors
 import           IR
 import           Lexer
 import           Parser
+import           Optimizer
 import           Script
 import           Syntax
 import           TypeChecker
@@ -25,5 +26,4 @@ compileToIR :: Contract a -> IR
 compileToIR c = execWriter $ evalStateT (contractCompiler c) []
 
 compile :: String -> Either Error Script
-compile code = compileIR . compileToIR <$> compileToAst code
-
+compile code = optimize . compileIR . compileToIR <$> compileToAst code
