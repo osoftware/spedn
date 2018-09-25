@@ -12,9 +12,13 @@ type SymbolTable = Map.Map Name Type
 
 globals :: SymbolTable
 globals = Map.fromList
-    [ ("min",           [Num, Num]              :-> Num)
+    [ ("abs",           [Num]                   :-> Num)
+    , ("min",           [Num, Num]              :-> Num)
     , ("max",           [Num, Num]              :-> Num)
     , ("within",        [Num, Num, Num]         :-> Bool)
+
+    , ("num2bin",       [Num]                   :-> Bin)
+    , ("bin2num",       [Bin]                   :-> Num)
 
     , ("ripemd160",     [Bin]                   :-> Bin)
     , ("sha1",          [Bin]                   :-> Bin)

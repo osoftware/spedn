@@ -9,6 +9,7 @@ import           Errors
 import           IR
 import           Lexer
 import           Parser
+import           Script
 import           Syntax
 import           TypeChecker
 
@@ -23,5 +24,6 @@ compileToAst code = case parse parser "test.bch" code of
 compileToIR :: Contract a -> IR
 compileToIR c = execWriter $ evalStateT (contractCompiler c) []
 
-compile :: String -> Either Error IR
-compile code = compileToIR <$> compileToAst code
+compile :: String -> Either Error Script
+compile code = compileIR . compileToIR <$> compileToAst code
+

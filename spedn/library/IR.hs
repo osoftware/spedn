@@ -9,8 +9,7 @@ import           Data.Word
 import           Syntax
 
 data OpCode
-    = OpGet Int
-    | OpPick Int
+    = OpPick Int
     | OpRoll Int
     | OpCall Name
     | OpVerify
