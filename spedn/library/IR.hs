@@ -41,14 +41,26 @@ popM = do
     stack <- get
     put $ tail stack
 
+rollM :: Name -> Compiler
+rollM name = do
+    stack <- get
+    let (top, bottom) = splitAt (name `from` stack) stack
+    put $ name : top ++ tail bottom
+
 from :: Name -> Stack -> Int
-from name stack = fromJust (name `elemIndex` stack)
+from name stack = fromJust $ name `elemIndex` stack
 
 emitPickM :: Name -> Compiler
 emitPickM name = do
     stack <- get
     emit [OpPick $ name `from` stack]
     pushM $ "$" ++ name
+
+emitDropM :: Compiler
+emitDropM = do
+    stack <- get
+    put $ tail stack
+    emit [OpDrop]
 
 contractCompiler :: Contract a -> Compiler
 contractCompiler (Contract _ cps cs _) = do
@@ -62,7 +74,7 @@ singleChallengeCompiler :: [Param a] -> Challenge a -> Compiler
 singleChallengeCompiler cps (Challenge _ ps s _) = do
     mapM_ pushM $ nameof <$> ps
     mapM_ pushM $ nameof <$> cps
-    stmtCompiler s
+    stmtCompiler s True
 
 challengesCompiler :: [Param a] -> [Challenge a] -> Compiler
 challengesCompiler cps cs = do
@@ -77,49 +89,52 @@ nthChallengeCompiler cps (Challenge _ ps s _) num total = do
     mapM_ pushM $ nameof <$> cps
     emitPickM "$case"
     emit [OpPushNum num, OpCall "Eq", OpIf]
-    stmtCompiler s
+    stmtCompiler s True
     when (num < total) (emit [OpElse])
 
 nameof :: Param a -> Name
 nameof (Param _ n _) = n
 
-stmtCompiler :: Statement a -> Compiler
-stmtCompiler (Assign _ name expr _) = do
+stmtCompiler :: Statement a -> Bool -> Compiler
+stmtCompiler (Assign _ name expr _) _ = do
     exprCompiler expr
     popM
     pushM name
-stmtCompiler (SplitAssign _ (l, r) expr _) = do
+stmtCompiler (SplitAssign _ (l, r) expr _) _ = do
     exprCompiler expr
     popM
     popM
     pushM l
     pushM r
-stmtCompiler (Verify expr _) = do
+stmtCompiler (Verify expr _) final = do
     exprCompiler expr
     popM
-    emit [OpVerify]
-stmtCompiler (If cond t f _) = do
+    unless final $ emit [OpVerify]
+stmtCompiler (If cond t f _) final = do
     exprCompiler cond
     emit [OpIf]
-    stmtCompiler t
+    stmtCompiler t final
     case f of
-        Just fl -> do
-            emit [OpElse]
-            stmtCompiler fl
-        Nothing -> return ()
+        Just fl -> emit [OpElse] >> stmtCompiler fl final
+        Nothing -> when final $ emit [OpElse, OpPushBool True]
     emit [OpEndIf]
-stmtCompiler (Block ss _) = do
+stmtCompiler (Block ss _) final = do
     stack <- get
-    mapM_ stmtCompiler ss
+    sequenceCompiler ss final
     stack' <- get
     let diff = length stack' - length stack
-    replicateM_ diff popM
+    unless final $ replicateM_ diff emitDropM
+
+sequenceCompiler :: [Statement a] -> Bool -> Compiler
+sequenceCompiler [s] final    = stmtCompiler s final
+sequenceCompiler (s:ss) final = stmtCompiler s False >> sequenceCompiler ss final
+sequenceCompiler [] _         = return ()
 
 exprCompiler :: Expr a -> Compiler
 exprCompiler (BoolConst val _) = emit [OpPushBool val] >> pushM "$const"
-exprCompiler (NumConst val _) = emit [OpPushNum val] >> pushM "$const"
-exprCompiler (BinConst val _) = emit [OpPushBin val] >> pushM "$const"
-exprCompiler (Var name _) = emitPickM name
+exprCompiler (NumConst val _)  = emit [OpPushNum val]  >> pushM "$const"
+exprCompiler (BinConst val _)  = emit [OpPushBin val]  >> pushM "$const"
+exprCompiler (Var name _)      = emitPickM name
 exprCompiler (UnaryExpr op e _) = do
     exprCompiler e
     emit [OpCall $ show op]
