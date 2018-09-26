@@ -29,23 +29,25 @@ checkChallenge (Challenge n ps s a) = do
 
 checkParam :: Param a -> TypeChecker Param a
 checkParam (Param t n a) = do
-    env <- addM n t
-    return $ Param t n (Right t, env, a)
+    (env, t') <- addM n t
+    return $ Param t n (t', env, a)
 
 checkStatement :: Statement a -> TypeChecker Statement a
 checkStatement (Assign t n e a) = do
     env <- get
     let t' = expect t (typeof env e)
     e' <- checkExpr e
-    env' <- addM n t
-    return $ Assign t n e' (t', env', a)
+    (env', t'') <- addM n t
+    let check = do { _ <- t' ; t'' }
+    return $ Assign t n e' (check, env', a)
 checkStatement (SplitAssign t (l, r) e a) = do
     env <- get
     let t' = expect t (typeof env e)
     e' <- checkExpr e
-    _ <- addM l t
-    env' <- addM r t
-    return $ SplitAssign t (l, r) e' (t', env', a)
+    (_, tl') <- addM l t
+    (env', tr') <- addM r t
+    let check = do { _ <- t' ; tl <- tl' ; tr <- tr' ; return $ tl :. tr }
+    return $ SplitAssign t (l, r) e' (check, env', a)
 checkStatement (Verify e a) = do
     env <- get
     let check = expect Bool (typeof env e)
@@ -117,14 +119,14 @@ leaveM = do
     env <- get
     put $ leave env
 
-addM :: Name -> Type -> Checker Env
-addM n d = do
+addM :: Name -> Type -> Checker (Env, Check Type)
+addM n t = do
     env <- get
-    case add env n d of
-        Left _  -> return env
-        Right e -> put e >> return e
+    case add env n t of
+        Right e  -> put e >> return (e, Right t)
+        Left err -> return (env, Left err)
 
-typeofM :: Expr a -> State Env (Either Error Type)
+typeofM :: Expr a -> Checker (Check Type)
 typeofM expr = do
     env <- get
     return $ typeof env expr
