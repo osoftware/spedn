@@ -1,5 +1,5 @@
-{-# LANGUAGE DeriveFoldable    #-}
 {-# LANGUAGE DeriveFunctor     #-}
+{-# LANGUAGE DeriveFoldable    #-}
 {-# LANGUAGE DeriveTraversable #-}
 
 module Syntax where
@@ -71,13 +71,15 @@ data Statement a
     | Block [Statement a] a
     deriving (Eq, Show, Functor, Foldable, Traversable)
 
-data Challenge a = Challenge Name [Param a] (Statement a) a deriving (Eq, Show)
+data Challenge a = Challenge Name [Param a] (Statement a) a
+    deriving (Eq, Show, Functor, Foldable, Traversable)
 
-data Param a = Param Type Name a deriving (Eq, Show)
+data Param a = Param Type Name a
+    deriving (Eq, Show, Functor, Foldable, Traversable)
 
 data Contract a = Contract
     { contractName       :: !Name
     , contractParams     :: ![Param a]
     , contractChallenges :: ![Challenge a]
     , contractAnnotation :: a
-    } deriving (Eq, Show)
+    } deriving (Eq, Show, Functor, Foldable, Traversable)
