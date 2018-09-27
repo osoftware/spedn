@@ -39,8 +39,11 @@ param = annotate $ do
     return $ Param t n
 
 varType :: Parser Type
-varType = choice [ keyword "int" >> pure Num
+varType = choice [ keyword "bool" >> pure Bool
+                 , keyword "int" >> pure Num
                  , keyword "bin" >> pure Bin
+                 , keyword "PubKey" >> pure PubKey
+                 , keyword "Sig" >> pure Sig
                  ]
 
 challenge :: Parser Challenge'
@@ -106,7 +109,7 @@ expr :: Parser Expr'
 expr = makeExprParser term operators
 
 operators :: [[Operator Parser Expr']]
-operators = [ [ prefix Minus $ symbol "-"
+operators = [ [ prefix Minus $ try $ symbol "-" *> notFollowedBy digits
               , prefix Not $ symbol "!"
               ]
             , [ infixL Mul $ symbol "*"
@@ -156,8 +159,28 @@ operators = [ [ prefix Minus $ symbol "-"
 
 term :: Parser Expr'
 term = choice [ parens expr
-              , annotate (BoolConst True <$ keyword "true")
-              , annotate (BoolConst False <$ keyword "false")
-              , annotate (try (Call <$> name <*> parens (sepBy expr comma)))
-              , annotate (Var <$> name <* notFollowedBy (symbol "("))
+              , list
+              , boolConst
+              , numConst
+              , binConst
+              , call
+              , var
               ]
+
+list :: Parser Expr'
+list = annotate $ Array <$> brackets (sepBy expr comma)
+
+boolConst :: Parser Expr'
+boolConst = annotate (BoolConst True <$ keyword "true" <|> BoolConst False <$ keyword "false")
+
+numConst :: Parser Expr'
+numConst = annotate . try $ NumConst <$> (symbol "0x" *> hexInt <* symbol "i" <|> decInt)
+
+binConst :: Parser Expr'
+binConst = annotate $ BinConst <$> (symbol "0x" *> many hexByte)
+
+call :: Parser Expr'
+call = annotate . try $ Call <$> name <*> parens (sepBy expr comma)
+
+var :: Parser Expr'
+var = annotate $ Var <$> name <* notFollowedBy (symbol "(")

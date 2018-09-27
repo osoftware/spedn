@@ -57,6 +57,7 @@ data Expr a
     | NumConst Int a
     | BinConst [Word8] a
     | Var Name a
+    | Array [Expr a] a
     | UnaryExpr UnaryOp (Expr a) a
     | BinaryExpr BinaryOp (Expr a) (Expr a) a
     | TernaryExpr (Expr a) (Expr a) (Expr a) a

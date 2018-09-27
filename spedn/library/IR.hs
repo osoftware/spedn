@@ -134,6 +134,7 @@ exprCompiler (BoolConst val _) = emit [OpPushBool val] >> pushM "$const"
 exprCompiler (NumConst val _)  = emit [OpPushNum val]  >> pushM "$const"
 exprCompiler (BinConst val _)  = emit [OpPushBin val]  >> pushM "$const"
 exprCompiler (Var name _)      = emitPickM name
+exprCompiler (Array es _)      = mapM_ exprCompiler es
 exprCompiler (UnaryExpr op e _) = do
     exprCompiler e
     emit [OpCall $ show op]
@@ -158,8 +159,19 @@ exprCompiler (TernaryExpr cond t f _) = do
     popM
     emit [OpEndIf]
     pushM "$tmp"
-exprCompiler (Call name args _) = do
-    mapM_ exprCompiler args
-    emit [OpCall name]
-    replicateM_ (length args) popM
+exprCompiler (Call "checkMultiSig" [Array sigs _, Array keys _] _) = do
+    emit [OpPushBool False] -- even Satoshi made an off by one mistake
+    mapM_ exprCompiler sigs
+    emit [OpPushNum $ length sigs]
+    mapM_ exprCompiler keys
+    emit [OpPushNum $ length keys]
+    emit [OpCall "checkMultiSig"]
+    replicateM_ (length sigs + length keys + 1) popM
     pushM "$tmp"
+exprCompiler (Call name args _)
+    | name `elem` ["PubKey", "Sig"] = exprCompiler $ head args
+    | otherwise                     = do
+        mapM_ exprCompiler args
+        emit [OpCall name]
+        unless (name == "size") $ replicateM_ (length args) popM
+        pushM "$tmp"

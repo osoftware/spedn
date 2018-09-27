@@ -17,20 +17,25 @@ globals = Map.fromList
     , ("max",           [Num, Num]              :-> Num)
     , ("within",        [Num, Num, Num]         :-> Bool)
 
-    , ("num2bin",       [Num]                   :-> Bin)
-    , ("bin2num",       [Bin]                   :-> Num)
-
     , ("ripemd160",     [Bin]                   :-> Bin)
     , ("sha1",          [Bin]                   :-> Bin)
     , ("sha256",        [Bin]                   :-> Bin)
     , ("hash160",       [Bin]                   :-> Bin)
     , ("hash256",       [Bin]                   :-> Bin)
 
-    , ("checkSig",      [PubKey, Sig]           :-> Bool)
-    , ("checkMultiSig", [List PubKey, List Sig] :-> Bool)
+    , ("checkSig",      [Sig, PubKey]           :-> Bool)
+    , ("checkMultiSig", [List Sig, List PubKey] :-> Bool)
+    , ("checkDataSig",  [Sig, Bin, PubKey]      :-> Bool)
 
     , ("checkLockTime", [Time]                  :-> Bool)
     , ("checkSequence", [TimeSpan]              :-> Bool)
+
+    , ("num2bin",       [Num]                   :-> Bin)
+    , ("bin2num",       [Bin, Num]              :-> Num)
+    , ("size",          [Bin]                   :-> Num)
+
+    , ("PubKey",        [Bin]                   :-> PubKey)
+    , ("Sig",           [Bin]                   :-> Sig)
     ]
 
 type Env = [SymbolTable]

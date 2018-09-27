@@ -85,6 +85,11 @@ checkExpr expr@(Var n a) = do
     env <- get
     t <- typeofM expr
     return $ Var n (t, env, a)
+checkExpr expr@(Array es a) = do
+    env <- get
+    t <- typeofM expr
+    es' <- mapM checkExpr es
+    return $ Array es' (List <$> t, env, a)
 checkExpr expr@(UnaryExpr op e a) = do
     env <- get
     t <- typeofM expr
@@ -138,6 +143,7 @@ typeof _ (BinConst _ _)             = return Bin
 typeof env (Var varName _)          = case Env.lookup env varName of
                                         Just t -> return t
                                         _      -> throwError $ NotInScope varName
+typeof env (Array es _)             = allSame $ typeof env <$> es
 typeof env (UnaryExpr Not expr _)   = expect Bool $ typeof env expr
 typeof env (UnaryExpr Minus expr _) = expect Num $ typeof env expr
 typeof env (BinaryExpr op l r _)
@@ -172,6 +178,9 @@ both t a b = expect t a >> expect t b
 bothSame :: Check Type -> Check Type -> Check Type
 bothSame (Right a) b  = expect a b
 bothSame l@(Left _) _ = l
+
+allSame :: [Check Type] -> Check Type
+allSame ts = foldr bothSame (head ts) ts
 
 toSplitTuple :: Check Type -> Check Type
 toSplitTuple (Right t) = Right $ t :. t

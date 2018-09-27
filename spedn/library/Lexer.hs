@@ -1,7 +1,9 @@
 module Lexer where
 
 import           Control.Monad              (void)
+import           Data.Char
 import           Data.Void
+import           Data.Word
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
@@ -58,3 +60,18 @@ name = lexeme . try $ do
     if word `elem` keywords
       then fail $ "keyword " ++ show word ++ " cannot be an identifier"
       else return word
+
+digits :: Parser Int
+digits = lexeme L.decimal
+
+decInt :: Parser Int
+decInt = L.signed spaceConsumer digits
+
+hexInt :: Parser Int
+hexInt = lexeme L.hexadecimal
+
+hexByte :: Parser Word8
+hexByte = do
+  h <- hexDigitChar 
+  l <- hexDigitChar
+  return . fromIntegral $ digitToInt h * 16 + digitToInt l
