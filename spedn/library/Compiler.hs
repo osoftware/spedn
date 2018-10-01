@@ -25,8 +25,8 @@ type Errors = [(Error, String)]
 parser :: Parser (TypeChecker Contract SourcePos)
 parser = checkContract <$> contract
 
-compileToAst :: String -> Either Errors (Contract (Check Type, Env, SourcePos))
-compileToAst code = case parse parser "test.bch" code of
+compileToAst :: FilePath -> String -> Either Errors (Contract (Check Type, Env, SourcePos))
+compileToAst source code = case parse parser source code of
     Right ast -> let ast'            = evalState ast [globals]
                      errors          = lefts $ map ann $ toList ast'
                      ann (a, _, pos) = a `extend` sourcePosPretty pos
@@ -40,6 +40,6 @@ extend (Right b) c = Right (b, c)
 compileToIR :: Contract a -> IR
 compileToIR c = execWriter $ evalStateT (contractCompiler c) []
 
-compile :: String -> Either Errors Script
-compile code = optimize . compileIR . compileToIR <$> compileToAst code
+compile :: FilePath -> String -> Either Errors Script
+compile source code = optimize . compileIR . compileToIR <$> compileToAst source code
 

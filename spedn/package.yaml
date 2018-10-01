@@ -35,6 +35,7 @@ executables:
     dependencies:
     - base
     - spedn
+    - optparse-applicative
     ghc-options:
     - -rtsopts
     - -threaded

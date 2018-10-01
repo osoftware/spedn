@@ -1,7 +1,15 @@
--- It is generally a good idea to keep all your business logic in your library
--- and only use it in the executable. Doing so allows others to use what you
--- wrote in their libraries.
-import qualified Example
+import           Options.Applicative
+
+import           Cli
+import           Compiler
 
 main :: IO ()
-main = Example.main
+main = run =<< execParser cli
+
+run :: Options -> IO ()
+run (Compile src) = do
+    code <- readFile src
+    case compile src code of
+        Left errors  -> mapM_ (\(e,l) -> putStrLn $ "Error at " ++ l ++ "\n" ++ show e ++ "\n") errors
+        Right result -> putStrLn . unwords . map show $ result
+run _             = putStrLn "Not implemented yet"
