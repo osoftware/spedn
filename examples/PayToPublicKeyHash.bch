@@ -1,0 +1,7 @@
+// This contract resembles a standard P2PKH.
+contract PayToPublicKeyHash(Sha256 pubKeyHash) {
+  challenge spend(PubKey pubKey, Sig sig) {
+    verify sha256(pubKey) == pubKeyHash;
+    verify checkSig(sig, pubKey);
+  }
+}

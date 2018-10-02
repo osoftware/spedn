@@ -3,13 +3,13 @@
 # this file: <https://github.com/sol/hpack>.
 name: spedn
 version: '0.0.0'
-github: "githubuser/spedn"
+git: "https://bitbucket.org/o-studio/spedn.git"
 license: MIT
-author: "Author name here"
-maintainer: "Author name here"
-# synopsis: A new Haskeleton package.
-# description: spedn is a new Haskeleton package.
-# category: Other
+author: (o) Software
+maintainer: (o) Software
+synopsis: Bitcoin Cash smart contracts compiler.
+description: Spedn is a high-level, strongly typed smart contract language compiled to Bitcoin Script.
+category: Bitcoin
 
 extra-source-files:
 - CHANGELOG.md
