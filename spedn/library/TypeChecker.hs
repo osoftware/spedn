@@ -81,7 +81,7 @@ checkBranch stmt = do
 checkExpr :: Expr a -> TypeChecker Expr a
 checkExpr (BoolConst v a) = get >>= \env -> return $ BoolConst v (Right Bool, env, a)
 checkExpr (NumConst v a) = get >>= \env -> return $ NumConst v (Right Num, env, a)
-checkExpr (BinConst v a) = get >>= \env -> return $ BinConst v (Right Bin, env, a)
+checkExpr (BinConst v a) = get >>= \env -> return $ BinConst v (Right $ Bin Raw, env, a)
 checkExpr expr@(Var n a) = do
     env <- get
     t <- typeofM expr
@@ -140,7 +140,7 @@ typeofM expr = do
 typeof :: Env -> Expr a -> Check Type
 typeof _ (BoolConst _ _)            = return Bool
 typeof _ (NumConst _ _)             = return Num
-typeof _ (BinConst _ _)             = return Bin
+typeof _ (BinConst _ _)             = return $ Bin Raw
 typeof env (Var varName _)          = case Env.lookup env varName of
                                         Just t -> return t
                                         _      -> throwError $ NotInScope varName
@@ -150,10 +150,10 @@ typeof env (UnaryExpr Minus expr _) = expect Num $ typeof env expr
 typeof env (BinaryExpr op l r _)
     | op == Split                 = let pos = typeof env r
                                     in case pos of
-                                        Right Num   -> toSplitTuple $ typeof env l
+                                        Right Num   -> toSplitTuple $ expect (Bin Raw) $ typeof env l
                                         Right other -> throwError $ TypeMismatch Num other
                                         err         -> err
-    | op == Cat                   = both Bin (typeof env l) (typeof env r)
+    | op == Cat                   = both (Bin Raw) (typeof env l) (typeof env r) >> return (Bin Raw)
     | op `elem` [Add, Sub, Div, Mod]
                                   = both Num (typeof env l) (typeof env r)
     | op `elem` [NumEq, NumNeq, Gt, Gte, Lt, Lte]
@@ -170,8 +170,9 @@ typeof env (Call fName args _)      = let argtypes = typeof env <$> args
                                           _               -> throwError $ NotInScope fName
 
 expect :: Type -> Check Type -> Check Type
-expect t (Right a) = if t == a then return t else throwError $ TypeMismatch t a
-expect _ a         = a
+expect (Bin Raw) (Right (Bin _)) = return $ Bin Raw
+expect t (Right a)               = if t == a then return t else throwError $ TypeMismatch t a
+expect _ a                       = a
 
 both :: Type -> Check Type -> Check Type -> Check Type
 both t a b = expect t a >> expect t b

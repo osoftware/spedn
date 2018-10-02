@@ -177,7 +177,7 @@ exprCompiler (Call "checkMultiSig" [Array sigs _, Array keys _] _) = do
     replicateM_ (length sigs + length keys + 1) popM
     pushM "$tmp"
 exprCompiler (Call name args _)
-    | name `elem` ["PubKey", "Sig"] = exprCompiler $ head args
+    | name `elem` ["PubKey", "Ripemd160", "Sha1", "Sha256", "Sig"] = exprCompiler $ head args
     | otherwise                     = do
         mapM_ exprCompiler args
         emit [OpCall name]

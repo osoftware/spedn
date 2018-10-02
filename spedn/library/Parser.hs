@@ -39,11 +39,14 @@ param = annotate $ do
     return $ Param t n
 
 varType :: Parser Type
-varType = choice [ keyword "bool" >> pure Bool
-                 , keyword "int" >> pure Num
-                 , keyword "bin" >> pure Bin
-                 , keyword "PubKey" >> pure PubKey
-                 , keyword "Sig" >> pure Sig
+varType = choice [ keyword "bool"      >> pure Bool
+                 , keyword "int"       >> pure Num
+                 , keyword "bin"       >> pure (Bin Raw)
+                 , keyword "PubKey"    >> pure (Bin PubKey)
+                 , keyword "Ripemd160" >> pure (Bin Ripemd160)
+                 , keyword "Sha1"      >> pure (Bin Sha1)
+                 , keyword "Sha256"    >> pure (Bin Sha256)
+                 , keyword "Sig"       >> pure (Bin Sig)
                  ]
 
 challenge :: Parser Challenge'

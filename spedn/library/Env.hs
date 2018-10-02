@@ -12,30 +12,37 @@ type SymbolTable = Map.Map Name Type
 
 globals :: SymbolTable
 globals = Map.fromList
-    [ ("abs",           [Num]                   :-> Num)
-    , ("min",           [Num, Num]              :-> Num)
-    , ("max",           [Num, Num]              :-> Num)
-    , ("within",        [Num, Num, Num]         :-> Bool)
+      -- Simple math
+    [ ("abs",           [Num]           :-> Num)
+    , ("min",           [Num, Num]      :-> Num)
+    , ("max",           [Num, Num]      :-> Num)
+    , ("within",        [Num, Num, Num] :-> Bool)
 
-    , ("ripemd160",     [Bin]                   :-> Bin)
-    , ("sha1",          [Bin]                   :-> Bin)
-    , ("sha256",        [Bin]                   :-> Bin)
-    , ("hash160",       [Bin]                   :-> Bin)
-    , ("hash256",       [Bin]                   :-> Bin)
-
-    , ("checkSig",      [Sig, PubKey]           :-> Bool)
-    , ("checkMultiSig", [List Sig, List PubKey] :-> Bool)
-    , ("checkDataSig",  [Sig, Bin, PubKey]      :-> Bool)
-
-    , ("checkLockTime", [Time]                  :-> Bool)
-    , ("checkSequence", [TimeSpan]              :-> Bool)
-
-    , ("num2bin",       [Num]                   :-> Bin)
-    , ("bin2num",       [Bin, Num]              :-> Num)
-    , ("size",          [Bin]                   :-> Num)
-
-    , ("PubKey",        [Bin]                   :-> PubKey)
-    , ("Sig",           [Bin]                   :-> Sig)
+      -- Hashing
+    , ("ripemd160",     [Bin Raw]       :-> Bin Ripemd160)
+    , ("sha1",          [Bin Raw]       :-> Bin Sha1)
+    , ("sha256",        [Bin Raw]       :-> Bin Sha256)
+    , ("hash160",       [Bin Raw]       :-> Bin Ripemd160)
+    , ("hash256",       [Bin Raw]       :-> Bin Sha256)
+    
+      -- Checking
+    , ("checkSig",      [Bin Sig, Bin PubKey]                  :-> Bool)
+    , ("checkMultiSig", [List $ Bin Sig, List $ Bin PubKey]    :-> Bool)
+    , ("checkDataSig",  [Bin Sig, Bin Raw, Bin PubKey]         :-> Bool)
+    , ("checkLockTime", [Time]                                 :-> Bool)
+    , ("checkSequence", [TimeSpan]                             :-> Bool)
+    
+      -- Array manipulation
+    , ("num2bin",       [Num]            :-> Bin Raw)
+    , ("bin2num",       [Bin Raw, Num]   :-> Num)
+    , ("size",          [Bin Raw]        :-> Num)
+    
+      -- Type constructors
+    , ("PubKey",        [Bin Raw]        :-> Bin PubKey)
+    , ("Ripemd160",     [Bin Raw]        :-> Bin Ripemd160)
+    , ("Sha1",          [Bin Raw]        :-> Bin Sha1)
+    , ("Sha256",        [Bin Raw]        :-> Bin Sha256)
+    , ("Sig",           [Bin Raw]        :-> Bin Sig)
     ]
 
 type Env = [SymbolTable]

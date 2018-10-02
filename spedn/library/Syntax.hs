@@ -13,15 +13,22 @@ infixr 5 :.
 data Type
     = Bool
     | Num
-    | Bin
-    | PubKey
-    | Sig
+    | Bin BinType
     | Time
     | TimeSpan
     | [Type] :-> Type -- | Function
     | Type :. Type    -- | Tuple
     | List Type
     | Void
+    deriving (Eq, Show)
+
+data BinType
+    = Raw
+    | PubKey
+    | Sha1
+    | Sha256
+    | Ripemd160
+    | Sig
     deriving (Eq, Show)
 
 data UnaryOp
