@@ -43,7 +43,7 @@ checkStatement (Assign t n e a) = do
     return $ Assign t n e' (check, env', a)
 checkStatement (SplitAssign t (l, r) e a) = do
     env <- get
-    let t' = expect t (typeof env e)
+    let t' = expect (t :. t) (typeof env e)
     e' <- checkExpr e
     (_, tl') <- addM l t
     (env', tr') <- addM r t
@@ -189,4 +189,4 @@ toSplitTuple (Right t) = Right $ t :. t
 toSplitTuple l         = l
 
 funSigMatches :: [Type] -> [Check Type] -> Bool
-funSigMatches ts as = rights as == ts && (null . lefts $ as)
+funSigMatches ts as = (length ts == length as) && (null . lefts $ zipWith expect ts as)

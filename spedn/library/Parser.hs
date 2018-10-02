@@ -66,7 +66,7 @@ statement :: Parser Statement'
 statement = assign <|> split <|> verify <|> ifElse <|> block
 
 assign :: Parser Statement'
-assign = annotate $ do
+assign = annotate . try $ do
     t <- varType
     n <- name
     val <- rval
@@ -82,7 +82,7 @@ split = annotate $ do
       r <- name
       return (l, r)
     val <- rval
-    return $ SplitAssign (t :. t) vars val
+    return $ SplitAssign t vars val
 
 rval :: Parser Expr'
 rval = eq *> expr <* semi
