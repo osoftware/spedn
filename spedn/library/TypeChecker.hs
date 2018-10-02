@@ -25,6 +25,7 @@ checkChallenge (Challenge n ps s a) = do
     ps' <- mapM checkParam ps
     env <- get
     s' <- checkStatement s
+    leaveM
     return $ Challenge n ps' s' (Right Void, env, a)
 
 checkParam :: Param a -> TypeChecker Param a

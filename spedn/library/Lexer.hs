@@ -15,7 +15,7 @@ type Parser = Parsec Void String
 spaceConsumer :: Parser ()
 spaceConsumer = L.space space1 line block
   where
-    line = L.skipLineComment "///"
+    line = L.skipLineComment "//"
     block = L.skipBlockComment "/*" "*/"
 
 lexeme :: Parser a -> Parser a

@@ -23,7 +23,7 @@ type Errors = [(Error, String)]
 --     show (e, pos) = show e ++ pos
 
 parser :: Parser (TypeChecker Contract SourcePos)
-parser = checkContract <$> contract
+parser = checkContract <$> sourceFile
 
 compileToAst :: FilePath -> String -> Either Errors (Contract (Check Type, Env, SourcePos))
 compileToAst source code = case parse parser source code of

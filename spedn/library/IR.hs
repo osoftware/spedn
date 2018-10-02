@@ -55,6 +55,12 @@ emitPickM name = do
     emit [OpPick $ name `from` stack]
     pushM $ "$" ++ name
 
+emitRollM :: Name -> Compiler
+emitRollM name = do
+    stack <- get
+    emit [OpRoll $ name `from` stack]
+    rollM name
+
 emitDropM :: Compiler
 emitDropM = do
     stack <- get
@@ -78,18 +84,20 @@ singleChallengeCompiler cps (Challenge _ ps s _) = do
 challengesCompiler :: [Param a] -> [Challenge a] -> Compiler
 challengesCompiler cps cs = do
     let cases = length cs
-    mapM_ (\(c, n) -> nthChallengeCompiler cps c n cases) (zip cs [1..])
+    mapM_ (uncurry $ nthChallengeCompiler cps) (zip cs [1..])
+    emit [OpPushBool False]
     replicateM_ cases $ emit [OpEndIf]
 
-nthChallengeCompiler :: [Param a] -> Challenge a -> Int -> Int -> Compiler
-nthChallengeCompiler cps (Challenge _ ps s _) num total = do
+nthChallengeCompiler :: [Param a] -> Challenge a -> Int -> Compiler
+nthChallengeCompiler cps (Challenge _ ps s _) num = do
     mapM_ pushM $ nameof <$> ps
     pushM "$case"
     mapM_ pushM $ nameof <$> cps
     emitPickM "$case"
     emit [OpPushNum num, OpCall "Eq", OpIf]
+    popM
     stmtCompiler s True
-    when (num < total) (emit [OpElse])
+    emit [OpElse]
 
 nameof :: Param a -> Name
 nameof (Param _ n _) = n

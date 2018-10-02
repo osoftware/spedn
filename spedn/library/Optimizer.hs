@@ -15,5 +15,6 @@ optimize (OP_CHECKSEQUENCE:ops)           = OP_CHECKSEQUENCEVERIFY : OP_TRUE : o
 optimize (OP_NUMEQUAL:OP_VERIFY:ops)      = OP_NUMEQUALVERIFY : optimize ops
 optimize (OP_FALSE:OP_EQUAL:OP_NOT:ops)   = OP_0NOTEQUAL : optimize ops
 optimize (OP_FALSE:OP_PICK:ops)           = OP_DUP : optimize ops
+optimize (OP_TRUE:OP_PICK:ops)            = OP_OVER : optimize ops
 optimize (OP_DROP:OP_DROP:ops)            = OP_2DROP : optimize ops
 optimize (op:ops)                         = op : optimize ops
