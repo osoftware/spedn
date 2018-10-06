@@ -1,0 +1,31 @@
+contract Bet(
+    Ripemd160 aliceCommitment,
+    Ripemd160 bobCommitment,
+    PubKey alicePK,
+    PubKey bobPK) {
+
+    challenge odd(bin aliceSecret, bin bobSecret, Sig aliceSig, bool cancel) {
+        if (!cancel) {
+            verify hash160(aliceSecret) == aliceCommitment;
+            verify hash160(bobSecret) == bobCommitment;
+
+            bin [a, _] = aliceSecret @ 4;
+            bin [b, _] = aliceSecret @ 4;
+            verify (bin2num(a) + bin2num(b)) % 2 == 1;
+        }
+        else verify checkSequence(8b);
+
+        verify checkSig(aliceSig, alicePK);
+    }
+
+    challenge even(bin aliceSecret, bin bobSecret, Sig bobSig) {
+        verify hash160(aliceSecret) == aliceCommitment;
+        verify hash160(bobSecret) == bobCommitment;
+
+        bin [a, _] = aliceSecret @ 4;
+        bin [b, _] = aliceSecret @ 4;
+        verify (bin2num(a) + bin2num(b)) % 2 == 0;
+
+        verify checkSig(bobSig, bobPK);
+    }
+}

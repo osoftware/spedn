@@ -1,0 +1,11 @@
+contract ChainBetBobEscrow(PubKey alicePK, PubKey bobPK) {
+    
+    challenge cancel(Sig bobSig) {
+        verify checkSequence(8b);
+        verify checkSig(bobSig, bobPK);
+    }
+
+    challenge proceed(Sig aliceSig, Sig bobSig) {
+        verify checkMultiSig([aliceSig, bobSig], [alicePK, bobPK]);
+    }
+}

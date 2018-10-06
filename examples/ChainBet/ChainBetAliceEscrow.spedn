@@ -1,0 +1,12 @@
+contract ChainBetAliceEscrow(PubKey alicePK, PubKey bobPK, Ripemd160 commitment) {
+    
+    challenge cancel(Sig aliceSig) {
+        verify checkSequence(8b);
+        verify checkSig(aliceSig, alicePK);
+    }
+
+    challenge proceed(Sig aliceSig, Sig bobSig, bin secret) {
+        verify hash160(secret) == commitment;
+        verify checkMultiSig([aliceSig, bobSig], [alicePK, bobPK]);
+    }
+}
