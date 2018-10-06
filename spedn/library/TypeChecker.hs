@@ -51,7 +51,7 @@ checkStatement (SplitAssign t (l, r) e a) = do
     return $ SplitAssign t (l, r) e' (check, env', a)
 checkStatement (Verify e a) = do
     env <- get
-    let check = expect Bool (typeof env e)
+    let check = expect (Bool :|: Verification) (typeof env e) >> return Verification
     e' <- checkExpr e
     return $ Verify e' (check, env, a)
 checkStatement (If cond t f a) = do
@@ -82,6 +82,8 @@ checkExpr :: Expr a -> TypeChecker Expr a
 checkExpr (BoolConst v a) = get >>= \env -> return $ BoolConst v (Right Bool, env, a)
 checkExpr (NumConst v a) = get >>= \env -> return $ NumConst v (Right Num, env, a)
 checkExpr (BinConst v a) = get >>= \env -> return $ BinConst v (Right $ Bin Raw, env, a)
+checkExpr (TimeConst v a) = get >>= \env -> return $ TimeConst v (Right Time, env, a)
+checkExpr (TimeSpanConst v a) = get >>= \env -> return $ TimeSpanConst v (Right TimeSpan, env, a)
 checkExpr expr@(Var n a) = do
     env <- get
     t <- typeofM expr
@@ -128,7 +130,9 @@ leaveM = do
 addM :: Name -> Type -> Checker (Env, Check Type)
 addM n t = do
     env <- get
-    case add env n t of
+    if n == "_"
+    then return (env, Right Void)
+    else case add env n t of
         Right e  -> put e >> return (e, Right t)
         Left err -> return (env, Left err)
 
@@ -141,10 +145,12 @@ typeof :: Env -> Expr a -> Check Type
 typeof _ (BoolConst _ _)            = return Bool
 typeof _ (NumConst _ _)             = return Num
 typeof _ (BinConst _ _)             = return $ Bin Raw
+typeof _ (TimeConst _ _)            = return Time
+typeof _ (TimeSpanConst _ _)        = return TimeSpan
 typeof env (Var varName _)          = case Env.lookup env varName of
                                         Just t -> return t
                                         _      -> throwError $ NotInScope varName
-typeof env (Array es _)             = allSame $ typeof env <$> es
+typeof env (Array es _)             = List <$> allSame (typeof env <$> es)
 typeof env (UnaryExpr Not expr _)   = expect Bool $ typeof env expr
 typeof env (UnaryExpr Minus expr _) = expect Num $ typeof env expr
 typeof env (BinaryExpr op l r _)
@@ -171,8 +177,13 @@ typeof env (Call fName args _)      = let argtypes = typeof env <$> args
 
 expect :: Type -> Check Type -> Check Type
 expect (Bin Raw) (Right (Bin _)) = return $ Bin Raw
+expect t@(a :|: b) x@(Right rx)  = case expect a x of
+                                    Left _  -> case expect b x of
+                                        Left _ -> throwError $ TypeMismatch t rx
+                                        rb     -> rb
+                                    ra      -> ra
 expect t (Right a)               = if t == a then return t else throwError $ TypeMismatch t a
-expect _ a                       = a
+expect _ l                       = l
 
 both :: Type -> Check Type -> Check Type -> Check Type
 both t a b = expect t a >> expect t b

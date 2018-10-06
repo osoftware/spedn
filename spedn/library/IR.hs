@@ -7,6 +7,7 @@ import           Data.Maybe
 import           Data.Word
 
 import           Syntax
+import           Env
 
 data OpCode
     = OpPick Int
@@ -21,6 +22,7 @@ data OpCode
     | OpElse
     | OpEndIf
     | OpDrop
+    | OpNip
     deriving (Show)
 
 type IR = [OpCode]
@@ -66,6 +68,13 @@ emitDropM = do
     stack <- get
     put $ tail stack
     emit [OpDrop]
+
+emitNipM :: Compiler
+emitNipM = do
+    stack <- get
+    case stack of (a:_:rest) -> put $ a:rest
+                  _          -> fail "Invalid stack"
+    emit [OpNip]
 
 contractCompiler :: Contract a -> Compiler
 contractCompiler (Contract _ cps cs _) = do
@@ -113,6 +122,8 @@ stmtCompiler (SplitAssign _ (l, r) expr _) _ = do
     popM
     pushM l
     pushM r
+    when (l == "_") emitNipM
+    when (r == "_") emitDropM
 stmtCompiler (Verify expr _) final = do
     exprCompiler expr
     popM
@@ -138,9 +149,11 @@ sequenceCompiler (s:ss) final = stmtCompiler s False >> sequenceCompiler ss fina
 sequenceCompiler [] _         = return ()
 
 exprCompiler :: Expr a -> Compiler
-exprCompiler (BoolConst val _) = emit [OpPushBool val] >> pushM "$const"
-exprCompiler (NumConst val _)  = emit [OpPushNum val]  >> pushM "$const"
-exprCompiler (BinConst val _)  = emit [OpPushBin val]  >> pushM "$const"
+exprCompiler (BoolConst val _)     = emit [OpPushBool val] >> pushM "$const"
+exprCompiler (NumConst val _)      = emit [OpPushNum val]  >> pushM "$const"
+exprCompiler (BinConst val _)      = emit [OpPushBin val]  >> pushM "$const"
+exprCompiler (TimeConst val _)     = emit [OpPushNum val]  >> pushM "$const"
+exprCompiler (TimeSpanConst val _) = emit [OpPushNum val]  >> pushM "$const"
 exprCompiler (Var name _)      = emitPickM name
 exprCompiler (Array es _)      = mapM_ exprCompiler es
 exprCompiler (UnaryExpr op e _) = do
@@ -177,9 +190,10 @@ exprCompiler (Call "checkMultiSig" [Array sigs _, Array keys _] _) = do
     replicateM_ (length sigs + length keys + 1) popM
     pushM "$tmp"
 exprCompiler (Call name args _)
-    | name `elem` ["PubKey", "Ripemd160", "Sha1", "Sha256", "Sig"] = exprCompiler $ head args
+    | name `elem` typeConstructors = exprCompiler $ head args
     | otherwise                     = do
         mapM_ exprCompiler args
         emit [OpCall name]
-        unless (name == "size") $ replicateM_ (length args) popM
+        unless (name `elem` ["size", "checkLockTime", "checkSequence"])
+               (replicateM_ (length args) popM)
         pushM "$tmp"

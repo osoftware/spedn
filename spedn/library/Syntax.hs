@@ -10,15 +10,18 @@ type Name = String
 
 infixr 5 :->
 infixr 5 :.
+infixr 5 :|:
 data Type
     = Bool
     | Num
     | Bin BinType
-    | Time
-    | TimeSpan
-    | [Type] :-> Type -- | Function
-    | Type :. Type    -- | Tuple
+    | Time            -- | Either timestamp or blockheight
+    | TimeSpan        -- | Either seconds or blocks
+    | Verification    -- | Result of OP_*VERIFY
     | List Type
+    | Type :. Type    -- | Tuple
+    | [Type] :-> Type -- | Function
+    | Type :|: Type   -- | Alternative
     | Void
     deriving (Eq, Show)
 
@@ -62,6 +65,8 @@ data BinaryOp
 data Expr a
     = BoolConst Bool a
     | NumConst Int a
+    | TimeConst Int a
+    | TimeSpanConst Int a
     | BinConst [Word8] a
     | Var Name a
     | Array [Expr a] a

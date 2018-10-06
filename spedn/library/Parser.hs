@@ -1,5 +1,10 @@
 module Parser where
 
+import           Control.Monad
+import           Data.Bits
+import           Data.List.NonEmpty
+import           Data.Time
+import           Data.Time.Clock.POSIX
 import           Text.Megaparsec
 import           Text.Megaparsec.Expr
 
@@ -77,9 +82,10 @@ split :: Parser Statement'
 split = annotate $ do
     t <- varType
     vars <- brackets $ do
-      l <- name
+      l <- name <|> lodash
       comma
-      r <- name
+      r <- name <|> lodash
+      when (l == r) $ unexpected . Label $ fromList "names must be unique"
       return (l, r)
     val <- rval
     return $ SplitAssign t vars val
@@ -113,7 +119,7 @@ expr = makeExprParser term operators
 
 operators :: [[Operator Parser Expr']]
 operators = [ [ prefix Minus $ try $ symbol "-" *> notFollowedBy digits
-              , prefix Not $ symbol "!"
+              , prefix Not   $ symbol "!"
               ]
             , [ infixL Mul $ symbol "*"
               , infixL Div $ symbol "/"
@@ -164,6 +170,8 @@ term :: Parser Expr'
 term = choice [ parens expr
               , list
               , boolConst
+              , timeConst
+              , timeSpanConst
               , numConst
               , binConst
               , call
@@ -171,7 +179,7 @@ term = choice [ parens expr
               ]
 
 list :: Parser Expr'
-list = annotate $ Array <$> brackets (sepBy expr comma)
+list = annotate . try $ Array <$> brackets (sepBy expr comma)
 
 boolConst :: Parser Expr'
 boolConst = annotate (BoolConst True <$ keyword "true" <|> BoolConst False <$ keyword "false")
@@ -180,7 +188,30 @@ numConst :: Parser Expr'
 numConst = annotate . try $ NumConst <$> (symbol "0x" *> hexInt <* symbol "i" <|> decInt)
 
 binConst :: Parser Expr'
-binConst = annotate $ BinConst <$> (symbol "0x" *> many hexByte)
+binConst = annotate . try $ BinConst <$> (symbol "0x" *> many hexByte)
+
+timeSpanLit :: Parser Int
+timeSpanLit = do 
+    parts <- some . choice $
+        [ try $ (*86400) <$> decInt <* symbol "d" 
+        , try $ (*3600)  <$> decInt <* symbol "h"
+        , try $ (*60)    <$> decInt <* symbol "m"
+        , try $              decInt <* symbol "s"
+        ]
+    return $ sum parts `div` 512 .|. (1 `shiftL` 22)
+
+blockSpanLit :: Parser Int
+blockSpanLit = decInt <* symbol "b"
+
+timeSpanConst :: Parser Expr'
+timeSpanConst = annotate . try $ TimeSpanConst <$> (try timeSpanLit <|> blockSpanLit)
+
+timeConst :: Parser Expr'
+timeConst = annotate . try $ do
+    str <- strLit '`'
+    case parseTimeM True defaultTimeLocale "%Y-%-m-%-d %T" str of
+        Just t  -> return . TimeConst $ round . utcTimeToPOSIXSeconds $ t
+        Nothing -> unexpected . Label $ fromList "time format - should be YYYY-MM-DD hh:mm:ss"
 
 call :: Parser Expr'
 call = annotate . try $ Call <$> name <*> parens (sepBy expr comma)

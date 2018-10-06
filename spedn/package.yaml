@@ -26,6 +26,7 @@ library:
   - megaparsec
   - mtl
   - containers
+  - time
   source-dirs: library
 
 executables:

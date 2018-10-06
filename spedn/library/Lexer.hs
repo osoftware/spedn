@@ -52,7 +52,7 @@ keyword :: String -> Parser ()
 keyword w = lexeme . try $ string w *> notFollowedBy alphaNumChar
 
 keywords :: [String]
-keywords = ["contract","challenge","if","then","else","verify","true","false","int","bin"]
+keywords = ["contract","challenge","if","else","verify","true","false","int","bin"]
 
 name :: Parser Name
 name = lexeme . try $ do
@@ -60,6 +60,9 @@ name = lexeme . try $ do
     if word `elem` keywords
       then fail $ "keyword " ++ show word ++ " cannot be an identifier"
       else return word
+
+lodash :: Parser Name
+lodash = symbol "_"
 
 digits :: Parser Int
 digits = lexeme L.decimal
@@ -72,6 +75,9 @@ hexInt = lexeme L.hexadecimal
 
 hexByte :: Parser Word8
 hexByte = do
-  h <- hexDigitChar 
-  l <- hexDigitChar
-  return . fromIntegral $ digitToInt h * 16 + digitToInt l
+    h <- hexDigitChar 
+    l <- hexDigitChar
+    return . fromIntegral $ digitToInt h * 16 + digitToInt l
+
+strLit :: Char -> Parser String
+strLit q = char q >> manyTill L.charLiteral (char q)

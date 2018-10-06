@@ -2,6 +2,7 @@ module Env where
 
 import           Control.Applicative
 import           Control.Monad.Except
+import           Data.Char
 import qualified Data.Map.Lazy        as Map
 import           Data.Maybe
 
@@ -29,21 +30,26 @@ globals = Map.fromList
     , ("checkSig",      [Bin Sig, Bin PubKey]                  :-> Bool)
     , ("checkMultiSig", [List $ Bin Sig, List $ Bin PubKey]    :-> Bool)
     , ("checkDataSig",  [Bin Sig, Bin Raw, Bin PubKey]         :-> Bool)
-    , ("checkLockTime", [Time]                                 :-> Bool)
-    , ("checkSequence", [TimeSpan]                             :-> Bool)
+    , ("checkLockTime", [Time]                                 :-> Verification)
+    , ("checkSequence", [TimeSpan]                             :-> Verification)
     
       -- Array manipulation
-    , ("num2bin",       [Num]            :-> Bin Raw)
-    , ("bin2num",       [Bin Raw, Num]   :-> Num)
+    , ("num2bin",       [Num, Num]       :-> Bin Raw)
+    , ("bin2num",       [Bin Raw]        :-> Num)
     , ("size",          [Bin Raw]        :-> Num)
-    
+
       -- Type constructors
     , ("PubKey",        [Bin Raw]        :-> Bin PubKey)
     , ("Ripemd160",     [Bin Raw]        :-> Bin Ripemd160)
     , ("Sha1",          [Bin Raw]        :-> Bin Sha1)
     , ("Sha256",        [Bin Raw]        :-> Bin Sha256)
     , ("Sig",           [Bin Raw]        :-> Bin Sig)
+    , ("Blocks",        [Num]            :-> TimeSpan)
+    , ("TimeStamp",     [Num]            :-> Time)
     ]
+
+typeConstructors :: [String]
+typeConstructors = filter (isUpper . head) $ fst <$> Map.toList globals
 
 type Env = [SymbolTable]
 
