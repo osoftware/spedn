@@ -89,16 +89,17 @@ singleChallengeCompiler cps (Challenge _ ps s _) = do
     mapM_ pushM $ nameof <$> ps
     mapM_ pushM $ nameof <$> cps
     stmtCompiler s True
+    replicateM_ (length ps + length cps) emitNipM
 
 challengesCompiler :: [Param a] -> [Challenge a] -> Compiler
 challengesCompiler cps cs = do
     let cases = length cs
-    mapM_ (uncurry $ nthChallengeCompiler cps) (zip cs [1..])
+    mapM_ (nthChallengeCompiler cps) (zip cs [1..])
     emit [OpPushBool False]
     replicateM_ cases $ emit [OpEndIf]
 
-nthChallengeCompiler :: [Param a] -> Challenge a -> Int -> Compiler
-nthChallengeCompiler cps (Challenge _ ps s _) num = do
+nthChallengeCompiler :: [Param a] -> (Challenge a, Int) -> Compiler
+nthChallengeCompiler cps (Challenge _ ps s _, num) = do
     mapM_ pushM $ nameof <$> ps
     pushM "$case"
     mapM_ pushM $ nameof <$> cps
@@ -106,6 +107,7 @@ nthChallengeCompiler cps (Challenge _ ps s _) num = do
     emit [OpPushNum num, OpCall "Eq", OpIf]
     popM
     stmtCompiler s True
+    replicateM_ (length ps + length cps + 1) emitNipM
     emit [OpElse]
 
 nameof :: Param a -> Name
@@ -141,7 +143,10 @@ stmtCompiler (Block ss _) final = do
     sequenceCompiler ss final
     stack' <- get
     let diff = length stack' - length stack
-    unless final $ replicateM_ diff emitDropM
+    if final
+    then replicateM_ (diff - 1) emitNipM
+    else replicateM_ diff emitDropM
+
 
 sequenceCompiler :: [Statement a] -> Bool -> Compiler
 sequenceCompiler [s] final    = stmtCompiler s final
@@ -154,8 +159,8 @@ exprCompiler (NumConst val _)      = emit [OpPushNum val]  >> pushM "$const"
 exprCompiler (BinConst val _)      = emit [OpPushBin val]  >> pushM "$const"
 exprCompiler (TimeConst val _)     = emit [OpPushNum val]  >> pushM "$const"
 exprCompiler (TimeSpanConst val _) = emit [OpPushNum val]  >> pushM "$const"
-exprCompiler (Var name _)      = emitPickM name
-exprCompiler (Array es _)      = mapM_ exprCompiler es
+exprCompiler (Var name _)          = emitPickM name
+exprCompiler (Array es _)          = mapM_ exprCompiler es
 exprCompiler (UnaryExpr op e _) = do
     exprCompiler e
     emit [OpCall $ show op]
