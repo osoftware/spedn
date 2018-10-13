@@ -1,0 +1,19 @@
+/*
+ * Let's assume Alice want to tip a waiter Bob with a paper wallet
+ * but she want to be sure that the coin will not get lost due to Bob loosing the paper.
+ * This contract locks a coin in such a way that Bob can redeem it at any time
+ * but if he didn't do so in 7 days then Alice can get it back.
+ */
+contract ExpiringTip(Ripemd160 alice, Ripemd160 bob) {
+
+    challenge receive(Sig sig, PubKey pubKey) {
+        verify hash160(pubKey) == bob;
+        verify checkSig(sig, pubKey);
+    }
+
+    challenge revoke(Sig sig, PubKey pubKey) {
+        verify checkSequence(7d);
+        verify hash160(pubKey) == alice;
+        verify checkSig(sig, pubKey);
+    }
+}
