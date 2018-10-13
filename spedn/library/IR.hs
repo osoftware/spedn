@@ -128,8 +128,9 @@ stmtCompiler (SplitAssign _ (l, r) expr _) _ = do
     when (r == "_") emitDropM
 stmtCompiler (Verify expr _) final = do
     exprCompiler expr
-    popM
-    unless final $ emit [OpVerify]
+    unless final $ do
+        emit [OpVerify]
+        popM
 stmtCompiler (If cond t f _) final = do
     exprCompiler cond
     emit [OpIf]
