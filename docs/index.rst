@@ -33,7 +33,7 @@ Spedn is an experimental tool. It is not recommended to be used on mainnet yet.
    :maxdepth: 1
    :caption: Examples
 
-    chainbet
+   chainbet
 
 Indices and tables
 ==================

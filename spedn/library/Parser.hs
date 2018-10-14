@@ -121,8 +121,7 @@ operators :: [[Operator Parser Expr']]
 operators = [ [ prefix Minus $ try $ symbol "-" *> notFollowedBy digits
               , prefix Not   $ symbol "!"
               ]
-            , [ infixL Mul $ symbol "*"
-              , infixL Div $ symbol "/"
+            , [ infixL Div $ symbol "/"
               , infixL Mod $ symbol "%"
               ]
             , [ infixL Add $ symbol "+"
@@ -130,10 +129,10 @@ operators = [ [ prefix Minus $ try $ symbol "-" *> notFollowedBy digits
               ]
             , [ infixL Cat $ symbol "."
               ]
-            , [ infixN Lt  $ operator "<"
-              , infixN Lte $ symbol "<="
-              , infixN Gt  $ operator ">"
-              , infixN Gte $ symbol ">="
+            , [ infixL Lt  $ operator "<"
+              , infixL Lte $ symbol "<="
+              , infixL Gt  $ operator ">"
+              , infixL Gte $ symbol ">="
               ]
             , [ infixL Eq     $ operator "=="
               , infixL Neq    $ operator "!="

@@ -87,7 +87,7 @@ Example:
     int a = b + c;
 
 There is also a possibility to define 2 variables in case of using the split operator.
-If one of the results is unnecessary, you can ignore it with a dash.
+If one of the results is unnecessary, you can ignore it with a low dash operator.
 
 Syntax:
 
@@ -100,7 +100,7 @@ Syntax:
 
 Example:
 
-.. code-block:: c
+.. code-block:: guess
 
     bin [prefix, _] = secret @ 4;
 
@@ -117,7 +117,7 @@ Example:
 
 .. code-block:: c
 
-    if (num % 2 = 1)
+    if (num % 2 == 1)
         verify checkSig(sig, alice);
     else
         verify checkSig(sig, bob);
@@ -125,7 +125,7 @@ Example:
 Block
 -----
 
-A block is a statement that groups several statements, for example when a challenge or conditional has to perform various checks.
+A block is a statement that groups several statements for sequential execution.
 A block introduces a lexical scope.
 
 Syntax:

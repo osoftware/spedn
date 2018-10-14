@@ -5,21 +5,28 @@ Quick start guide
 Installation
 ============
 
-1. Intsall [Haskell Tool Stack](https://docs.haskellstack.org/en/stable/README/#how-to-install).::
-2. Download Spedn [sources](https://bitbucket.org/o-studio/spedn/src).::
+1. Intsall `Haskell Tool Stack <https://docs.haskellstack.org/en/stable/README/#how-to-install>`_.
 
-    $ git clone https://bitbucket.org/o-studio/spedn.git
+2. Download Spedn `sources <https://bitbucket.org/o-studio/spedn/src>`_.
 
-3. Build and install Spedn.::
+    .. code-block:: bash
 
-    $ cd spedn
-    $ stack install spedn
+        $ git clone https://bitbucket.org/o-studio/spedn.git
+
+3. Build and install Spedn.
+
+    .. code-block:: bash
+
+        $ cd spedn/spedn
+        $ stack install
 
 
 Your first contract
 ===================
 
-Create a file mycontract.spedn with a following content:::
+Create a file mycontract.spedn with a following content:
+
+.. code-block:: c
 
     contract ExpiringTip(Ripemd160 alice, Ripemd160 bob) {
     
@@ -35,11 +42,15 @@ Create a file mycontract.spedn with a following content:::
         }
     }
 
-Compile with command::
+Compile with command:
+
+.. code-block:: bash
 
     $ spedn compile -c mycontract.spedn
 
-You should get a following, compiled contract template:::
+You should get a compiled contract template similar to this:
+
+.. code-block:: forth
 
     <alice> <bob> 2 PICK TRUE EQUAL IF 3 PICK HASH160 OVER EQUALVERIFY (...)
 
