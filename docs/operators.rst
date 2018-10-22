@@ -22,7 +22,7 @@ Operators
       - right to left
 
     * - 2
-      - `` a / b``
+      - ``a / b``
       - Integer division
       - left to right
 
@@ -105,15 +105,15 @@ Operators
       - ``a && b``
       - Bolean AND
       
-        *This operator does not perform short-circuiting! Both a and b are always evaluated.*
+        *Note: Both a and b are always evaluated.*
       
       - left to right
 
     * - 11
       - ``a || b``
-      - Bitwise AND
+      - Boolean OR
 
-        *This operator does not perform short-circuiting! Both a and b are always evaluated.*
+        *Note: Both a and b are always evaluated.*
       - left to right
 
     * - 12

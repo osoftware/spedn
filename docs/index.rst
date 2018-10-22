@@ -1,6 +1,7 @@
-
 Welcome to Spedn's documentation!
 =================================
+
+.. image:: ../images/spedn-logo-cashwave-144.png
 
 Spedn is a high level smart contracts language for Bitcoin Cash.
 It is designed for explicity and safety:
@@ -10,7 +11,7 @@ It is designed for explicity and safety:
 * It is purely-functional - free of side effects, the common source of bugs
 * It has a familiar C-like syntax
 
-Spedn is an experimental tool. It is not recommended to be used on mainnet yet.
+.. Warning:: Spedn is an experimental tool. It is not recommended to be used on mainnet yet.
 
 .. toctree::
    :maxdepth: 1
@@ -20,7 +21,7 @@ Spedn is an experimental tool. It is not recommended to be used on mainnet yet.
    script
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Language Specification:
 
    syntax
@@ -34,6 +35,7 @@ Spedn is an experimental tool. It is not recommended to be used on mainnet yet.
    :caption: Examples
 
    0conf
+   chainbet
 
 Indices and tables
 ==================
