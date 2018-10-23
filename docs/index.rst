@@ -37,9 +37,34 @@ It is designed for explicity and safety:
    0conf
    chainbet
 
-Indices and tables
-==================
+Roadmap
+-------
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+Spedn is an early, experimental tool with a lot of plans:
+
+* Making addresses and unsigned transaction templates
+* JavaScript interoperability and libraries integration
+* Compiled code optimizations
+* IDE with a debugger
+* ...and more
+
+Check out the `Trello board <https://bitbucket.org/o-studio/spedn/addon/trello/trello-board>`_ 
+to see what's currently going on.
+
+Contributing
+------------
+
+Every kind of contribution is appreciated, especially:
+
+* Syntax ideas and other features propositions
+* Code review
+* Unit tests
+* Bug reports
+* Usage examples and docs improvement
+
+Contract
+--------
+
+* `Issue tracker <https://bitbucket.org/o-studio/spedn/issues?status=new&status=open>`_
+* `#spedn-lang channel on Electron Cash Slack <https://electroncash.slack.com/messages/CD81XT49X>`_
+* `Twitter <http://twitter.com/tendo_pein_sama>`_
