@@ -61,6 +61,22 @@ Every kind of contribution is appreciated, especially:
 * Unit tests
 * Bug reports
 * Usage examples and docs improvement
+* `Tips <bitcoincash:qzu5e85zx770d82rv3u6fevr5s5ytl5kl5kzfp9tmc>`_
+
+    .. raw:: html
+
+        <div class="money-button"
+             data-to="bitcoincash:qzu5e85zx770d82rv3u6fevr5s5ytl5kl5kzfp9tmc"
+             data-amount="0.001"
+             data-currency="BCH"
+             data-label="Donate"
+             data-client-identifier="b61564a61cfff8f88f51b757fd9c6deb"
+             data-button-id="1540404534895"
+             data-button-data="{}"
+             data-type="tip">
+        </div>
+        <script src="https://www.moneybutton.com/moneybutton.js"></script>
+
 
 Contract
 --------
