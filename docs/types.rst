@@ -98,14 +98,14 @@ Special types
 
 These are types that can appear in expressions but you cannot define variables of them.
 
-* **List**. Can be only created as literals passed to functions that expect them, 
+* **List** - can be only created as literals passed to functions that expect them, 
     which is currently ``checkMultiSig`` only.
     
     .. code-block:: c
 
         verify checkMultiSig([sig1, sig2], [key1, key1]);
 
-* **Verification**. Almost like ``bool`` but the only thing you can do with it is to pass it to ``verify``. 
+* **Verification** - almost like ``bool`` but the only thing you can do with it is to pass it to ``verify``. 
     This is a return type of ``checkLockTime`` and ``checkSequence`` functions.:
     
     .. code-block:: c

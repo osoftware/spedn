@@ -48,7 +48,7 @@ Spedn is an early, experimental tool with a lot of plans:
 * IDE with a debugger
 * ...and more
 
-Check out the `Trello board <https://bitbucket.org/o-studio/spedn/addon/trello/trello-board>`_ 
+Check out the `Trello board <https://trello.com/b/u6vD1EWO/spedn>`_ 
 to see what's currently going on.
 
 Contributing
