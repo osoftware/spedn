@@ -4,7 +4,7 @@ Welcome to Spedn's documentation!
 .. image:: ../images/spedn-logo-cashwave-144.png
 
 Spedn is a high level smart contracts language for Bitcoin Cash.
-It is designed for explicity and safety:
+It is designed for explicitness and safety:
 
 * It is statically typed - detects many errors at compile time
 * It is explicitly typed - no guessing what the expression is supposed to return
@@ -62,21 +62,6 @@ Every kind of contribution is appreciated, especially:
 * Bug reports
 * Usage examples and docs improvement
 * `Tips <bitcoincash:qzu5e85zx770d82rv3u6fevr5s5ytl5kl5kzfp9tmc>`_
-
-    .. raw:: html
-
-        <div class="money-button"
-             data-to="bitcoincash:qzu5e85zx770d82rv3u6fevr5s5ytl5kl5kzfp9tmc"
-             data-amount="0.001"
-             data-currency="BCH"
-             data-label="Donate"
-             data-client-identifier="b61564a61cfff8f88f51b757fd9c6deb"
-             data-button-id="1540404534895"
-             data-button-data="{}"
-             data-type="tip">
-        </div>
-        <script src="https://www.moneybutton.com/moneybutton.js"></script>
-
 
 Contract
 --------
