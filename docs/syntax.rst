@@ -27,7 +27,7 @@ Challenges
 
 A challenge is a set of conditions that have to be met to redeem a coin locked in a contract.
 Challenges specify arguments that will be expected to be provided in ``scriptSig`` when redeeming the coin.
-A contract must contain at least one challenge and a challenge must desine at least one argument.
+A contract must contain at least one challenge and a challenge must define at least one argument.
 Challenges must have unique names.
 
 A challenge introduces a lexical scope so two different challenges can define an argument with the same name.
@@ -52,7 +52,7 @@ Statements
 ==========
 
 A challenge can contain any number of statements.
-To be precise - it contains a single statement but this can be a block statement which can containt any number of statements.
+To be precise - it contains a single statement but this can be a block statement which can contain any number of statements.
 
 There are the following kinds of statements:
 
