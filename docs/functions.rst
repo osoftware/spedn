@@ -29,10 +29,6 @@ Hashing Functions
 
   Returns a RIPEMD-160 hash of the argument.
 
-* ``Ripemd160 ripemd160(bin bytes)``
-
-  Returns a RIPEMD-160 hash of the argument.
-
 * ``Sha1 sha1(bin bytes)``
 
   Returns a SHA-1 hash of the argument.
@@ -45,7 +41,7 @@ Hashing Functions
 
   Returns RIPEMD-160 hash of SHA-256 hash of the argument.
 
-* ``Ripemd160 hash160(bin bytes)``
+* ``Sha256 hash256(bin bytes)``
 
   Returns double SHA-256 hash of the argument.
 
