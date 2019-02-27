@@ -184,6 +184,7 @@ compileOp (OpCall op) = case op of
                           "min"           -> [OP_MIN]
                           "max"           -> [OP_MAX]
                           "within"        -> [OP_WITHIN]
+                          "size"          -> [OP_SIZE, OP_NIP]
                           "num2bin"       -> [OP_NUM2BIN]
                           "bin2num"       -> [OP_BIN2NUM]
                           "ripemd160"     -> [OP_RIPEMD160]
@@ -193,8 +194,8 @@ compileOp (OpCall op) = case op of
                           "hash256"       -> [OP_HASH256]
                           "checkSig"      -> [OP_CHECKSIG]
                           "checkMultiSig" -> [OP_CHECKMULTISIG]
-                          "checkLockTime" -> [OP_CHECKLOCKTIME]
-                          "checkSequence" -> [OP_CHECKSEQUENCE]
+                          "checkLockTime" -> [OP_CHECKLOCKTIME, OP_DROP, OP_TRUE]
+                          "checkSequence" -> [OP_CHECKSEQUENCE, OP_DROP, OP_TRUE]
                           "checkDataSig"  -> [OP_CHECKDATASIG]
                           _               -> fail "Unknown function"
 compileOp OpVerify = [OP_VERIFY]

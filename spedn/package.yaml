@@ -67,9 +67,16 @@ tests:
     dependencies:
     - base
     - spedn
+    - mtl
+    - containers
+    - time
     - tasty
     - tasty-hspec
+    - hspec
+    - QuickCheck
+    - QuickCheck-GenT
     ghc-options:
     - -rtsopts
     - -threaded
     - -with-rtsopts=-N
+    - -fno-warn-orphans

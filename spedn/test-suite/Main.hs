@@ -1,10 +1,9 @@
--- Tasty makes it easy to test your code. It is a test framework that can
--- combine many different types of tests into one suite. See its website for
--- help: <http://documentup.com/feuerbach/tasty>.
+import           Test.Hspec.QuickCheck
+import           Test.QuickCheck
 import qualified Test.Tasty
--- Hspec is one of the providers for Tasty. It provides a nice syntax for
--- writing tests. Its website has more info: <https://hspec.github.io>.
-import Test.Tasty.Hspec
+import           Test.Tasty.Hspec
+
+import           ContractProps
 
 main :: IO ()
 main = do
@@ -12,6 +11,8 @@ main = do
     Test.Tasty.defaultMain test
 
 spec :: Spec
-spec = parallel $ do
-    it "is trivially true" $ do
-        True `shouldBe` True
+spec = parallel $ modifyMaxSuccess (*10) $
+    describe "Contract" $ do
+        it "typechecks" $ property prop_typechecks
+        it "leaves a clean stack" $ property prop_clean_stack
+        it "does not emit invalid opcodes" $ property prop_no_invalid_opcodes

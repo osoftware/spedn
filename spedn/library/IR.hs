@@ -77,38 +77,40 @@ emitNipM = do
     emit [OpNip]
 
 contractCompiler :: Contract a -> Compiler
-contractCompiler (Contract _ cps cs _) = do
-    mapM_ (\n -> emit [OpPush n]) $ nameof <$> cps
+contractCompiler (Contract _ ps cs _) = do
+    mapM_ (\n -> emit [OpPush n]) $ nameof <$> ps
     if length cs == 1
-    then singleChallengeCompiler cps (head cs)
-    else challengesCompiler cps cs
+    then singleChallengeCompiler ps (head cs)
+    else challengesCompiler ps cs
 
 
 singleChallengeCompiler :: [Param a] -> Challenge a -> Compiler
-singleChallengeCompiler cps (Challenge _ ps s _) = do
+singleChallengeCompiler ps (Challenge _ args s _) = do
+    mapM_ pushM $ nameof <$> args
     mapM_ pushM $ nameof <$> ps
-    mapM_ pushM $ nameof <$> cps
     stmtCompiler s True
-    replicateM_ (length ps + length cps) emitNipM
+    replicateM_ (length args + length ps) emitNipM
 
 challengesCompiler :: [Param a] -> [Challenge a] -> Compiler
-challengesCompiler cps cs = do
+challengesCompiler ps cs = do
     let cases = length cs
-    mapM_ (nthChallengeCompiler cps) (zip cs [1..])
+    mapM_ (nthChallengeCompiler ps) (zip cs [1..])
     emit [OpPushBool False]
+    pushM "$default"
     replicateM_ cases $ emit [OpEndIf]
 
 nthChallengeCompiler :: [Param a] -> (Challenge a, Int) -> Compiler
-nthChallengeCompiler cps (Challenge _ ps s _, num) = do
-    mapM_ pushM $ nameof <$> ps
+nthChallengeCompiler ps (Challenge _ args s _, num) = do
+    mapM_ pushM $ nameof <$> args
     pushM "$case"
-    mapM_ pushM $ nameof <$> cps
+    mapM_ pushM $ nameof <$> ps
     emitPickM "$case"
     emit [OpPushNum num, OpCall "Eq", OpIf]
     popM
     stmtCompiler s True
-    replicateM_ (length ps + length cps + 1) emitNipM
+    replicateM_ (length args + length ps + 1) emitNipM
     emit [OpElse]
+    popM
 
 nameof :: Param a -> Name
 nameof (Param _ n _) = n
@@ -193,13 +195,12 @@ exprCompiler (Call "checkMultiSig" [Array sigs _, Array keys _] _) = do
     mapM_ exprCompiler keys
     emit [OpPushNum $ length keys]
     emit [OpCall "checkMultiSig"]
-    replicateM_ (length sigs + length keys + 1) popM
+    replicateM_ (length sigs + length keys) popM
     pushM "$tmp"
 exprCompiler (Call name args _)
     | name `elem` typeConstructors = exprCompiler $ head args
-    | otherwise                     = do
+    | otherwise                    = do
         mapM_ exprCompiler args
         emit [OpCall name]
-        unless (name `elem` ["size", "checkLockTime", "checkSequence"])
-               (replicateM_ (length args) popM)
+        replicateM_ (length args) popM
         pushM "$tmp"

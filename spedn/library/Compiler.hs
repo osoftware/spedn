@@ -19,9 +19,6 @@ import           TypeChecker
 
 type Errors = [(Error, String)]
 
--- instance Show (Error, String) where
---     show (e, pos) = show e ++ pos
-
 parser :: Parser (TypeChecker Contract SourcePos)
 parser = checkContract <$> sourceFile
 
@@ -42,4 +39,3 @@ compileToIR c = execWriter $ evalStateT (contractCompiler c) []
 
 compile :: FilePath -> String -> Either Errors Script
 compile source code = optimize . compileIR . compileToIR <$> compileToAst source code
-
