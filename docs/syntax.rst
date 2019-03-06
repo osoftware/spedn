@@ -107,7 +107,7 @@ Example:
 Conditional
 -----------
 
-You can conditionaly execute a branch of code. A branch introduces a new lexical scope.
+You can conditionaly execute a branch of code. A branch introduces a new lexical scope and it can be a verification, block or another conditional.
 
 Syntax:
 
@@ -127,6 +127,7 @@ Block
 
 A block is a statement that groups several statements for sequential execution.
 A block introduces a lexical scope.
+The last statement must be a verification or conditional.
 
 Syntax:
 

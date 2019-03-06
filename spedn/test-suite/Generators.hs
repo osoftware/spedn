@@ -40,6 +40,13 @@ leaveM = do
     env <- get
     put $ tail env
 
+scoped :: GenT Context a -> GenT Context a
+scoped gen = do
+    lift enterM
+    result <- gen
+    lift leaveM
+    return result
+
 newName :: Type -> GenT Context Name
 newName t = do
     ctx@(scope:scopes) <- lift get
@@ -130,7 +137,6 @@ verExpr = GT.oneof
     , Call "checkSequence" <$> GT.vectorOf 1 (exprOf TimeSpan) <*> pure ()
     ]
 
-
 numExpr :: GenT Context Expr'
 numExpr = GT.oneof
     [ liftGen numConst
@@ -166,6 +172,7 @@ instance Arbitrary Expr' where
         t <- liftGen arbitrary
         exprOf t
     shrink expr = case expr of
+        UnaryExpr _ e _                             -> [e]
         BinaryExpr op l r _
             | op `elem` [Eq, Neq, Lt, Lte, Gt, Gte] -> [BoolConst True ()]
             | op `elem` [BoolAnd, BoolOr]           -> [BinConst [] (), l, r]
@@ -181,19 +188,55 @@ arbitraryAssignment = do
     name <- newName t
     return $ Assign t name expr ()
 
+arbitrarySplit :: GenT Context Statement'
+arbitrarySplit = do
+    expr <- exprOf $ Bin Raw
+    pos <- exprOf Num
+    left <- newName $ Bin Raw
+    right <- newName $ Bin Raw
+    return $ SplitAssign (Bin Raw) (left, right) (BinaryExpr Split expr pos ()) ()
+
 arbitraryBlock :: GenT Context Statement'
-arbitraryBlock = do
-    lift enterM
-    block <- scale' (`div` 2) $ Block <$> GT.listOf1 arbitraryStatement <*> pure ()
-    lift leaveM
-    return block
+arbitraryBlock = scoped $ scale' (`div` 2) $ Block
+    <$> do
+        stmts <- GT.listOf arbitraryStatement
+        stmt <- arbitraryVerification
+        return $ stmts ++ [stmt]
+    <*> pure ()
+
+maybeArbitrary :: GenT Context a -> GenT Context (Maybe a)
+maybeArbitrary gen = do
+    switch <- liftGen arbitrary
+    if switch
+        then Just <$> gen
+        else return Nothing
+
+arbitraryConditional :: GenT Context Statement'
+arbitraryConditional = do
+    cond <- boolExpr
+    t <- scale' (`div` 2) $ scoped arbitraryChallengeBody
+    f <- scale' (`div` 2) $ maybeArbitrary (scoped arbitraryChallengeBody)
+    return $ If cond t f ()
+
+arbitraryVerification :: GenT Context Statement'
+arbitraryVerification = GT.oneof
+    [ Verify <$> boolExpr <*> pure ()
+    , Verify <$> verExpr <*> pure ()
+    ]
 
 arbitraryStatement :: GenT Context Statement'
 arbitraryStatement = GT.oneof
     [ arbitraryAssignment
+    , arbitrarySplit
+    , arbitraryConditional
     , arbitraryBlock
-    , Verify <$> boolExpr <*> pure ()
-    , Verify <$> verExpr <*> pure ()
+    , arbitraryVerification
+    ]
+
+arbitraryChallengeBody ::  GenT Context Statement'
+arbitraryChallengeBody = GT.oneof
+    [ arbitraryVerification
+    , arbitraryBlock
     ]
 
 instance Arbitrary Statement' where
@@ -215,14 +258,11 @@ arbitraryParam = do
     t <- liftGen arbitrary
     Param t <$> newName t <*> pure ()
 
-
 arbitraryChallenge :: GenT Context Challenge'
-arbitraryChallenge = GT.resize 2 $ do
-    lift enterM
+arbitraryChallenge = GT.resize 2 $ scoped $ do
     name <- liftGen arbitraryName
     params <- GT.listOf1 arbitraryParam
-    stmt <- arbitraryStatement
-    lift leaveM
+    stmt <- arbitraryChallengeBody
     return $ Challenge name params stmt ()
 
 instance Arbitrary Contract' where

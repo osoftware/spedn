@@ -1,6 +1,8 @@
-{-# LANGUAGE DeriveFunctor     #-}
-{-# LANGUAGE DeriveFoldable    #-}
-{-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE DeriveFoldable        #-}
+{-# LANGUAGE DeriveFunctor         #-}
+{-# LANGUAGE DeriveTraversable     #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Syntax where
 
@@ -62,6 +64,9 @@ data BinaryOp
     | Split
     deriving (Eq, Show)
 
+class Annotated a b where
+    ann :: a b -> b
+
 data Expr a
     = BoolConst Bool a
     | NumConst Int a
@@ -83,6 +88,13 @@ data Statement a
     | If (Expr a) (Statement a) (Maybe (Statement a)) a
     | Block [Statement a] a
     deriving (Eq, Show, Functor, Foldable, Traversable)
+
+instance Annotated Statement a where
+    ann (Assign _ _ _ a)      = a
+    ann (SplitAssign _ _ _ a) = a
+    ann (Verify _ a)          = a
+    ann (If _ _ _ a)          = a
+    ann (Block _ a)           = a
 
 data Challenge a = Challenge Name [Param a] (Statement a) a
     deriving (Eq, Show, Functor, Foldable, Traversable)

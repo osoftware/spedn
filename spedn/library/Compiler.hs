@@ -24,9 +24,9 @@ parser = checkContract <$> sourceFile
 
 compileToAst :: FilePath -> String -> Either Errors (Contract (Check Type, Env, SourcePos))
 compileToAst source code = case parse parser source code of
-    Right ast -> let ast'            = evalState ast [globals]
-                     errors          = lefts $ map ann $ toList ast'
-                     ann (a, _, pos) = a `extend` sourcePosPretty pos
+    Right ast -> let ast'             = evalState ast [globals]
+                     errors           = lefts $ map ann' $ toList ast'
+                     ann' (a, _, pos) = a `extend` sourcePosPretty pos
                  in if null errors then Right ast' else Left errors
     Left err  -> Left [(SyntaxError $ parseErrorTextPretty err, sourcePosPretty . NE.head $ errorPos err)]
 

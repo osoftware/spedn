@@ -25,8 +25,9 @@ checkChallenge (Challenge n ps s a) = do
     ps' <- mapM checkParam ps
     env <- get
     s' <- checkStatement s
+    let check = expect Verification (fst3 . ann $ s')
     leaveM
-    return $ Challenge n ps' s' (Right Void, env, a)
+    return $ Challenge n ps' s' (check, env, a)
 
 checkParam :: Param a -> TypeChecker Param a
 checkParam (Param t n a) = do
@@ -59,17 +60,20 @@ checkStatement (If cond t f a) = do
     let check = expect Bool (typeof env cond)
     cond' <- checkExpr cond
     t' <- checkBranch t
+    let tc = fst3 . ann $ t'
     case f of
-        Nothing -> return $ If cond' t' Nothing (check, env, a)
+        Nothing -> return $ If cond' t' Nothing (check >> tc, env, a)
         Just f' -> do
             f'' <- checkBranch f'
-            return $ If cond' t' (Just f'') (check, env, a)
+            let fc = fst3 . ann $ f''
+            return $ If cond' t' (Just f'') (check >> both Verification tc fc, env, a)
 checkStatement (Block stmts a) = do
     enterM
     env <- get
     stmts' <- mapM checkStatement stmts
+    let check = fst3 . ann . last $ stmts'
     leaveM
-    return $ Block stmts' (Right Void, env, a)
+    return $ Block stmts' (check, env, a)
 
 checkBranch :: Statement a -> TypeChecker Statement a
 checkBranch stmt = do
@@ -201,3 +205,6 @@ toSplitTuple l         = l
 
 funSigMatches :: [Type] -> [Check Type] -> Bool
 funSigMatches ts as = (length ts == length as) && (null . lefts $ zipWith expect ts as)
+
+fst3 :: (a, b, c) -> a
+fst3 (a, _, _) = a
