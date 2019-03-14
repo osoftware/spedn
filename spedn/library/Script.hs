@@ -139,7 +139,7 @@ instance Show OP_CODE where
 type Script = [OP_CODE]
 
 compileIR :: IR -> Script
-compileIR = concatMap compileOp
+compileIR = postprocess . concatMap compileOp
 
 compileOp :: OpCode -> Script
 compileOp (OpPushBool val)                = if val then [OP_TRUE] else [OP_FALSE]
@@ -204,3 +204,18 @@ compileOp OpElse   = [OP_ELSE]
 compileOp OpEndIf  = [OP_ENDIF]
 compileOp OpDrop   = [OP_DROP]
 compileOp OpNip    = [OP_NIP]
+
+
+-- Remove pseudo-opcode
+postprocess :: Script -> Script
+postprocess [] = []
+postprocess (OP_CHECKLOCKTIME:OP_DROP:OP_TRUE:OP_VERIFY:ops)
+               = OP_CHECKLOCKTIMEVERIFY : OP_DROP : postprocess ops
+postprocess (OP_CHECKLOCKTIME:OP_DROP:OP_TRUE:ops)
+               = OP_CHECKLOCKTIMEVERIFY : OP_DROP : OP_TRUE : postprocess ops
+postprocess (OP_CHECKSEQUENCE:OP_DROP:OP_TRUE:OP_VERIFY:ops)
+               = OP_CHECKSEQUENCEVERIFY : OP_DROP : postprocess ops
+postprocess (OP_CHECKSEQUENCE:OP_DROP:OP_TRUE:ops)
+               = OP_CHECKSEQUENCEVERIFY : OP_DROP : OP_TRUE : postprocess ops
+postprocess (op:ops)
+               = op : postprocess ops
