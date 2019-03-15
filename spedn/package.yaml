@@ -24,6 +24,7 @@ library:
   dependencies:
   - base
   - megaparsec
+  - parser-combinators
   - mtl
   - containers
   - time

@@ -49,7 +49,7 @@ scoped gen = do
 
 newName :: Type -> GenT Context Name
 newName t = do
-    ctx@(scope:scopes) <- lift get
+    ~ctx@(scope:scopes) <- lift get
     name <- liftGen arbitraryName `GT.suchThat` (not . (`elem` (fst <$> concat ctx)))
     lift . put $ ((name,t):scope):scopes
     return name
@@ -111,7 +111,7 @@ callReturning :: Type -> GenT Context Expr'
 callReturning t = do
     fs <- lift get
     let matching = filter (returning t) (concat fs)
-    (name, input :-> _) <- GT.elements matching
+    ~(name, input :-> _) <- GT.elements matching
     Call name <$> sequence (exprOf <$> input) <*> pure ()
   where
     returning expected (_, x) = case x of

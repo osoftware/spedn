@@ -4,7 +4,6 @@ import           Control.Monad.State
 import           Control.Monad.Writer
 import           Data.Either
 import           Data.Foldable
-import qualified Data.List.NonEmpty as NE
 import           Text.Megaparsec
 
 import           Env
@@ -28,7 +27,7 @@ compileToAst source code = case parse parser source code of
                      errors           = lefts $ map ann' $ toList ast'
                      ann' (a, _, pos) = a `extend` sourcePosPretty pos
                  in if null errors then Right ast' else Left errors
-    Left err  -> Left [(SyntaxError $ parseErrorTextPretty err, sourcePosPretty . NE.head $ errorPos err)]
+    Left err  -> Left [(SyntaxError $ errorBundlePretty err, "")]
 
 extend :: Either a b -> c -> Either (a, c) (b, c)
 extend (Left a) c  = Left (a, c)

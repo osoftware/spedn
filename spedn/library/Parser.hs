@@ -1,12 +1,12 @@
 module Parser where
 
 import           Control.Monad
+import           Control.Monad.Combinators.Expr
 import           Data.Bits
 import           Data.List.NonEmpty
 import           Data.Time
 import           Data.Time.Clock.POSIX
 import           Text.Megaparsec
-import           Text.Megaparsec.Expr
 
 import           Lexer
 import           Syntax
@@ -22,7 +22,7 @@ sourceFile = between spaceConsumer eof contract
 
 annotate :: Parser (SourcePos -> a) -> Parser a
 annotate parser = do
-    pos <- getPosition
+    pos <- getSourcePos
     x <- parser
     return $ x pos
 
@@ -154,15 +154,15 @@ operators = [ [ prefix Minus $ try $ symbol "-" *> notFollowedBy digits
             ]
   where
     prefix op parser = Prefix $ do
-        pos <- getPosition <* parser
+        pos <- getSourcePos <* parser
         return $ \ e -> UnaryExpr op e pos
 
     infixL op parser = InfixL $ do
-        pos <- getPosition <* parser
+        pos <- getSourcePos <* parser
         return $ \ l r -> BinaryExpr op l r pos
 
     infixN op parser = InfixN $ do
-        pos <- getPosition <* parser
+        pos <- getSourcePos <* parser
         return $ \ l r -> BinaryExpr op l r pos
 
 term :: Parser Expr'
@@ -190,9 +190,9 @@ binConst :: Parser Expr'
 binConst = annotate . try $ BinConst <$> (symbol "0x" *> many hexByte)
 
 timeSpanLit :: Parser Int
-timeSpanLit = do 
+timeSpanLit = do
     parts <- some . choice $
-        [ try $ (*86400) <$> decInt <* symbol "d" 
+        [ try $ (*86400) <$> decInt <* symbol "d"
         , try $ (*3600)  <$> decInt <* symbol "h"
         , try $ (*60)    <$> decInt <* symbol "m"
         , try $              decInt <* symbol "s"
