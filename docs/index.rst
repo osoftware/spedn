@@ -61,7 +61,7 @@ Every kind of contribution is appreciated, especially:
 * Unit tests
 * Bug reports
 * Usage examples and docs improvement
-* `Tips <bitcoincash:qzu5e85zx770d82rv3u6fevr5s5ytl5kl5kzfp9tmc>`_
+* `Tips <bitcoincash:qrc2jhalczuka8q3dvk0g8mnkqx79wxp9gvvqvg7qt>`_
 
 Contract
 --------
