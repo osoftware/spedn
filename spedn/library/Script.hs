@@ -1,9 +1,16 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable   #-}
+{-# LANGUAGE DeriveGeneric        #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+
 
 module Script where
 
 import           Data.Data
+import           Data.Persist
 import           Data.Word
+import           Data.ByteString (ByteString)
+import           GHC.Generics
 
 import           Bytes
 import           IR
@@ -125,18 +132,154 @@ data OP_CODE
     | OP_PUBKEYHASH
     | OP_PUBKEY
     | OP_INVALIDOPCODE Word8
-    deriving (Eq, Data)
+    deriving (Eq, Data, Generic)
 
 instance Show OP_CODE where
-  show (OP_PUSHDATA0 _ payload) = show payload
-  show (OP_PUSHDATA1 _ payload) = show payload
-  show (OP_PUSHDATA2 _ payload) = show payload
-  show (OP_PUSHDATA4 _ payload) = show payload
-  show (OP_PUSH name)           = "<" ++ name ++ ">"
-  show (OP_N n)                 = show n
-  show op                       = drop 3 $ show $ toConstr op
+    show (OP_PUSHDATA0 len payload) = "PUSH(" ++ show len ++ ")" ++ show payload
+    show (OP_PUSHDATA1 len payload) = "PUSHDATA1" ++ show len ++ show payload
+    show (OP_PUSHDATA2 len payload) = "PUSHDATA2" ++ show len ++ show payload
+    show (OP_PUSHDATA4 len payload) = "PUSHDATA4" ++ show len ++ show payload
+    show (OP_PUSH name)             = "<" ++ name ++ ">"
+    show (OP_N n)                   = show n
+    show op                         = drop 3 $ show $ toConstr op
+
+putByte :: Word8 -> Put ()
+putByte = put
+
+putBytes :: [Word8] -> Put ()
+putBytes = put
+
+instance Persist OP_CODE where
+    put op = case op of
+        -- Push values
+        OP_PUSHDATA0 len bytes -> putByte len >> putBytes bytes
+        OP_PUSHDATA1 len bytes -> putByte 0x4c >> putBytes len >> putBytes bytes
+        OP_PUSHDATA2 len bytes -> putByte 0x4d >> putBytes len >> putBytes bytes
+        OP_PUSHDATA4 len bytes -> putByte 0x4e >> putBytes len >> putBytes bytes
+        OP_FALSE               -> putByte 0x00
+        OP_1NEGATE             -> putByte 0x4f
+        OP_RESERVED            -> putByte 0x50
+        OP_TRUE                -> putByte 0x51
+        OP_N n                 -> putByte . fromIntegral $ 0x50 + n
+
+        -- Flow Control
+        OP_NOP                 -> putByte 0x61
+        OP_VER                 -> putByte 0x62
+        OP_IF                  -> putByte 0x63
+        OP_NOTIF               -> putByte 0x64
+        OP_VERIF               -> putByte 0x65
+        OP_VERNOTIF            -> putByte 0x66
+        OP_ELSE                -> putByte 0x67
+        OP_ENDIF               -> putByte 0x68
+        OP_VERIFY              -> putByte 0x69
+        OP_RETURN              -> putByte 0x6a
+
+        -- Stack Operations
+        OP_TOALTSTACK          -> putByte 0x6b
+        OP_FROMALTSTACK        -> putByte 0x6c
+        OP_2DROP               -> putByte 0x6d
+        OP_2DUP                -> putByte 0x6e
+        OP_3DUP                -> putByte 0x6f
+        OP_2OVER               -> putByte 0x70
+        OP_2ROT                -> putByte 0x71
+        OP_2SWAP               -> putByte 0x72
+        OP_IFDUP               -> putByte 0x73
+        OP_DEPTH               -> putByte 0x74
+        OP_DROP                -> putByte 0x75
+        OP_DUP                 -> putByte 0x76
+        OP_NIP                 -> putByte 0x77
+        OP_OVER                -> putByte 0x78
+        OP_PICK                -> putByte 0x79
+        OP_ROLL                -> putByte 0x7a
+        OP_ROT                 -> putByte 0x7b
+        OP_SWAP                -> putByte 0x7c
+        OP_TUCK                -> putByte 0x7d
+
+        -- Array operations
+        OP_CAT                 -> putByte 0x7e
+        OP_SPLIT               -> putByte 0x7f
+        OP_NUM2BIN             -> putByte 0x80
+        OP_BIN2NUM             -> putByte 0x81
+        OP_SIZE                -> putByte 0x82
+
+        -- Bitwise logic
+        OP_INVERT              -> putByte 0x83
+        OP_AND                 -> putByte 0x84
+        OP_OR                  -> putByte 0x85
+        OP_XOR                 -> putByte 0x86
+        OP_EQUAL               -> putByte 0x87
+        OP_EQUALVERIFY         -> putByte 0x88
+        OP_RESERVED1           -> putByte 0x89
+        OP_RESERVED2           -> putByte 0x8a
+
+        -- Arithmetic
+        OP_1ADD                -> putByte 0x8b
+        OP_1SUB                -> putByte 0x8c
+        OP_2MUL                -> putByte 0x8d
+        OP_2DIV                -> putByte 0x8e
+        OP_NEGATE              -> putByte 0x8f
+        OP_ABS                 -> putByte 0x90
+        OP_NOT                 -> putByte 0x91
+        OP_0NOTEQUAL           -> putByte 0x92
+        OP_ADD                 -> putByte 0x93
+        OP_SUB                 -> putByte 0x94
+        OP_MUL                 -> putByte 0x95
+        OP_DIV                 -> putByte 0x96
+        OP_MOD                 -> putByte 0x97
+        OP_LSHIFT              -> putByte 0x98
+        OP_RSHIFT              -> putByte 0x99
+        OP_BOOLAND             -> putByte 0x9a
+        OP_BOOLOR              -> putByte 0x9b
+        OP_NUMEQUAL            -> putByte 0x9c
+        OP_NUMEQUALVERIFY      -> putByte 0x9d
+        OP_NUMNOTEQUAL         -> putByte 0x9e
+        OP_LESSTHAN            -> putByte 0x9f
+        OP_GREATERTHAN         -> putByte 0xa0
+        OP_LESSTHANOREQUAL     -> putByte 0xa1
+        OP_GREATERTHANOREQUAL  -> putByte 0xa2
+        OP_MIN                 -> putByte 0xa3
+        OP_MAX                 -> putByte 0xa4
+        OP_WITHIN              -> putByte 0xa5
+
+        -- Crypto
+        OP_RIPEMD160           -> putByte 0xa6
+        OP_SHA1                -> putByte 0xa7
+        OP_SHA256              -> putByte 0xa8
+        OP_HASH160             -> putByte 0xa9
+        OP_HASH256             -> putByte 0xaa
+        OP_CODESEPARATOR       -> putByte 0xab
+        OP_CHECKSIG            -> putByte 0xac
+        OP_CHECKSIGVERIFY      -> putByte 0xad
+        OP_CHECKMULTISIG       -> putByte 0xae
+        OP_CHECKMULTISIGVERIFY -> putByte 0xaf
+
+        -- New operations
+        OP_NOP1                -> putByte 0xb0
+        OP_CHECKLOCKTIMEVERIFY -> putByte 0xb1
+        OP_CHECKSEQUENCEVERIFY -> putByte 0xb2
+        OP_NOP4                -> putByte 0xb3
+        OP_NOP5                -> putByte 0xb4
+        OP_NOP6                -> putByte 0xb5
+        OP_NOP7                -> putByte 0xb6
+        OP_NOP8                -> putByte 0xb7
+        OP_NOP9                -> putByte 0xb8
+        OP_NOP10               -> putByte 0xb9
+        OP_CHECKDATASIG        -> putByte 0xba
+        OP_CHECKDATASIGVERIFY  -> putByte 0xbb
+
+        -- Other
+        OP_PUBKEY              -> putByte 0xfe
+        OP_PUBKEYHASH          -> putByte 0xfd
+        (OP_INVALIDOPCODE x)   -> putByte x
+        _                      -> error "Contract must be fully instantiated."
 
 type Script = [OP_CODE]
+
+instance {-# Overlaps #-} Persist Script where
+    put = mapM_ put
+
+toByteString :: Script -> ByteString
+toByteString = encode
 
 compileIR :: IR -> Script
 compileIR = postprocess . concatMap compileOp
@@ -147,7 +290,8 @@ compileOp (OpPushNum val) | val == -1     = [OP_1NEGATE]
                           | val == 0      = [OP_FALSE]
                           | val == 1      = [OP_TRUE]
                           | val <= 16     = [OP_N val]
-                          | otherwise     = [OP_PUSHDATA0 (head . serialize $ 4) (serialize val)]
+                          | otherwise     = let payload = serialize val
+                                            in [OP_PUSHDATA0 (head . serialize . length $ payload) payload]
 compileOp (OpPushBin val) | length val <= 0x4b   = [OP_PUSHDATA0 (head . serialize . length $ val) val]
                           | length val <= 0xff   = [OP_PUSHDATA1 (serialize . length $ val) val]
                           | length val <= 0xffff = [OP_PUSHDATA2 (serialize . length $ val) val]

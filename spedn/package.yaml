@@ -28,6 +28,8 @@ library:
   - mtl
   - containers
   - time
+  - persist
+  - bytestring
   source-dirs: library
 
 executables:
@@ -37,6 +39,8 @@ executables:
     dependencies:
     - base
     - spedn
+    - bytestring
+    - base16-bytestring
     - optparse-applicative
     ghc-options:
     - -rtsopts

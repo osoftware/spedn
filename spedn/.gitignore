@@ -2,3 +2,4 @@
 /.stack-work/
 # Stack generates the Cabal file from `package.yaml` through hpack.
 /*.cabal
+.vscode/phoityne.log
