@@ -177,6 +177,22 @@ term = choice [ parens expr
               , var
               ]
 
+paramVal :: Parser (Name, Expr')
+paramVal = do
+    paramName <- name
+    eq
+    paramValue <- choice
+        [ boolConst
+        , timeConst
+        , timeSpanConst
+        , numConst
+        , binConst
+        ]
+    return (paramName, paramValue)
+
+parseParamVal :: String -> Maybe (Name, Expr')
+parseParamVal = parseMaybe paramVal
+
 list :: Parser Expr'
 list = annotate . try $ Array <$> brackets (sepBy expr comma)
 

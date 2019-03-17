@@ -3,9 +3,12 @@ module Cli where
 import           Data.Semigroup      ((<>))
 import           Options.Applicative
 
+import           Parser
+import           Syntax
+
 data Options
-    = Compile { source :: FilePath }
-    | MakeAddr { source :: FilePath , mainnet :: Bool, params :: [String] }
+    = Compile { source :: FilePath, params :: [(Name, Expr')] }
+    | MakeAddr { source :: FilePath , mainnet :: Bool, params :: [(Name, Expr')] }
     deriving (Show)
 
 sourceParser :: Parser FilePath
@@ -14,13 +17,13 @@ sourceParser = strOption $ long "source" <> short 'c' <> metavar "SOURCE" <> hel
 mainnetParser :: Parser Bool
 mainnetParser = switch $ long "mainnet" <> help "Produce MainNet address"
 
-paramsParser :: Parser [String]
-paramsParser = many $ argument str $ metavar "CONTRACT_PARAMS..."
+paramsParser :: Parser [(Name, Expr')]
+paramsParser = many $ argument (maybeReader parseParamVal) $ metavar "CONTRACT_PARAMS..."
 
 commandsParser :: Parser Options
 commandsParser = hsubparser
     (  command "compile" (info
-        (Compile <$> sourceParser)
+        (Compile <$> sourceParser <*> paramsParser)
         (progDesc "Compiles SOURCE to Script"))
     <> command "makeaddr" (info
         (MakeAddr <$> sourceParser <*> mainnetParser <*> paramsParser)
