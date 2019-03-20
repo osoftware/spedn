@@ -10,70 +10,67 @@ import           Syntax
 
 type Check = Either Error
 type Checker = State Env
-type TypeChecker n a = Checker (n (Check Type, Env, a))
+type TypeChecker n a = Checker (n (Check Type, a))
 
 checkContract :: Contract a -> TypeChecker Contract a
 checkContract (Contract n ps cs a) = do
     ps' <- mapM checkParam ps
-    env <- get
     cs' <- mapM checkChallenge cs
-    return $ Contract n ps' cs' (Right Void, env, a)
+    return $ Contract n ps' cs' (Right Void, a)
 
 checkChallenge :: Challenge a -> TypeChecker Challenge a
 checkChallenge (Challenge n ps s a) = do
     enterM
     ps' <- mapM checkParam ps
-    env <- get
     s' <- checkStatement s
-    let check = expect Verification (fst3 . ann $ s')
+    let check = expect Verification (fst . ann $ s')
     leaveM
-    return $ Challenge n ps' s' (check, env, a)
+    return $ Challenge n ps' s' (check, a)
 
 checkParam :: Param a -> TypeChecker Param a
 checkParam (Param t n a) = do
-    (env, t') <- addM n t
-    return $ Param t n (t', env, a)
+    t' <- addM n t
+    return $ Param t n (t', a)
 
 checkStatement :: Statement a -> TypeChecker Statement a
 checkStatement (Assign t n e a) = do
     env <- get
     let t' = expect t (typeof env e)
     e' <- checkExpr e
-    (env', t'') <- addM n t
+    t'' <- addM n t
     let check = do { _ <- t' ; t'' }
-    return $ Assign t n e' (check, env', a)
+    return $ Assign t n e' (check, a)
 checkStatement (SplitAssign t (l, r) e a) = do
     env <- get
     let t' = expect (t :. t) (typeof env e)
     e' <- checkExpr e
-    (_, tl') <- addM l t
-    (env', tr') <- addM r t
+    tl' <- addM l t
+    tr' <- addM r t
     let check = do { _ <- t' ; tl <- tl' ; tr <- tr' ; return $ tl :. tr }
-    return $ SplitAssign t (l, r) e' (check, env', a)
+    return $ SplitAssign t (l, r) e' (check, a)
 checkStatement (Verify e a) = do
     env <- get
     let check = expect (Bool :|: Verification) (typeof env e) >> return Verification
     e' <- checkExpr e
-    return $ Verify e' (check, env, a)
+    return $ Verify e' (check, a)
 checkStatement (If cond t f a) = do
     env <- get
     let check = expect Bool (typeof env cond)
     cond' <- checkExpr cond
     t' <- checkBranch t
-    let tc = fst3 . ann $ t'
+    let tc = fst . ann $ t'
     case f of
-        Nothing -> return $ If cond' t' Nothing (check >> tc, env, a)
+        Nothing -> return $ If cond' t' Nothing (check >> tc, a)
         Just f' -> do
             f'' <- checkBranch f'
-            let fc = fst3 . ann $ f''
-            return $ If cond' t' (Just f'') (check >> both Verification tc fc, env, a)
+            let fc = fst . ann $ f''
+            return $ If cond' t' (Just f'') (check >> both Verification tc fc, a)
 checkStatement (Block stmts a) = do
     enterM
-    env <- get
     stmts' <- mapM checkStatement stmts
-    let check = fst3 . ann . last $ stmts'
+    let check = fst . ann . last $ stmts'
     leaveM
-    return $ Block stmts' (check, env, a)
+    return $ Block stmts' (check, a)
 
 checkBranch :: Statement a -> TypeChecker Statement a
 checkBranch stmt = do
@@ -83,43 +80,37 @@ checkBranch stmt = do
     return stmt'
 
 checkExpr :: Expr a -> TypeChecker Expr a
-checkExpr (BoolConst v a) = get >>= \env -> return $ BoolConst v (Right Bool, env, a)
-checkExpr (NumConst v a) = get >>= \env -> return $ NumConst v (Right Num, env, a)
-checkExpr (BinConst v a) = get >>= \env -> return $ BinConst v (Right $ Bin Raw, env, a)
-checkExpr (TimeConst v a) = get >>= \env -> return $ TimeConst v (Right Time, env, a)
-checkExpr (TimeSpanConst v a) = get >>= \env -> return $ TimeSpanConst v (Right TimeSpan, env, a)
+checkExpr (BoolConst v a)     = return $ BoolConst v (Right Bool, a)
+checkExpr (NumConst v a)      = return $ NumConst v (Right Num, a)
+checkExpr (BinConst v a)      = return $ BinConst v (Right $ Bin Raw, a)
+checkExpr (TimeConst v a)     = return $ TimeConst v (Right Time, a)
+checkExpr (TimeSpanConst v a) = return $ TimeSpanConst v (Right TimeSpan, a)
 checkExpr expr@(Var n a) = do
-    env <- get
     t <- typeofM expr
-    return $ Var n (t, env, a)
+    return $ Var n (t, a)
 checkExpr expr@(Array es a) = do
-    env <- get
     t <- typeofM expr
     es' <- mapM checkExpr es
-    return $ Array es' (List <$> t, env, a)
+    return $ Array es' (List <$> t, a)
 checkExpr expr@(UnaryExpr op e a) = do
-    env <- get
     t <- typeofM expr
     e' <- checkExpr e
-    return $ UnaryExpr op e' (t, env, a)
+    return $ UnaryExpr op e' (t, a)
 checkExpr expr@(BinaryExpr op l r a) = do
-    env <- get
     t <- typeofM expr
     l' <- checkExpr l
     r' <- checkExpr r
-    return $ BinaryExpr op l' r' (t, env, a)
+    return $ BinaryExpr op l' r' (t, a)
 checkExpr expr@(TernaryExpr cond tr fl a) = do
-    env <- get
     t <- typeofM expr
     cond' <- checkExpr cond
     tr' <- checkExpr tr
     fl' <- checkExpr fl
-    return $ TernaryExpr cond' tr' fl' (t, env, a)
+    return $ TernaryExpr cond' tr' fl' (t, a)
 checkExpr expr@(Call n args a) = do
-    env <- get
     t <- typeofM expr
     args' <- mapM checkExpr args
-    return $ Call n args' (t, env, a)
+    return $ Call n args' (t, a)
 
 enterM :: Checker ()
 enterM = do
@@ -131,14 +122,14 @@ leaveM = do
     env <- get
     put $ leave env
 
-addM :: Name -> Type -> Checker (Env, Check Type)
+addM :: Name -> Type -> Checker (Check Type)
 addM n t = do
     env <- get
     if n == "_"
-    then return (env, Right Void)
+    then return $ Right Void
     else case add env n t of
-        Right e  -> put e >> return (e, Right t)
-        Left err -> return (env, Left err)
+        Right e  -> put e >> return (Right t)
+        Left err -> return $ Left err
 
 typeofM :: Expr a -> Checker (Check Type)
 typeofM expr = do
@@ -161,7 +152,7 @@ typeof env (BinaryExpr op l r _)
     | op == Split                 = let pos = typeof env r
                                     in case pos of
                                         Right Num   -> toSplitTuple $ expect (Bin Raw) $ typeof env l
-                                        Right other -> throwError $ TypeMismatch Num other
+                                        Right other -> throwError $ TypeMismatch Num (Right other)
                                         err         -> err
     | op == Cat                   = both (Bin Raw) (typeof env l) (typeof env r) >> return (Bin Raw)
     | op `elem` [Add, Sub, Div, Mod]
@@ -176,17 +167,18 @@ typeof env (Call fName args _)      = let argtypes = typeof env <$> args
                                       in case Env.lookup env fName of
                                           Just (ts :-> t) -> if funSigMatches ts argtypes
                                                              then return t
-                                                             else throwError $ TypeMismatch (ts :-> t) (rights argtypes :-> t)
+                                                             else throwError
+                                                                $ ArgumentMismatch fName (ts :-> t) argtypes
                                           _               -> throwError $ NotInScope fName
 
 expect :: Type -> Check Type -> Check Type
 expect (Bin Raw) (Right (Bin _)) = return $ Bin Raw
-expect t@(a :|: b) x@(Right rx)  = case expect a x of
+expect t@(a :|: b) x@(Right _)  = case expect a x of
                                     Left _  -> case expect b x of
-                                        Left _ -> throwError $ TypeMismatch t rx
+                                        Left _ -> throwError $ TypeMismatch t x
                                         rb     -> rb
                                     ra      -> ra
-expect t (Right a)               = if t == a then return t else throwError $ TypeMismatch t a
+expect t a@(Right ra)            = if t == ra then return t else throwError $ TypeMismatch t a
 expect _ l                       = l
 
 both :: Type -> Check Type -> Check Type -> Check Type
@@ -205,6 +197,3 @@ toSplitTuple l         = l
 
 funSigMatches :: [Type] -> [Check Type] -> Bool
 funSigMatches ts as = (length ts == length as) && (null . lefts $ zipWith expect ts as)
-
-fst3 :: (a, b, c) -> a
-fst3 (a, _, _) = a

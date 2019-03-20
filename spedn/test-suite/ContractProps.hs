@@ -17,7 +17,7 @@ import           TypeChecker
 prop_typechecks :: Contract () -> Bool
 prop_typechecks c = null errors
   where
-    errors = lefts $ fst3 <$> checks
+    errors = lefts $ fst <$> checks
     checks = toList c'
     c'     = evalState (checkContract c) [globals]
 

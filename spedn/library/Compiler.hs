@@ -24,11 +24,11 @@ type Params = [(Name, Expr')]
 parser :: Parser (TypeChecker Contract SourcePos)
 parser = checkContract <$> sourceFile
 
-compileToAst :: FilePath -> String -> Either Errors (Contract (Check Type, Env, SourcePos))
+compileToAst :: FilePath -> String -> Either Errors (Contract (Check Type, SourcePos))
 compileToAst source code = case parse parser source code of
     Right ast -> let ast'             = evalState ast [globals]
                      errors           = lefts $ map ann' $ toList ast'
-                     ann' (a, _, pos) = a `extend` sourcePosPretty pos
+                     ann' (a, pos) = a `extend` sourcePosPretty pos
                  in if null errors then Right ast' else Left errors
     Left err  -> Left [(SyntaxError $ errorBundlePretty err, "")]
 
@@ -40,7 +40,7 @@ compileToIR :: Contract a -> IR
 compileToIR c = execWriter $ evalStateT (contractCompiler c) []
 
 instantiate :: [(Name, Expr')] -> IR -> IR
-instantiate params = fillParams (evalParams params)
+instantiate ps = fillParams (evalParams ps)
 
 evalParams :: Params -> Map.Map Name OpCode
 evalParams ps = Map.fromList $ map eval ps

@@ -6,6 +6,7 @@
 
 module Syntax where
 
+import           Data.List (intercalate)
 import           Data.Word
 
 type Name = String
@@ -25,7 +26,20 @@ data Type
     | [Type] :-> Type -- | Function
     | Type :|: Type   -- | Alternative
     | Void
-    deriving (Eq, Show)
+    deriving (Eq)
+
+instance Show Type where
+    show Bool         = "bool"
+    show Num          = "int"
+    show (Bin t)      = show t
+    show Time         = "Time"
+    show TimeSpan     = "TimeSpan"
+    show Verification = "Verification"
+    show (List t)     = "[" ++ show t ++ "...]"
+    show (a :. b)     = "[" ++ show a ++ ", " ++ show b ++ "]"
+    show (as :-> b)   = "(" ++ intercalate ", " (map show as) ++ ") -> " ++ show b
+    show (a :|: b)    = show a ++ " or " ++ show b
+    show Void         = "void"
 
 data BinType
     = Raw
@@ -34,7 +48,15 @@ data BinType
     | Sha256
     | Ripemd160
     | Sig
-    deriving (Eq, Show)
+    deriving (Eq)
+
+instance Show BinType where
+    show Raw       = "bin"
+    show PubKey    = "PubKey"
+    show Sha1      = "Sha1"
+    show Sha256    = "Sha256"
+    show Ripemd160 = "Ripemd160"
+    show Sig       = "Sig"
 
 data UnaryOp
     = Not
