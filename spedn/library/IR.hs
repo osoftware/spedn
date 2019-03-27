@@ -203,4 +203,5 @@ exprCompiler (Call name args _)
         mapM_ exprCompiler args
         emit [OpCall name]
         replicateM_ (length args) popM
+        when (name `elem` ["fst", "snd"]) popM
         pushM "$tmp"

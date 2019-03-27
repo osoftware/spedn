@@ -56,7 +56,7 @@ Cryptographic Checks
 
   Validates the set of signatures against the set of public keys.
 
-* ``bool checkDataSig(Sig sig, bin msg, PubKey pk)``
+* ``bool checkDataSig(DataSig sig, bin msg, PubKey pk)``
 
   Validates a signature ``sig`` of an arbitrary message ``msg`` against a public key ``pk``.
 
@@ -89,6 +89,35 @@ Array Operations
 
   Returns the length of ``data``.
 
+* ``bin fst([bin, bin] data)``
+
+  Returns the first element of a tuple (result of ``@`` operator). 
+
+  .. code-block:: c
+
+      bin left = fst(0xaabbccdd @ 2);
+      // left == 0xaabb
+
+* ``bin snd([bin, bin] data)``
+
+  Returns the second element of a tuple (result of ``@`` operator). 
+
+  .. code-block:: c
+
+      bin right = snd(0xaabbccdd @ 2);
+      // right == 0xccdd
+
+* ``DataSig toDataSig(Sig data)``
+
+  Converts a signature suitable for ``checkSig`` function (with a sighash flag) 
+  to a signature suitable for ``checkDataSig`` function (without a sighash flag).
+
+  .. code-block:: c
+
+      verify checkSig(sig, pubKey);
+      verify checkDataSig(toDataSig(sig), preimageHash, pubKey);
+
+
 Type Constructors
 =================
 
@@ -97,5 +126,6 @@ Type Constructors
 * ``Sha1 Sha1(bin data)``
 * ``Sha256 Sha256(bin data)``
 * ``Sig Sig(bin data)``
+* ``DataSig DataSig(bin data)``
 * ``Time TimeStamp(int timestamp)``
 * ``TimeSpan Blocks(int number)``

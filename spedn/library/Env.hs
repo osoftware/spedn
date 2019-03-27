@@ -29,7 +29,7 @@ globals = Map.fromList
       -- Checking
     , ("checkSig",      [Bin Sig, Bin PubKey]                  :-> Bool)
     , ("checkMultiSig", [List $ Bin Sig, List $ Bin PubKey]    :-> Bool)
-    , ("checkDataSig",  [Bin Sig, Bin Raw, Bin PubKey]         :-> Bool)
+    , ("checkDataSig",  [Bin DataSig, Bin Raw, Bin PubKey]     :-> Bool)
     , ("checkLockTime", [Time]                                 :-> Verification)
     , ("checkSequence", [TimeSpan]                             :-> Verification)
     
@@ -44,8 +44,14 @@ globals = Map.fromList
     , ("Sha1",          [Bin Raw]        :-> Bin Sha1)
     , ("Sha256",        [Bin Raw]        :-> Bin Sha256)
     , ("Sig",           [Bin Raw]        :-> Bin Sig)
+    , ("DataSig",       [Bin Raw]        :-> Bin DataSig)
     , ("Blocks",        [Num]            :-> TimeSpan)
     , ("TimeStamp",     [Num]            :-> Time)
+
+      -- Macros
+    , ("fst",           [Bin Raw :. Bin Raw] :-> Bin Raw)
+    , ("snd",           [Bin Raw :. Bin Raw] :-> Bin Raw)
+    , ("toDataSig",     [Bin Sig]            :-> Bin DataSig)
     ]
 
 typeConstructors :: [String]

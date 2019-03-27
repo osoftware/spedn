@@ -52,6 +52,7 @@ varType = choice [ keyword "bool"      >> pure Bool
                  , keyword "Sha1"      >> pure (Bin Sha1)
                  , keyword "Sha256"    >> pure (Bin Sha256)
                  , keyword "Sig"       >> pure (Bin Sig)
+                 , keyword "DataSig"   >> pure (Bin DataSig)
                  ]
 
 challenge :: Parser Challenge'

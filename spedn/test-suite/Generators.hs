@@ -27,6 +27,9 @@ runContext gen = evalState <$> runGenT gen <*> pure [Map.toList globals]
 scale' :: GT.MonadGen m => (Int -> Int) -> m a -> m a
 scale' f g = GT.sized (\n -> GT.resize (f n) g)
 
+downscale :: GT.MonadGen m => m a -> m a
+downscale = scale' (`div` 2)
+
 arbitraryName :: Gen Name
 arbitraryName = sized $ \n -> vectorOf n $ choose ('a', 'z')
 
@@ -89,6 +92,7 @@ constOf (Bin Sha1)      = Call "Sha1" <$> vectorOf 1 binConst <*> pure ()
 constOf (Bin Sha256)    = Call "Sha256" <$> vectorOf 1 binConst <*> pure ()
 constOf (Bin Ripemd160) = Call "Ripemd160" <$> vectorOf 1 binConst <*> pure ()
 constOf (Bin Sig)       = Call "Sig" <$> vectorOf 1 binConst <*> pure ()
+constOf (Bin DataSig)   = Call "DataSig" <$> vectorOf 1 binConst <*> pure ()
 constOf Time            = timeConst
 constOf TimeSpan        = timeSpanConst
 constOf _               = fail "impossible constant"
@@ -162,10 +166,13 @@ exprOf (Bin Sha1)       = Call "Sha1" <$> GT.vectorOf 1 (exprOf $ Bin Raw) <*> p
 exprOf (Bin Sha256)     = Call "Sha256" <$> GT.vectorOf 1 (exprOf $ Bin Raw) <*> pure ()
 exprOf (Bin Ripemd160)  = Call "Ripemd160" <$> GT.vectorOf 1 (exprOf $ Bin Raw) <*> pure ()
 exprOf (Bin Sig)        = Call "Sig" <$> GT.vectorOf 1 (exprOf $ Bin Raw) <*> pure ()
+exprOf (Bin DataSig)    = Call "DataSig" <$> GT.vectorOf 1 (exprOf $ Bin Raw) <*> pure ()
 exprOf Time             = liftGen timeConst
 exprOf TimeSpan         = liftGen timeSpanConst
-exprOf (List (Bin t))  = Array <$> GT.listOf1 (exprOf $ Bin t) <*> pure ()
-exprOf _               = fail "impossible expr"
+exprOf (List (Bin t))   = Array <$> GT.listOf1 (exprOf $ Bin t) <*> pure ()
+exprOf (Bin Raw :. Bin Raw)
+                        = downscale $ BinaryExpr Split <$> (exprOf $ Bin Raw) <*> exprOf Num <*> pure ()
+exprOf _                = fail "impossible expr"
 
 instance Arbitrary Expr' where
     arbitrary = runContext $ do
@@ -197,7 +204,7 @@ arbitrarySplit = do
     return $ SplitAssign (Bin Raw) (left, right) (BinaryExpr Split expr pos ()) ()
 
 arbitraryBlock :: GenT Context Statement'
-arbitraryBlock = scoped $ scale' (`div` 2) $ Block
+arbitraryBlock = scoped $ downscale $ Block
     <$> do
         stmts <- GT.listOf arbitraryStatement
         stmt <- arbitraryVerification
@@ -214,8 +221,8 @@ maybeArbitrary gen = do
 arbitraryConditional :: GenT Context Statement'
 arbitraryConditional = do
     cond <- boolExpr
-    t <- scale' (`div` 2) $ scoped arbitraryChallengeBody
-    f <- scale' (`div` 2) $ maybeArbitrary (scoped arbitraryChallengeBody)
+    t <- downscale $ scoped arbitraryChallengeBody
+    f <- downscale $ maybeArbitrary (scoped arbitraryChallengeBody)
     return $ If cond t f ()
 
 arbitraryVerification :: GenT Context Statement'
@@ -249,6 +256,7 @@ instance Arbitrary Type where
         , Bin Raw
         , Bin PubKey
         , Bin Sig
+        , Bin DataSig
         , Time
         , TimeSpan
         ]

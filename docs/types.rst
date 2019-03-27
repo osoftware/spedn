@@ -68,11 +68,19 @@ They must be explicitly casted from ``bin`` with a type constructor.
 
         PubKey alice = PubKey(0x11223344556677889900aabbccddeeff);
 
-* **Sig** - represents a signature.
+* **Sig** - represents a tx signature (which can be checked with ``checkSig``).
 
     .. code-block:: c
 
         Sig alice = Sig(0x11223344556677889900aabbccddeeff);
+        verify checkSig(alice, alicePubKey);
+
+* **DataSig** - represents a data signature (which can be checked with ``checkDataSig``).
+
+    .. code-block:: c
+
+        DataSig alice = DataSig(0x11223344556677889900aabbccddee);
+        verify checkDataSig(alice, preimageHash, alicePubKey);
 
 * **Ripemd160** - represents a result of RIPEMD-160 hash.
 

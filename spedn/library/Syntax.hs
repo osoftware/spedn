@@ -48,6 +48,7 @@ data BinType
     | Sha256
     | Ripemd160
     | Sig
+    | DataSig
     deriving (Eq)
 
 instance Show BinType where
@@ -57,6 +58,7 @@ instance Show BinType where
     show Sha256    = "Sha256"
     show Ripemd160 = "Ripemd160"
     show Sig       = "Sig"
+    show DataSig   = "DataSig"
 
 data UnaryOp
     = Not
