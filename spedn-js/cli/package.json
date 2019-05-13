@@ -1,0 +1,30 @@
+{
+  "name": "spedn-cli",
+  "version": "0.1.0-alpha.3",
+  "description": "Spedn compiler CLI",
+  "main": "all.js",
+  "scripts": {
+    "postinstall": "node ./postinstall.js",
+    "build": "./build.sh"
+  },
+  "preferGlobal": true,
+  "bin": {
+    "spedn": "./spedn.js"
+  },
+  "author": "{o} Software",
+  "categories": [
+    "Programming Languages"
+  ],
+  "keywords": [
+    "Bitcoin",
+    "Bitcoin Cash",
+    "Smart Contract"
+  ],
+  "homepage": "https://spedn.rtfd.io",
+  "repository": {
+    "type": "git",
+    "url": "https://bitbucket.org/o-studio/spedn.git"
+  },
+  "preview": true,
+  "license": "MIT"
+}

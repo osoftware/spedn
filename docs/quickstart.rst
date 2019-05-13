@@ -2,8 +2,8 @@
 Quick start guide
 =================
 
-Installation
-============
+Build from sources
+==================
 
 1. Intsall `Haskell Tool Stack <https://docs.haskellstack.org/en/stable/README/#how-to-install>`_.
 
@@ -19,6 +19,16 @@ Installation
 
         $ cd spedn/spedn
         $ stack install
+
+
+Installation from npm
+=====================
+
+Alternatively, you can install a JavaScript version from npmjs repository:
+
+    .. code-block:: bash
+
+        $ npm i -g spedn-cli
 
 
 Your first contract
