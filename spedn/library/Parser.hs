@@ -46,6 +46,8 @@ param = annotate $ do
 varType :: Parser Type
 varType = choice [ keyword "bool"      >> pure Bool
                  , keyword "int"       >> pure Num
+                 , keyword "TimeSpan"  >> pure TimeSpan
+                 , keyword "Time"      >> pure Time
                  , keyword "bin"       >> pure (Bin Raw)
                  , keyword "PubKey"    >> pure (Bin PubKey)
                  , keyword "Ripemd160" >> pure (Bin Ripemd160)
