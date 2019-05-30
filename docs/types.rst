@@ -45,6 +45,7 @@ They cannot be casted back to ``int``.
 
         Time x = `2018-10-13 21:37:00`; // defined with a time literal
         Time y = TimeStamp(1539466620); // conversion from `int` interpreted as Unix Timestamp
+        Time z = TimeStamp(584834);     // conversion from `int` interpreted as Block Height
 
 * **TimeSpan** - represents a relative time period. Can be expressed as a number of blocks or 512-seconds periods.
 
@@ -52,7 +53,7 @@ They cannot be casted back to ``int``.
 
         TimeSpan x = 1d 2h 3m 4s; // Time units literal. Be awre that the number will be rounded down to full 512s periods
         TimeSpan y = 10b;         // Blocks literal.
-        TimeSpan z = Blocks(10)   // Conversion from `int`
+        TimeSpan z = Blocks(10);  // Conversion from `int`
 
 
 Binary types
