@@ -128,4 +128,5 @@ Type Constructors
 * ``Sig Sig(bin data)``
 * ``DataSig DataSig(bin data)``
 * ``Time TimeStamp(int timestamp)``
+* ``Time TimeStamp(int blockHeight)``
 * ``TimeSpan Blocks(int number)``
