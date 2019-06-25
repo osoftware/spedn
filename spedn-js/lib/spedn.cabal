@@ -1,0 +1,108 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.1.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: cdacdca15f298e522044a4a951eb7d7a674745d4c5fc7cfa435d63ffbd51b84b
+
+name:           spedn
+version:        0.0.0
+synopsis:       Bitcoin Cash smart contracts compiler.
+description:    Spedn is a high-level, strongly typed smart contract language compiled to Bitcoin Script.
+category:       Bitcoin
+author:         (o) Software
+maintainer:     (o) Software
+license:        MIT
+build-type:     Simple
+extra-source-files:
+    CHANGELOG.md
+    LICENSE.md
+    package.yaml
+    README.md
+    stack.yaml
+
+source-repository head
+  type: git
+  location: https://bitbucket.org/o-studio/spedn.git
+
+library
+  exposed-modules:
+      Bytes
+      Compiler
+      Env
+      Errors
+      IR
+      Lexer
+      Optimizer
+      Parser
+      Script
+      Syntax
+      TypeChecker
+  other-modules:
+      Paths_spedn
+  hs-source-dirs:
+      ../../spedn/library
+  ghc-options: -Wall
+  build-depends:
+      base
+    , bytestring
+    , containers
+    , megaparsec
+    , mtl
+    , parser-combinators
+    , persist
+    , time
+  default-language: Haskell2010
+
+executable spedn
+  main-is: Api.hs
+  other-modules:
+      Paths_spedn
+  hs-source-dirs:
+      ../../spedn/executable-js
+  ghc-options: -Wall -rtsopts -threaded -with-rtsopts=-N -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -fno-warn-unused-top-binds -fno-warn-orphans
+  build-depends:
+      base
+    , base16-bytestring
+    , bytestring
+    , ghcjs-base
+    , spedn
+  default-language: Haskell2010
+
+test-suite spedn-test-suite
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      ContractProps
+      Generators
+      Paths_spedn
+  hs-source-dirs:
+      ../../spedn/test-suite
+  ghc-options: -Wall -rtsopts -threaded -with-rtsopts=-N -fno-warn-orphans
+  build-depends:
+      QuickCheck
+    , QuickCheck-GenT
+    , base
+    , containers
+    , hspec
+    , mtl
+    , spedn
+    , tasty
+    , tasty-hspec
+    , time
+  default-language: Haskell2010
+
+benchmark spedn-benchmarks
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Paths_spedn
+  hs-source-dirs:
+      ../../spedn/benchmark
+  ghc-options: -Wall -rtsopts -threaded -with-rtsopts=-N
+  build-depends:
+      base
+    , criterion
+    , spedn
+  default-language: Haskell2010

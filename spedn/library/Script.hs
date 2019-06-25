@@ -20,7 +20,7 @@ data OP_CODE
       -- Constants
     = OP_FALSE
     | OP_PUSHDATA0 Word8 [Word8]
-    | OP_PUSHDATA1 [Word8] [Word8]
+    | OP_PUSHDATA1 Word8 [Word8]
     | OP_PUSHDATA2 [Word8] [Word8]
     | OP_PUSHDATA4 [Word8] [Word8]
     | OP_PUSH Name    -- Pseudo-opcode used in uninstantiated contract template
@@ -132,7 +132,7 @@ data OP_CODE
     | OP_PUBKEYHASH
     | OP_PUBKEY
     | OP_INVALIDOPCODE Word8
-    deriving (Eq, Data, Generic)
+    deriving (Eq, Data, Typeable, Generic)
 
 instance Show OP_CODE where
     show (OP_PUSHDATA0 len payload) = "PUSH(" ++ show len ++ ")" ++ show payload
@@ -153,7 +153,7 @@ instance Persist OP_CODE where
     put op = case op of
         -- Push values
         OP_PUSHDATA0 len bytes -> putByte len >> putBytes bytes
-        OP_PUSHDATA1 len bytes -> putByte 0x4c >> putBytes len >> putBytes bytes
+        OP_PUSHDATA1 len bytes -> putByte 0x4c >> putByte len >> putBytes bytes
         OP_PUSHDATA2 len bytes -> putByte 0x4d >> putBytes len >> putBytes bytes
         OP_PUSHDATA4 len bytes -> putByte 0x4e >> putBytes len >> putBytes bytes
         OP_FALSE               -> putByte 0x00
@@ -293,7 +293,7 @@ compileOp (OpPushNum val) | val == -1     = [OP_1NEGATE]
                           | otherwise     = let payload = serialize val
                                             in [OP_PUSHDATA0 (head . serialize . length $ payload) payload]
 compileOp (OpPushBin val) | length val <= 0x4b   = [OP_PUSHDATA0 (head . serialize . length $ val) val]
-                          | length val <= 0xff   = [OP_PUSHDATA1 (serialize . length $ val) val]
+                          | length val <= 0xff   = [OP_PUSHDATA1 (head . serialize . length $ val) val]
                           | length val <= 0xffff = [OP_PUSHDATA2 (serialize . length $ val) val]
                           | otherwise            = [OP_PUSHDATA4 (serialize . length $ val) val]
 compileOp (OpPush name) = [OP_PUSH name]

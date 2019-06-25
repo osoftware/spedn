@@ -1,6 +1,11 @@
+{-# LANGUAGE DeriveDataTypeable   #-}
+{-# LANGUAGE DeriveGeneric        #-}
+
 module Errors where
 
+import           Data.Data
 import           Data.List
+import           GHC.Generics
 import           Syntax
 
 data Error
@@ -9,6 +14,7 @@ data Error
     | NotInScope String
     | NameConflict String
     | SyntaxError String
+    deriving (Data, Typeable, Generic)
 
 instance Show Error where
     show (TypeMismatch a (Right b)) = "Type mismatch. Expected <" ++ show a ++ ">, but got <" ++ show b ++ ">."

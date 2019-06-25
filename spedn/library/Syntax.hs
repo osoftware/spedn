@@ -1,13 +1,17 @@
 {-# LANGUAGE DeriveFoldable        #-}
 {-# LANGUAGE DeriveFunctor         #-}
 {-# LANGUAGE DeriveTraversable     #-}
+{-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module Syntax where
 
+import           Data.Data
 import           Data.List (intercalate)
 import           Data.Word
+import           GHC.Generics
 
 type Name = String
 
@@ -26,7 +30,7 @@ data Type
     | [Type] :-> Type -- | Function
     | Type :|: Type   -- | Alternative
     | Void
-    deriving (Eq)
+    deriving (Eq, Data, Typeable, Generic)
 
 instance Show Type where
     show Bool         = "bool"
@@ -49,7 +53,7 @@ data BinType
     | Ripemd160
     | Sig
     | DataSig
-    deriving (Eq)
+    deriving (Eq, Data, Typeable, Generic)
 
 instance Show BinType where
     show Raw       = "bin"
@@ -63,7 +67,7 @@ instance Show BinType where
 data UnaryOp
     = Not
     | Minus
-    deriving (Eq, Show)
+    deriving (Eq, Show, Data, Typeable, Generic)
 
 data BinaryOp
     = Add
@@ -86,7 +90,7 @@ data BinaryOp
     | Gte
     | Cat
     | Split
-    deriving (Eq, Show)
+    deriving (Eq, Show, Data, Typeable, Generic)
 
 class Annotated a b where
     ann :: a b -> b
@@ -103,7 +107,7 @@ data Expr a
     | BinaryExpr BinaryOp (Expr a) (Expr a) a
     | TernaryExpr (Expr a) (Expr a) (Expr a) a
     | Call Name [Expr a] a
-    deriving (Eq, Show, Functor, Foldable, Traversable)
+    deriving (Eq, Show, Functor, Foldable, Traversable, Data, Typeable, Generic)
 
 data Statement a
     = Assign Type Name (Expr a) a
@@ -111,7 +115,7 @@ data Statement a
     | Verify (Expr a) a
     | If (Expr a) (Statement a) (Maybe (Statement a)) a
     | Block [Statement a] a
-    deriving (Eq, Show, Functor, Foldable, Traversable)
+    deriving (Eq, Show, Functor, Foldable, Traversable, Data, Typeable, Generic)
 
 instance Annotated Statement a where
     ann (Assign _ _ _ a)      = a
@@ -121,14 +125,14 @@ instance Annotated Statement a where
     ann (Block _ a)           = a
 
 data Challenge a = Challenge Name [Param a] (Statement a) a
-    deriving (Eq, Show, Functor, Foldable, Traversable)
+    deriving (Eq, Show, Functor, Foldable, Traversable, Data, Typeable, Generic)
 
 data Param a = Param Type Name a
-    deriving (Eq, Show, Functor, Foldable, Traversable)
+    deriving (Eq, Show, Functor, Foldable, Traversable, Data, Typeable, Generic)
 
 data Contract a = Contract
     { contractName       :: !Name
     , contractParams     :: ![Param a]
     , contractChallenges :: ![Challenge a]
     , contractAnnotation :: a
-    } deriving (Eq, Show, Functor, Foldable, Traversable)
+    } deriving (Eq, Show, Functor, Foldable, Traversable, Data, Typeable, Generic)

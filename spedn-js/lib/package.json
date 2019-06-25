@@ -1,0 +1,31 @@
+{
+  "name": "spedn",
+  "version": "0.1.0",
+  "description": "Spedn compiler",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "./bundle.sh && tsc"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "keywords": [
+    "Bitcoin",
+    "Bitcoin Cash",
+    "Smart Contract"
+  ],
+  "homepage": "https://spedn.rtfd.io",
+  "repository": {
+    "type": "git",
+    "url": "https://bitbucket.org/o-studio/spedn.git"
+  },
+  "author": "{o} Software",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^3.5.1"
+  },
+  "dependencies": {
+    "@types/node": "^12.0.4"
+  }
+}
