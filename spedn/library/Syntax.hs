@@ -35,6 +35,7 @@ data Type
 instance Show Type where
     show Bool         = "bool"
     show Num          = "int"
+    show (Bin Raw)    = "bin"
     show (Bin t)      = show t
     show Time         = "Time"
     show TimeSpan     = "TimeSpan"

@@ -67,6 +67,7 @@ executable spedn
     , base16-bytestring
     , bytestring
     , ghcjs-base
+    , megaparsec
     , spedn
   default-language: Haskell2010
 

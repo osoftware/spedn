@@ -1,0 +1,13 @@
+contract ExpiringTip(Ripemd160 alice, Sha256 bob) {
+
+    challenge receive(Sig sig, PubKey pubKey) {
+        verify hash160(pubKey) == bob; // Type mismatch
+        verify checkSig(sig, pubKey);
+    }
+
+    challenge revoke(Sig sig, PubKey pubKey) {
+        verify checkSequence(7d);
+        verify hash160(pubKey) == alice;
+        verify checkSig(sig, pubKey);
+    }
+}

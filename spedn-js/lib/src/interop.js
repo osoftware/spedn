@@ -1,4 +1,4 @@
-workers = require("worker_threads");
+const workers = require("worker_threads");
 
 const ref = val => h$c1(h$ghcjszmprimZCGHCJSziPrimziJSVal_con_e, val);
 
