@@ -1,5 +1,5 @@
-import { fromPairs, dropRight, reverse, zip, zipWith, toPairs } from "lodash/fp";
-import { Script, opcodes } from "bitbox-sdk";
+import { fromPairs, dropRight, reverse } from "lodash/fp";
+import { Script } from "bitbox-sdk";
 
 export interface Template {
   Left: any[];
@@ -8,8 +8,13 @@ export interface Template {
       contractParams: string[][];
       contractChallenges: any[];
     };
-    asm: any[];
+    asm: Op[];
   };
+}
+
+interface Op {
+  tag: string;
+  contents: any;
 }
 
 export type ParamType =
@@ -54,11 +59,14 @@ export interface Tx {}
 export interface Instance {
   paramValues: ParamValues;
   challenges: Challenges;
+  script: Buffer;
 }
+
+const bitcoinScript = new Script();
 
 const defParams = (astParams: string[][]) => fromPairs(astParams.map(dropRight(1)).map(reverse));
 
-function typeMatches(spednType: ParamType, arg: ParamValue) {
+function typeMatches(spednType: ParamType, arg: ParamValue): boolean {
   switch (spednType) {
     case "bool":
       return typeof arg === "boolean";
@@ -82,37 +90,59 @@ function typeMatches(spednType: ParamType, arg: ParamValue) {
   }
 }
 
+function asmToBuffer(asm: Op[], paramValues: ParamValues): Buffer {
+  const ops = bitcoinScript.opcodes as any;
+  const chunks = asm.map(op => {
+    switch (op.tag) {
+      case "OP_N":
+        return bitcoinScript.encodeNumber(op.contents);
+      case "OP_PUSHDATA0":
+      case "OP_PUSHDATA1":
+      case "OP_PUSHDATA2":
+      case "OP_PUSHDATA4":
+        const buf = Buffer.alloc(op.contents[0]);
+        (op.contents[1] as number[]).forEach((v, i) => buf.writeUInt8(v, i));
+        return buf;
+      case "OP_PUSH":
+        const value = paramValues[op.contents];
+        if (typeof value === "boolean") return bitcoinScript.encodeNumber(value ? 1 : 0);
+        if (typeof value == "number") return bitcoinScript.encodeNumber(value);
+        if (value instanceof Buffer) return value;
+        throw TypeError("Invalid parameter type.");
+      default:
+        return ops[op.tag];
+    }
+  });
+  return bitcoinScript.encode(chunks);
+}
+
 export function makeContractClass(template: Template): Contract {
   if (template.Left) throw template.Left;
   const ast = template.Right.ast;
 
   const challenges: Challenges = {};
   for (const [name, args] of ast.contractChallenges) {
-    const f: any = (params: ParamValues) => ({} as Tx);
+    const f: any = () => ({} as Tx);
     f.params = defParams(args);
     challenges[name] = f;
   }
 
-  const ops = new Script().opcodes;
-  const script = template.Right.asm.map(op => {
-    switch (op) {
-      default:
-        return ops.OP_0;
-    }
-  });
+  const Class = class implements Instance {
+    static params: ParamTypes = defParams(ast.contractParams);
 
-  const contract = class implements Instance {
+    challenges: Challenges;
+    script: Buffer;
+
     constructor(public paramValues: ParamValues) {
-      for (const name in contract.params) {
-        const t = contract.params[name];
+      for (const name in Class.params) {
+        const t = Class.params[name];
         if (paramValues[name] === undefined) throw TypeError(`Missing parameter: ${t} ${name}`);
         if (!typeMatches(t, paramValues[name])) throw TypeError(`Incorrect value for ${t} ${name}`);
       }
+      this.script = asmToBuffer(template.Right.asm, this.paramValues);
+      this.challenges = challenges;
     }
-    static params: ParamTypes = defParams(ast.contractParams);
-    challenges = challenges;
-    script = script;
   };
 
-  return contract;
+  return Class;
 }
