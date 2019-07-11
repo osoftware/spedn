@@ -147,7 +147,7 @@ putByte :: Word8 -> Put ()
 putByte = put
 
 putBytes :: [Word8] -> Put ()
-putBytes = put
+putBytes = mapM_ put
 
 instance Persist OP_CODE where
     put op = case op of
