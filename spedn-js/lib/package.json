@@ -26,12 +26,15 @@
     "@types/jest": "^24.0.15",
     "jest": "^24.8.0",
     "ts-jest": "^24.0.2",
-    "typescript": "^3.5.1"
+    "typescript": "^3.5.1",
+    "typescript-tslint-plugin": "^0.5.4"
   },
   "dependencies": {
     "@types/lodash": "^4.14.135",
     "@types/node": "^12.0.4",
+    "bitbox-cli": "^2.0.5",
     "bitbox-sdk": "^8.4.2",
-    "lodash": "^4.17.11"
+    "lodash": "^4.17.11",
+    "varuint-bitcoin": "^1.1.0"
   }
 }

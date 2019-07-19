@@ -64,8 +64,8 @@ describe("ExpiringTip contract", () => {
         alice: Buffer.alloc(20),
         bob: Buffer.alloc(20)
       });
-      expect(instance.challenges).toHaveProperty("receive");
-      expect(instance.challenges).toHaveProperty("revoke");
+      expect(instance.challengeSpecs).toHaveProperty("receive");
+      expect(instance.challengeSpecs).toHaveProperty("revoke");
     });
   });
 });

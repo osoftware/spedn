@@ -1,24 +1,32 @@
 import * as path from "path";
 import { Worker } from "worker_threads";
 import { Bridge } from "./bridge";
-import { Disposable, using } from "./disposable";
-import { Contract, makeContractClass } from "./contracts";
+import { Contract, makeContractClass, Template } from "./contracts";
+import { Disposable } from "./disposable";
+
+interface CompilerOutput {
+  Left: any[];
+  Right: Template;
+}
 
 export class Spedn implements Disposable {
-  private bridge: Bridge = new Bridge(new Worker(__dirname + "/compiler_service.js"));
+  private bridge = new Bridge(new Worker(__dirname + "/compiler_service.js"));
+
   async compileCode(code: string): Promise<Contract> {
-    const output = await this.bridge.request("compileCode", code);
-    return makeContractClass(output);
+    const output: CompilerOutput = await this.bridge.request("compileCode", code);
+    if (output.Left) throw output.Left;
+    return makeContractClass(output.Right);
   }
 
   async compileFile(file: string): Promise<Contract> {
     const absolute = path.resolve(file);
-    const output = await this.bridge.request("compileFile", absolute);
-    if (output) return makeContractClass(output);
-    else throw Error(`File not found: ${absolute}`);
+    const output: CompilerOutput = await this.bridge.request("compileFile", absolute);
+    if (!output) throw Error(`File not found: ${absolute}`);
+    if (output.Left) throw output.Left;
+    return makeContractClass(output.Right);
   }
 
-  dispose(): void {
+  dispose() {
     this.bridge.dispose();
   }
 }

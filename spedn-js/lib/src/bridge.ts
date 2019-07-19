@@ -17,14 +17,7 @@ export class Bridge implements Disposable {
     });
   }
 
-  private handleMessage({ id, result }: Response) {
-    if (this.requests[id]) {
-      this.requests[id](result);
-      delete this.requests[id];
-    }
-  }
-
-  public request(func: string, ...args: Array<any>): Promise<any> {
+  request(func: string, ...args: any[]): Promise<any> {
     return new Promise((resolve, _) => {
       const id = this.counter++;
       this.requests[id] = resolve;
@@ -32,7 +25,14 @@ export class Bridge implements Disposable {
     });
   }
 
-  public dispose() {
+  dispose() {
     this.worker.postMessage({ id: -1, func: "dispose" });
+  }
+
+  private handleMessage({ id, result }: Response) {
+    if (this.requests[id]) {
+      this.requests[id](result);
+      delete this.requests[id];
+    }
   }
 }
