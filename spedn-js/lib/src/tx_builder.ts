@@ -1,5 +1,5 @@
 import { Crypto, TransactionBuilder } from "bitbox-sdk";
-import { ECPair, ECSignature } from "bitcoincashjs-lib";
+import { ECPair } from "bitcoincashjs-lib";
 import { castArray } from "lodash/fp";
 import varuint from "varuint-bitcoin";
 import { Challenges, Coin, ScriptSig } from "./contracts";
@@ -7,7 +7,7 @@ import { Challenges, Coin, ScriptSig } from "./contracts";
 export interface SigningContext {
   vin: number;
   preimage(sighashFlag: number): Buffer;
-  sign(key: ECPair, sighashFlag: number): Buffer;
+  sign(key: ECPair, hashType?: SigHash): Buffer;
   signData(key: ECPair, data: Buffer): Buffer;
 }
 
@@ -36,19 +36,14 @@ class P2SHContext implements SigningContext {
 
   sign(key: ECPair, hashType: SigHash = SigHash.SIGHASH_ALL): Buffer {
     hashType = hashType | SigHash.SIGHASH_FORKID;
-
-    const buffer = Buffer.alloc(65);
-    key.sign(crypto.hash256(this.preimage(hashType)), 1).copy(buffer);
-    buffer.writeUInt8(hashType, 64);
-
-    return buffer;
+    return key.sign(crypto.hash256(this.preimage(hashType)), 1).toScriptSignature(hashType, 1);
   }
 
   signData(key: ECPair, data: Buffer): Buffer {
     return key.sign(crypto.sha256(data));
   }
 
-  preimage(hashType: SigHash) {
+  preimage(hashType: SigHash = SigHash.SIGHASH_ALL) {
     let tbuffer: Buffer;
     let toffset: number;
 
@@ -183,7 +178,10 @@ export class TxBuilder {
   build() {
     const scripts = this.callbacks.map((cb, vin) => {
       const { challenges, utxo, redeemScript } = this.inputs[vin];
-      return cb(challenges, new P2SHContext(this.builder, vin, utxo.satoshis, redeemScript));
+      return {
+        vout: vin,
+        script: cb(challenges, new P2SHContext(this.builder, vin, utxo.satoshis, redeemScript))
+      };
     });
     this.builder.addInputScripts(scripts);
     return this.builder.build();

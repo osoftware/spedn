@@ -1,3 +1,5 @@
-export { Disposable, using } from "./disposable";
-export { Spedn } from "./compiler";
+export * from "./disposable";
+export * from "./compiler";
 export * from "./contracts";
+export * from "./P2PKH";
+export * from "./tx_builder";

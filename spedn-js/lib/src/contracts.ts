@@ -1,4 +1,4 @@
-import { Address, BITBOX, Crypto, Script } from "bitbox-sdk";
+import { Address, BITBOX, tresturl } from "bitbox-sdk";
 import { AddressUtxoResult } from "bitcoin-com-rest";
 import { dropRight, fromPairs, nth, reverse, toPairs } from "lodash/fp";
 
@@ -68,10 +68,6 @@ export interface Coin {
   utxo: Utxo;
 }
 
-class CoinImpl implements Coin {
-  constructor(public utxo: any, public challenges: Challenges, public redeemScript: Buffer) {}
-}
-
 export interface Instance {
   paramValues: ParamValues;
   challengeSpecs: ChallengeSpecs;
@@ -85,8 +81,16 @@ export interface Contract {
   new (params: ParamValues): Instance;
 }
 
-const crypto = new Crypto();
-const script = new Script();
+export const bitbox = {
+  mainnet: new BITBOX(),
+  testnet: new BITBOX({ restURL: tresturl })
+} as { [net: string]: BITBOX };
+export const addr = {
+  mainnet: bitbox.mainnet.Address,
+  testnet: bitbox.testnet.Address
+} as { [net: string]: Address };
+export const crypto = bitbox.mainnet.Crypto;
+export const script = bitbox.mainnet.Script;
 
 const defParams = (astParams: string[][]) => fromPairs(astParams.map(dropRight(1)).map(reverse)) as ParamTypes;
 
@@ -99,10 +103,13 @@ function typeMatches(spednType: ParamType, arg: ParamValue): boolean {
     case "TimeSpan":
       return typeof arg === "number" && Math.trunc(arg) === arg;
     case "bin":
-    case "Sig":
-    case "DataSig":
-    case "PubKey":
       return arg instanceof Buffer;
+    case "Sig":
+      return arg instanceof Buffer && arg.length === 65;
+    case "DataSig":
+      return arg instanceof Buffer && arg.length === 64;
+    case "PubKey":
+      return arg instanceof Buffer && (arg.length === 33 || arg.length === 65);
     case "Sha1":
       return arg instanceof Buffer && arg.length === 16;
     case "Sha256":
@@ -114,7 +121,7 @@ function typeMatches(spednType: ParamType, arg: ParamValue): boolean {
   }
 }
 
-function validateParamValues(values: ParamValues, types: ParamTypes) {
+export function validateParamValues(values: ParamValues, types: ParamTypes) {
   toPairs(types).forEach(([n, t]) => {
     if (values[n] === undefined) throw TypeError(`Missing parameter: ${t} ${n}`);
     if (!typeMatches(t, values[n])) throw TypeError(`Incorrect value for ${t} ${n}`);
@@ -143,7 +150,7 @@ function asmToScript(asm: Op[], paramValues: ParamValues): RedeemScript {
   return script.encode(chunks);
 }
 
-function encodeParam(value: ParamValue) {
+export function encodeParam(value: ParamValue) {
   if (typeof value === "boolean") return script.encodeNumber(value ? 1 : 0);
   if (typeof value === "number") return script.encodeNumber(value);
   if (value instanceof Buffer) return value;
@@ -198,15 +205,19 @@ export function makeContractClass(template: Template): Contract {
     }
 
     getAddress(network: string) {
-      return new Address().fromOutputScript(script.encodeP2SHOutput(crypto.hash160(this.redeemScript)), network);
+      return addr[network].fromOutputScript(script.encodeP2SHOutput(crypto.hash160(this.redeemScript)), network);
     }
 
     async findCoins(network: string): Promise<Coin[]> {
-      const results = (await new BITBOX().Address.utxo(this.getAddress(network))) as AddressUtxoResult;
-      return results.utxos.map(utxo => new CoinImpl(utxo, this.challenges, this.redeemScript));
+      const results = (await addr[network].utxo(this.getAddress(network))) as AddressUtxoResult;
+      return results.utxos.map(utxo => new ContractCoin(utxo, this.challenges, this.redeemScript));
     }
   };
   Object.defineProperty(Class, "name", { value: ast.contractName });
 
   return Class;
+}
+
+class ContractCoin implements Coin {
+  constructor(public utxo: Utxo, public challenges: Challenges, public redeemScript: Buffer) {}
 }
