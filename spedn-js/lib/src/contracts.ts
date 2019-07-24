@@ -194,7 +194,7 @@ export function makeContractClass(template: Template): Contract {
     redeemScript: RedeemScript;
 
     challengeSpecs: ChallengeSpecs;
-    private challenges: Challenges;
+    challenges: Challenges;
 
     constructor(public paramValues: ParamValues) {
       validateParamValues(paramValues, Class.params);
@@ -218,6 +218,6 @@ export function makeContractClass(template: Template): Contract {
   return Class;
 }
 
-class ContractCoin implements Coin {
+export class ContractCoin implements Coin {
   constructor(public utxo: Utxo, public challenges: Challenges, public redeemScript: Buffer) {}
 }

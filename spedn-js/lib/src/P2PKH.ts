@@ -39,7 +39,7 @@ export class P2PKH implements Instance {
   }
 }
 
-class P2PKHCoin implements Coin {
+export class P2PKHCoin implements Coin {
   challenges = {
     spend: ({ sig, pubKey }: ParamValues) => {
       validateParamValues({ sig, pubKey }, { sig: "Sig", pubKey: "PubKey" });

@@ -1,6 +1,6 @@
 import { Crypto, TransactionBuilder } from "bitbox-sdk";
 import { ECPair } from "bitcoincashjs-lib";
-import { castArray } from "lodash/fp";
+import { castArray, last } from "lodash/fp";
 import varuint from "varuint-bitcoin";
 import { Challenges, Coin, ScriptSig } from "./contracts";
 
@@ -22,7 +22,12 @@ export enum SigHash {
 const crypto = new Crypto();
 const ZERO = Buffer.from("0000000000000000000000000000000000000000000000000000000000000000", "hex");
 
-class P2SHContext implements SigningContext {
+const varSliceSize = (someScript: Buffer) => {
+  const length = someScript.length;
+  return varuint.encodingLength(length) + length;
+};
+
+class SchnorrContext implements SigningContext {
   private tx: { ins: any[]; outs: any; version: number; locktime: number };
 
   constructor(
@@ -62,10 +67,6 @@ class P2SHContext implements SigningContext {
     const writeVarSlice = (slice: Buffer) => {
       writeVarInt(slice.length);
       writeSlice(slice);
-    };
-    const varSliceSize = (someScript: Buffer) => {
-      const length = someScript.length;
-      return varuint.encodingLength(length) + length;
     };
 
     let hashOutputs = ZERO;
@@ -145,12 +146,26 @@ class P2SHContext implements SigningContext {
   }
 }
 
+class SizeCalculationContext implements SigningContext {
+  vin = 0;
+  constructor(public redeemScript: Buffer) {}
+
+  preimage = (sighashFlag: number) => Buffer.allocUnsafe(156 + varSliceSize(this.redeemScript));
+  sign = (key: ECPair, hashType?: SigHash) => Buffer.alloc(65, SigHash.SIGHASH_ALL);
+  signData = (key: ECPair, data: Buffer) => Buffer.allocUnsafe(64);
+}
+
+const FEE_RATE = 1;
+const DUST_LIMIT = 546;
+
 export type SigningCallback = (input: Challenges, context: SigningContext) => ScriptSig;
 
 export class TxBuilder {
   private inputs: Coin[] = [];
   private callbacks: SigningCallback[] = [];
   private builder: TransactionBuilder;
+  private change: any;
+  private balance = 0;
 
   constructor(network?: string) {
     this.builder = new TransactionBuilder(network);
@@ -161,12 +176,18 @@ export class TxBuilder {
       this.inputs.push(coin);
       this.callbacks.push(onSigning);
       this.builder.addInput(coin.utxo.txid, coin.utxo.vout, sequence);
+      this.balance += coin.utxo.satoshis;
     });
     return this;
   }
 
-  to(scriptPubKey: string | Buffer, amount: number) {
-    this.builder.addOutput(scriptPubKey, amount);
+  to(scriptPubKey: string | Buffer, amount?: number) {
+    this.builder.addOutput(scriptPubKey, amount || 0);
+    this.balance -= amount || 0;
+    if (amount === undefined) {
+      if (this.change !== undefined) throw Error("Olny one output can automatically calculate amount.");
+      this.change = last(this.builder.transaction.tx.outs);
+    }
     return this;
   }
 
@@ -175,15 +196,29 @@ export class TxBuilder {
     return this;
   }
 
-  build() {
-    const scripts = this.callbacks.map((cb, vin) => {
-      const { challenges, utxo, redeemScript } = this.inputs[vin];
-      return {
-        vout: vin,
-        script: cb(challenges, new P2SHContext(this.builder, vin, utxo.satoshis, redeemScript))
-      };
-    });
+  build(forceHighFee = false) {
+    const placeholders = this.inputs.map(({ challenges, redeemScript }, i) => ({
+      vout: i,
+      script: this.callbacks[i](challenges, new SizeCalculationContext(redeemScript))
+    }));
+    this.builder.addInputScripts(placeholders);
+    const fee = this.builder.build().byteLength() * FEE_RATE;
+
+    if (this.change) {
+      if (this.balance > fee + DUST_LIMIT) this.change.value = this.balance - fee;
+      else throw Error("Change output is below dust level.");
+    } else if (this.balance > fee * 3 && !forceHighFee) {
+      throw Error("Fee is unreasonably high.");
+    }
+
+    const scripts = this.inputs.map(({ challenges, utxo, redeemScript }, i) => ({
+      vout: i,
+      script: this.callbacks[i](challenges, new SchnorrContext(this.builder, i, utxo.satoshis, redeemScript))
+    }));
+
     this.builder.addInputScripts(scripts);
-    return this.builder.build();
+    const tx = this.builder.build();
+
+    return tx;
   }
 }

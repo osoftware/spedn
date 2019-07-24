@@ -1,9 +1,8 @@
+import { BITBOX } from "bitbox-sdk";
 import { Spedn } from "./compiler";
 import { Contract } from "./contracts";
-import { P2PKH } from "./P2PKH";
 import { using } from "./disposable";
-import { HDNode, Mnemonic, Address, Crypto, Script, BITBOX } from "bitbox-sdk";
-import { ECPair } from "bitcoincashjs-lib";
+import { P2PKH } from "./P2PKH";
 
 describe("ExpiringTip contract", () => {
   let ExpiringTip: Contract;

@@ -1,5 +1,5 @@
 import { Spedn } from "./compiler";
-import { Contract, Instance } from "./contracts";
+import { Contract } from "./contracts";
 
 describe("compiler", () => {
   let compiler: Spedn;

@@ -1,3 +1,4 @@
 bundle.sh
 worker.io.js
+testEnv.js
 *.test.*
