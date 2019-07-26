@@ -18,7 +18,7 @@ export class P2PKH implements Instance {
   static fromPubKey = (pubKey: Buffer) => new P2PKH(crypto.hash160(pubKey));
   static fromKeyPair = (keyPair: ECPair) => P2PKH.fromPubKey(keyPair.getPublicKeyBuffer());
   static fromAddress = (address: string, network = "mainnet") =>
-    new P2PKH(Buffer.from(addr[network].cashToHash160(address), "hex"));
+    new P2PKH(Buffer.from(addr[network].cashToHash160(address), "hex")); // tslint:disable-line: semicolon
 
   paramValues: ParamValues = {};
   challengeSpecs: ChallengeSpecs = { spend: { sig: "Sig", pubKey: "PubKey" } };

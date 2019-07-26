@@ -11,10 +11,8 @@ It is designed for explicity and safety:
 * It is purely-functional - free of side effects, the common source of bugs
 * It has a familiar C-like syntax
 
-This package contains a command-line tool for compiling contracts. For usage instructions, type:
+This package contains an SDK for developing Bitcoin Cash applications running on NodeJS.
 
-`spedn --help`
-
-If you want to use Spedn as a NodeJS library, use this package instead: [spedn](https://www.npmjs.com/package/spedn).
+If you want to use Spedn as a command-line tool, use this package instead: [spedn-cli](https://www.npmjs.com/package/spedn-cli).
 
 [Full Docs](http://spedn.rtfd.io)

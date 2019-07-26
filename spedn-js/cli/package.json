@@ -1,6 +1,6 @@
 {
   "name": "spedn-cli",
-  "version": "0.1.0-alpha.3",
+  "version": "0.1.0",
   "description": "Spedn compiler CLI",
   "main": "all.js",
   "scripts": {
@@ -26,5 +26,8 @@
     "url": "https://bitbucket.org/o-studio/spedn.git"
   },
   "preview": true,
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "google-closure-compiler": "^20190709.0.0"
+  }
 }

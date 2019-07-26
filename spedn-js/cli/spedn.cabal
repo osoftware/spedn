@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: cdacdca15f298e522044a4a951eb7d7a674745d4c5fc7cfa435d63ffbd51b84b
+-- hash: 787c2e773af182cffd3e873076670af89fbb21b733050a549efd5aeb89e2f476
 
 name:           spedn
 version:        0.1.0
@@ -56,18 +56,18 @@ library
   default-language: Haskell2010
 
 executable spedn
-  main-is: Api.hs
+  main-is: Main.hs
   other-modules:
+      Cli
       Paths_spedn
   hs-source-dirs:
-      ../../spedn/executable-js
-  ghc-options: -Wall -rtsopts -threaded -with-rtsopts=-N -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -fno-warn-unused-top-binds -fno-warn-orphans
+      ../../spedn/executable
+  ghc-options: -Wall -rtsopts -threaded -with-rtsopts=-N -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints
   build-depends:
       base
     , base16-bytestring
     , bytestring
-    , ghcjs-base
-    , megaparsec
+    , optparse-applicative
     , spedn
   default-language: Haskell2010
 

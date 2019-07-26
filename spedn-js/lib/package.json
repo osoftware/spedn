@@ -1,11 +1,13 @@
 {
   "name": "spedn",
-  "version": "0.1.0",
+  "version": "0.1.0-alpha.1",
   "description": "Spedn compiler",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "./bundle.sh && tsc"
+    "build": "./bundle.sh && tsc",
+    "lint": "tslint -p .",
+    "test": "jest"
   },
   "categories": [
     "Programming Languages"
@@ -23,18 +25,23 @@
   "author": "{o} Software",
   "license": "MIT",
   "devDependencies": {
+    "@types/bigi": "^1.4.2",
+    "@types/bip39": "^2.4.2",
     "@types/jest": "^24.0.15",
+    "@types/lodash": "^4.14.136",
+    "@types/randombytes": "^2.0.0",
+    "@types/wif": "^2.0.1",
+    "google-closure-compiler": "^20190709.0.0",
     "jest": "^24.8.0",
     "ts-jest": "^24.0.2",
+    "tslint": "^5.18.0",
     "typescript": "^3.5.1",
     "typescript-tslint-plugin": "^0.5.4"
   },
   "dependencies": {
-    "@types/lodash": "^4.14.135",
-    "@types/node": "^12.0.4",
-    "bitbox-cli": "^2.0.5",
-    "bitbox-sdk": "^8.4.2",
-    "lodash": "^4.17.11",
+    "@types/node": "^12.6.8",
+    "bitbox-sdk": "^8.5.1",
+    "lodash": "^4.17.15",
     "varuint-bitcoin": "^1.1.0"
   }
 }

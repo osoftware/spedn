@@ -1,8 +1,8 @@
 import { BITBOX } from "bitbox-sdk";
-import { Spedn, using } from ".";
+import { Spedn, using,  } from ".";
 import { Contract, ContractCoin } from "./contracts";
 import { P2PKH, p2pkh, P2PKHCoin } from "./P2PKH";
-import { TxBuilder } from "./tx_builder";
+import { TxBuilder } from "./TxBuilder";
 
 const bitbox = new BITBOX({ restURL: "https://trest.bitcoin.com/v2/" });
 const mnemonic = "draw parade crater busy book swim soldier tragic exit feel top civil";

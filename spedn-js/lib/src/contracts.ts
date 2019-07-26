@@ -1,6 +1,6 @@
-import { Address, BITBOX, tresturl } from "bitbox-sdk";
+import { Address, BITBOX, TREST_URL, TWS_URL } from "bitbox-sdk";
 import { AddressUtxoResult } from "bitcoin-com-rest";
-import { dropRight, fromPairs, nth, reverse, toPairs } from "lodash/fp";
+import { dropRight, fromPairs, reverse, toPairs } from "lodash/fp";
 
 export interface Template {
   asm: Op[];
@@ -81,10 +81,10 @@ export interface Contract {
   new (params: ParamValues): Instance;
 }
 
-export const bitbox = {
+export const bitbox: { [net: string]: BITBOX } = {
   mainnet: new BITBOX(),
-  testnet: new BITBOX({ restURL: tresturl })
-} as { [net: string]: BITBOX };
+  testnet: new BITBOX({ restURL: TREST_URL, wsURL: TWS_URL })
+};
 export const addr = {
   mainnet: bitbox.mainnet.Address,
   testnet: bitbox.testnet.Address
@@ -92,7 +92,7 @@ export const addr = {
 export const crypto = bitbox.mainnet.Crypto;
 export const script = bitbox.mainnet.Script;
 
-const defParams = (astParams: string[][]) => fromPairs(astParams.map(dropRight(1)).map(reverse)) as ParamTypes;
+const makeParams = (astParams: string[][]) => fromPairs(astParams.map(dropRight(1)).map(reverse)) as ParamTypes;
 
 function typeMatches(spednType: ParamType, arg: ParamValue): boolean {
   switch (spednType) {
@@ -157,11 +157,10 @@ export function encodeParam(value: ParamValue) {
   throw TypeError("Invalid parameter type.");
 }
 
-function makeChallengeFunc(types: ParamTypes, args: any, redeemScript: Buffer, i: number): Challenge {
+function makeChallengeFunc(types: ParamTypes, redeemScript: Buffer, i: number): Challenge {
   return (params: ParamValues) => {
     validateParamValues(params, types);
-
-    const argStack = args.map(nth(1)).map((n: string) => params[n]).map(encodeParam);
+    const argStack = Object.keys(types).map((n: string) => encodeParam(params[n]));
     if (i > 0) argStack.push(encodeParam(i));
     argStack.push(encodeParam(redeemScript));
 
@@ -177,8 +176,8 @@ function makeChallenges(astChallenges: any[], redeemScript: Buffer) {
 
   let i = multiChallenge ? 1 : 0;
   for (const [name, args] of astChallenges) {
-    challengeSpecs[name] = defParams(args);
-    challenges[name] = makeChallengeFunc(challengeSpecs[name], args, redeemScript, i);
+    challengeSpecs[name] = makeParams(args);
+    challenges[name] = makeChallengeFunc(challengeSpecs[name], redeemScript, i);
     i++;
   }
 
@@ -189,7 +188,7 @@ export function makeContractClass(template: Template): Contract {
   const ast = template.ast;
 
   const Class = class implements Instance {
-    static params: ParamTypes = defParams(ast.contractParams);
+    static params: ParamTypes = makeParams(ast.contractParams);
 
     redeemScript: RedeemScript;
 

@@ -1,8 +1,8 @@
 import { Crypto, TransactionBuilder } from "bitbox-sdk";
 import { ECPair } from "bitcoincashjs-lib";
 import { castArray, last } from "lodash/fp";
-import varuint from "varuint-bitcoin";
-import { Challenges, Coin, ScriptSig } from "./contracts";
+import * as varuint from "varuint-bitcoin";
+import { bitbox, Challenges, Coin, ScriptSig } from "./contracts";
 
 export interface SigningContext {
   vin: number;
@@ -161,13 +161,13 @@ const DUST_LIMIT = 546;
 export type SigningCallback = (input: Challenges, context: SigningContext) => ScriptSig;
 
 export class TxBuilder {
+  private builder: TransactionBuilder;
   private inputs: Coin[] = [];
   private callbacks: SigningCallback[] = [];
-  private builder: TransactionBuilder;
   private change: any;
   private balance = 0;
 
-  constructor(network?: string) {
+  constructor(private network = "mainnet") {
     this.builder = new TransactionBuilder(network);
   }
 
@@ -220,5 +220,11 @@ export class TxBuilder {
     const tx = this.builder.build();
 
     return tx;
+  }
+
+  async broadcast(forceHighFee = false): Promise<string> {
+    const tx = this.build(forceHighFee);
+    const txid = await bitbox[this.network].RawTransactions.sendRawTransaction(tx.toHex());
+    return txid;
   }
 }
