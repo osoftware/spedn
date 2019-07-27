@@ -6,6 +6,6 @@
   "private": true,
   "dependencies": {
     "bitbox-sdk": "^8.5.1",
-    "spedn": "^0.1.0-alpha.1"
+    "spedn": "^0.1.1"
   }
 }
