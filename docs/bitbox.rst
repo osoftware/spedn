@@ -2,11 +2,15 @@
 BITBOX Integration
 ==================
 
-Spedn is available for NodeJS developers as an SDK extending capabilities of BITBOX SDK.
-TypeScript type definitions are provided out of the box.
+Spedn is available for NodeJS_ developers as an SDK extending capabilities of
+`BITBOX SDK`_.
+TypeScript_ type definitions are provided out of the box.
 
 Installation
 ============
+
+NodeJS **v11** or newer is required. You can also use **v10** but then `Worker Threads`_ feature
+has to be explicitly enabled by ``--experimental-worker`` flag.
 
 To install Spedn SDK in your JS project, type:
 
@@ -93,6 +97,11 @@ Instantiating contracts
 =======================
 
 To instantiate the template, just create an object of the contract class, providing parameters values.
+Parameters are passed as an object literal explicitly assigning values by names. Values of ``bool`` and ``int``
+*Spedn* type can be passed as ordinary *JS* booleans and numbers. ``Time`` and ``TimeSpan`` are also passed as numbers
+(see BIP65_ and BIP112_ for value interpretation details).
+All the other types should be passed as *JS* ``Buffer``.
+
 In case of ``ExpiringTip`` you'll need 2 public keys which you can generate with BITBOX.
 
 .. code-block:: TypeScript
@@ -144,8 +153,11 @@ The second one is a ``SigningContext`` which provides methods necessary for sign
 
    * ``sign(keyPair, hashType)`` - generates a siggnature valid for ``OP_CHECKSIG``.
    * ``signData(keyPair, data)`` - generates a signature valid for ``OP_CHECKDATASIG``.
-   * ``preimage(hashType)`` - generates the same preimage as one used by ``sign(keyPair, hashType)``
+   * ``preimage(hashType)`` - generates the same preimage_ as one used by ``sign(keyPair, hashType)``
      (useful for ``OP_CHECKDATASIG`` covenants).
+
+Note that methods accepting ``hashType`` always add ``SIGHASH_FORKID`` flag so you don't need to specify it
+explicitly.
 
 ``to`` method accepts an address or a scriptPubKey buffer as its first argument and an amount (in satoshis)
 as the second one. You can also omit the amount at a single output - in this case, ``TxBuilder`` will
@@ -175,7 +187,7 @@ Spending ordinary P2PKH
 -----------------------
 
 Spedn SDK provides also a class ``P2PKH`` which is a representation of an ordinary Pay to Public Key Hash address.
-You can instantiate it with a public key buffer or several factory methods:
+You can instantiate it with a public key hash buffer or several factory methods:
 
 .. code-block:: TypeScript
 
@@ -185,6 +197,7 @@ You can instantiate it with a public key buffer or several factory methods:
    addr = P2PKH.fromKeyPair(bob.keyPair);
    addr = P2PKH.fromPubKey(bob.getPublicKeyBuffer());
    addr = P2PKH.fromAddress(bob.getAddress());
+   // all the above are equivalent
 
 P2PKH contracts can be spent just like any other contract - they have ``spend({sig, pubKey})`` challenge,
 but you can also replace the whole signing callback with a convenient helper ``signWith(keyPair)``.
@@ -223,3 +236,12 @@ requirements as specified in the constructor.
    import { GenericP2SH } from "spedn";
 
    const contract = new GenericP2SH(redeemScriptBuffer, { sig: "Sig", someNumber: "int" });
+
+
+.. _NodeJS: https://nodejs.org/
+.. _BITBOX SDK: https://developer.bitcoin.com/bitbox
+.. _TypeScript: https://www.typescriptlang.org/
+.. _Worker Threads: https://nodejs.org/docs/latest-v12.x/api/worker_threads.html
+.. _BIP65: https://github.com/bitcoin/bips/blob/master/bip-0065.mediawiki
+.. _BIP112: https://github.com/bitcoin/bips/blob/master/bip-0112.mediawiki
+.. _preimage: https://www.bitcoincash.org/spec/replay-protected-sighash.html#specification
