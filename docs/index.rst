@@ -31,6 +31,12 @@ It is designed for explicitness and safety:
    cli
 
 .. toctree::
+   :maxdepth: 2
+   :caption: Integrations:
+
+   bitbox
+
+.. toctree::
    :maxdepth: 1
    :caption: Examples
 
@@ -42,13 +48,13 @@ Roadmap
 
 Spedn is an early, experimental tool with a lot of plans:
 
-* Making addresses and unsigned transaction templates
-* JavaScript interoperability and libraries integration
+* Macros
+* Extended support for covenants and tx preimage introspection
 * Compiled code optimizations
 * IDE with a debugger
 * ...and more
 
-Check out the `Trello board <https://trello.com/b/u6vD1EWO/spedn>`_ 
+Check out the `Trello board <https://trello.com/b/u6vD1EWO/spedn>`_
 to see what's currently going on.
 
 Contributing

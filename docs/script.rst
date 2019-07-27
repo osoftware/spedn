@@ -2,7 +2,7 @@
 Understanding Script
 ====================
 
-Before developing contracts with Spedn it is worth understanding what they are compiled to 
+Before developing contracts with Spedn it is worth understanding what they are compiled to
 and how Bitcoin Cash transactions internally work.
 
 There is no spoon...
@@ -15,11 +15,11 @@ There is no account. Every transaction contains inputs and outputs. An output co
 and a script (often called ``scriptPubKey``) specifying some spending conditions for that amount.
 An input is a reference to some output of a previous transaction and some script (called ``scriptSig``)
 satisfying the spending condition from ``scriptPubKey``.
-In a typical transaction, ``scriptPubKey`` contains a public key of a coin owner 
+In a typical transaction, ``scriptPubKey`` contains a public key of a coin owner
 and ``scriptSig`` contains a signature matching that public key - hence the names.
 An output that is not yet referenced by any other transaction is called *Unspent Transaction Output* (UTXO).
 
-A UTXO can be perceived as a lockbox containing a single coin. 
+A UTXO can be perceived as a lockbox containing a single coin.
 
 An address is a user readable representation of a standard scriptPubKey.
 
@@ -49,7 +49,7 @@ Making fancy boxes
 All those scripts are bytecode that run in a stack machine.
 A human readable representation (assembly language) of this bytecode is called... Script.
 Script is a FORTH-like, stack oriented language containing numerous opcodes, some generic, some very Bitcoin-specific.
-It intentionally lacks support for recursion what guarantees that all scripts finish 
+It intentionally lacks support for recursion what guarantees that all scripts finish
 (and even do so in deterministic time).
 
 Writing scripts in Script is quite hard.

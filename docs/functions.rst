@@ -91,7 +91,7 @@ Array Operations
 
 * ``bin fst([bin, bin] data)``
 
-  Returns the first element of a tuple (result of ``@`` operator). 
+  Returns the first element of a tuple (result of ``@`` operator).
 
   .. code-block:: c
 
@@ -100,7 +100,7 @@ Array Operations
 
 * ``bin snd([bin, bin] data)``
 
-  Returns the second element of a tuple (result of ``@`` operator). 
+  Returns the second element of a tuple (result of ``@`` operator).
 
   .. code-block:: c
 
@@ -109,7 +109,7 @@ Array Operations
 
 * ``DataSig toDataSig(Sig data)``
 
-  Converts a signature suitable for ``checkSig`` function (with a sighash flag) 
+  Converts a signature suitable for ``checkSig`` function (with a sighash flag)
   to a signature suitable for ``checkDataSig`` function (without a sighash flag).
 
   .. code-block:: c

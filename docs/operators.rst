@@ -6,10 +6,10 @@ Operators
     :header-rows: 1
     :widths: 15 15 55 15
 
-    * - Precedence 
+    * - Precedence
       - Operator
       - Description
-      - Associativity 
+      - Associativity
 
     * - 1
       - ``-a``
@@ -104,9 +104,9 @@ Operators
     * - 10
       - ``a && b``
       - Bolean AND
-      
+
         *Note: Both a and b are always evaluated.*
-      
+
       - left to right
 
     * - 11

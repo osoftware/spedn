@@ -50,6 +50,6 @@ export class P2PKHCoin implements Coin {
   constructor(public utxo: Utxo, public redeemScript: Buffer) {}
 }
 
-export function p2pkh(key: ECPair): SigningCallback {
+export function signWith(key: ECPair): SigningCallback {
   return (i, c) => i.spend({ sig: c.sign(key), pubKey: key.getPublicKeyBuffer() });
 }

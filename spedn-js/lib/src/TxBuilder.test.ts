@@ -1,7 +1,7 @@
 import { BITBOX } from "bitbox-sdk";
-import { Spedn, using,  } from ".";
+import { Spedn, using } from ".";
 import { Contract, ContractCoin } from "./contracts";
-import { P2PKH, p2pkh, P2PKHCoin } from "./P2PKH";
+import { P2PKH, signWith, P2PKHCoin } from "./P2PKH";
 import { TxBuilder } from "./TxBuilder";
 
 const bitbox = new BITBOX({ restURL: "https://trest.bitcoin.com/v2/" });
@@ -54,7 +54,9 @@ const coins = [
 describe("TxBuilder", () => {
   describe("size calculation", () => {
     let builder: TxBuilder;
-    beforeEach(() => (builder = new TxBuilder("testnet").from(coins[0], p2pkh(key0)).from(coins[1], p2pkh(key1))));
+    beforeEach(
+      () => (builder = new TxBuilder("testnet").from(coins[0], signWith(key0)).from(coins[1], signWith(key1)))
+    );
 
     it("should calculate change output amount", () => {
       const tx = builder.to(addr0.getAddress("testnet"), 100000).to(change2.getAddress("testnet")).build();
@@ -113,7 +115,7 @@ describe("TxBuilder", () => {
 
       const tx = new TxBuilder("testnet")
         .from(utxo0, (i, c) => i.spend({ pubKey: key1.getPublicKeyBuffer(), sig: c.sign(key1) }))
-        .from(utxo1, p2pkh(key2))
+        .from(utxo1, signWith(key2))
         .to(addr1.getAddress("testnet"), 9999300)
         .build();
 
