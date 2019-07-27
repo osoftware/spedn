@@ -67,11 +67,21 @@ Every kind of contribution is appreciated, especially:
 * Unit tests
 * Bug reports
 * Usage examples and docs improvement
-* `Tips <bitcoincash:qrc2jhalczuka8q3dvk0g8mnkqx79wxp9gvvqvg7qt>`_
+
+.. raw :: html
+
+   <script src="https://paybutton.cash/pre-release/v0.1/js/paybutton.min.js"></script>
+   <button
+      class="pay-button"
+      amount="0.005"
+      amount-type="BCH"
+      address="bitcoincash:qrc2jhalczuka8q3dvk0g8mnkqx79wxp9gvvqvg7qt">
+   </button>
 
 Contract
 --------
 
+* `Telegram Channel <https://t.me/bch_compilers>`_
 * `Issue tracker <https://bitbucket.org/o-studio/spedn/issues?status=new&status=open>`_
 * `#spedn-lang channel on Electron Cash Slack <https://electroncash.slack.com/messages/CD81XT49X>`_
 * `Twitter <http://twitter.com/tendo_pein_sama>`_
