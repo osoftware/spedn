@@ -6,10 +6,10 @@
 
 module Script where
 
+import           Data.ByteString (ByteString)
 import           Data.Data
 import           Data.Persist
 import           Data.Word
-import           Data.ByteString (ByteString)
 import           GHC.Generics
 
 import           Bytes
@@ -285,13 +285,13 @@ compileIR :: IR -> Script
 compileIR = postprocess . concatMap compileOp
 
 compileOp :: OpCode -> Script
-compileOp (OpPushBool val)                = if val then [OP_TRUE] else [OP_FALSE]
-compileOp (OpPushNum val) | val == -1     = [OP_1NEGATE]
-                          | val == 0      = [OP_FALSE]
-                          | val == 1      = [OP_TRUE]
-                          | val <= 16     = [OP_N val]
-                          | otherwise     = let payload = serialize val
-                                            in [OP_PUSHDATA0 (head . serialize . length $ payload) payload]
+compileOp (OpPushBool val)                       = if val then [OP_TRUE] else [OP_FALSE]
+compileOp (OpPushNum val) | val == -1            = [OP_1NEGATE]
+                          | val == 0             = [OP_FALSE]
+                          | val == 1             = [OP_TRUE]
+                          | val > 1 && val <= 16 = [OP_N val]
+                          | otherwise            = let payload = serialize val
+                                                   in [OP_PUSHDATA0 (head . serialize . length $ payload) payload]
 compileOp (OpPushBin val) | length val <= 0x4b   = [OP_PUSHDATA0 (head . serialize . length $ val) val]
                           | length val <= 0xff   = [OP_PUSHDATA1 (head . serialize . length $ val) val]
                           | length val <= 0xffff = [OP_PUSHDATA2 (serialize . length $ val) val]

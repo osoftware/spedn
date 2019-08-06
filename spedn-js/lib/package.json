@@ -1,7 +1,7 @@
 {
   "name": "spedn",
-  "version": "0.1.1",
-  "description": "Spedn compiler",
+  "version": "0.1.2",
+  "description": "Spedn compiler SDK",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

@@ -17,11 +17,7 @@ To install Spedn SDK in your JS project, type:
 .. code-block:: bash
 
    npm i spedn
-
-or
-
-.. code-block:: bash
-
+   # or
    yarn add spedn
 
 
