@@ -19,6 +19,8 @@ export enum SigHash {
   SIGHASH_ANYONECANPAY = 0x80
 }
 
+const SCHNORR = 1;
+
 const crypto = new Crypto();
 const ZERO = Buffer.from("0000000000000000000000000000000000000000000000000000000000000000", "hex");
 
@@ -41,11 +43,11 @@ class SchnorrContext implements SigningContext {
 
   sign(key: ECPair, hashType: SigHash = SigHash.SIGHASH_ALL): Buffer {
     hashType = hashType | SigHash.SIGHASH_FORKID;
-    return key.sign(crypto.hash256(this.preimage(hashType)), 1).toScriptSignature(hashType, 1);
+    return key.sign(crypto.hash256(this.preimage(hashType)), 1).toScriptSignature(hashType, SCHNORR);
   }
 
   signData(key: ECPair, data: Buffer): Buffer {
-    return key.sign(crypto.sha256(data));
+    return key.sign(crypto.sha256(data), SCHNORR).toRSBuffer();
   }
 
   preimage(hashType: SigHash = SigHash.SIGHASH_ALL) {

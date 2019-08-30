@@ -1,8 +1,8 @@
 import { BITBOX } from "bitbox-sdk";
 import { Spedn, using } from ".";
 import { Contract, ContractCoin } from "./contracts";
-import { P2PKH, signWith, P2PKHCoin } from "./P2PKH";
-import { TxBuilder } from "./TxBuilder";
+import { P2PKH, P2PKHCoin, signWith } from "./P2PKH";
+import { SigHash, TxBuilder } from "./TxBuilder";
 
 const bitbox = new BITBOX({ restURL: "https://trest.bitcoin.com/v2/" });
 const mnemonic = "draw parade crater busy book swim soldier tragic exit feel top civil";
@@ -75,6 +75,26 @@ describe("TxBuilder", () => {
       expect(() =>
         builder.to(addr0.getAddress("testnet"), 199990).to(change2.getAddress("testnet")).build()
       ).toThrowError("Change output is below dust level.");
+    });
+  });
+
+  describe("signing context", () => {
+    it("should generate equivalent signatures for checkSig and checkDataSig", () => {
+      let sig: Buffer;
+      let datasig: Buffer;
+      const flag = Buffer.alloc(1, SigHash.SIGHASH_ALL | SigHash.SIGHASH_FORKID);
+      const tx = new TxBuilder("testnet")
+        .from(coins[0], (i, c) => {
+          sig = c.sign(key0);
+          datasig = c.signData(key0, bitbox.Crypto.sha256(c.preimage(SigHash.SIGHASH_ALL)));
+
+          return i.spend({ pubKey: key0.getPublicKeyBuffer(), sig });
+        })
+        .to(addr1.getAddress("testnet"), 9999300)
+        .build();
+
+      // @ts-ignore
+      expect(sig.toString("hex")).toEqual(Buffer.concat([datasig, flag]).toString("hex"));
     });
   });
 
