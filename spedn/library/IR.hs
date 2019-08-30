@@ -136,6 +136,7 @@ stmtCompiler (Verify expr _) final = do
 stmtCompiler (If cond t f _) final = do
     exprCompiler cond
     emit [OpIf]
+    popM
     stmtCompiler t final
     case f of
         Just fl -> emit [OpElse] >> stmtCompiler fl final
