@@ -18,3 +18,5 @@ This package contains a command-line tool for compiling contracts. For usage ins
 If you want to use Spedn as a NodeJS library, use this package instead: [spedn](https://www.npmjs.com/package/spedn).
 
 [Full Docs](http://spedn.rtfd.io)
+
+Donations: 🎺 Pein#7306 || bitcoincash:qrc2jhalczuka8q3dvk0g8mnkqx79wxp9gvvqvg7qt

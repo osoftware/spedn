@@ -105,7 +105,7 @@ Alice can sign for her public key AND Hash(A)= HASH_A AND Hash(B)=HASH_B AND A+B
                 verify hash160(bobSecret) == bobCommitment;
 
                 bin [a, _] = aliceSecret @ 4;
-                bin [b, _] = aliceSecret @ 4;
+                bin [b, _] = bobSecret @ 4;
                 verify (bin2num(a) + bin2num(b)) % 2 == 1;
             }
             else verify checkSequence(8b);
@@ -118,7 +118,7 @@ Alice can sign for her public key AND Hash(A)= HASH_A AND Hash(B)=HASH_B AND A+B
             verify hash160(bobSecret) == bobCommitment;
 
             bin [a, _] = aliceSecret @ 4;
-            bin [b, _] = aliceSecret @ 4;
+            bin [b, _] = bobSecret @ 4;
             verify (bin2num(a) + bin2num(b)) % 2 == 0;
 
             verify checkSig(bobSig, bobPK);

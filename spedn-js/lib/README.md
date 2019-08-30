@@ -16,3 +16,5 @@ This package contains an SDK for developing Bitcoin Cash applications running on
 If you want to use Spedn as a command-line tool, use this package instead: [spedn-cli](https://www.npmjs.com/package/spedn-cli).
 
 [Full Docs](http://spedn.rtfd.io)
+
+Donations: 🎺 Pein#7306 || bitcoincash:qrc2jhalczuka8q3dvk0g8mnkqx79wxp9gvvqvg7qt

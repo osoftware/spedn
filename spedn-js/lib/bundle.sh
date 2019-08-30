@@ -10,10 +10,10 @@ npx google-closure-compiler \
     --jscomp_off=checkVars \
     --output_wrapper="(function(global){%output%})(exports)" \
     --assume_function_wrapper \
-    --externs=dist-newstyle/build/x86_64-linux/ghcjs-8.6.0.1/spedn-0.1.2/x/spedn/build/spedn/spedn.jsexe/all.js.externs \
-    --js=dist-newstyle/build/x86_64-linux/ghcjs-8.6.0.1/spedn-0.1.2/x/spedn/build/spedn/spedn.jsexe/rts.js \
-    --js=dist-newstyle/build/x86_64-linux/ghcjs-8.6.0.1/spedn-0.1.2/x/spedn/build/spedn/spedn.jsexe/lib.js \
-    --js=dist-newstyle/build/x86_64-linux/ghcjs-8.6.0.1/spedn-0.1.2/x/spedn/build/spedn/spedn.jsexe/out.js \
+    --externs=dist-newstyle/build/x86_64-linux/ghcjs-8.6.0.1/spedn-0.1.3/x/spedn/build/spedn/spedn.jsexe/all.js.externs \
+    --js=dist-newstyle/build/x86_64-linux/ghcjs-8.6.0.1/spedn-0.1.3/x/spedn/build/spedn/spedn.jsexe/rts.js \
+    --js=dist-newstyle/build/x86_64-linux/ghcjs-8.6.0.1/spedn-0.1.3/x/spedn/build/spedn/spedn.jsexe/lib.js \
+    --js=dist-newstyle/build/x86_64-linux/ghcjs-8.6.0.1/spedn-0.1.3/x/spedn/build/spedn/spedn.jsexe/out.js \
     --js=src/interop.js \
     --js_output_file=dist/compiler_service.js
 
