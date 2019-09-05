@@ -1,3 +1,4 @@
+
 module Parser where
 
 import           Control.Monad
@@ -11,8 +12,11 @@ import           Text.Megaparsec
 import           Lexer
 import           Syntax
 
+{-# ANN module "HLint: ignore" #-}
+
 type Contract' = Contract SourcePos
-type Param' = Param SourcePos
+type VarDecl' = VarDecl SourcePos
+type TuplePart' = TuplePart SourcePos
 type Challenge' = Challenge SourcePos
 type Statement' = Statement SourcePos
 type Expr' = Expr SourcePos
@@ -34,34 +38,45 @@ contract = annotate $ do
     cs <- braces $ many challenge
     return $ Contract n ps cs
 
-params :: Parser [Param']
-params = parens $ sepBy param comma
+params :: Parser [VarDecl']
+params = parens $ sepBy varDecl comma
 
-param :: Parser Param'
-param = annotate $ do
-    t <- varType
-    n <- name
-    return $ Param t n
+varDecl :: Parser VarDecl'
+varDecl = annotate $ VarDecl <$> varType <*> name
+
+tupleVarDecl :: Parser TuplePart'
+tupleVarDecl = annotate . choice $
+    [ TupleVarDecl <$> varType <*> name
+    , lodash >> pure Gap
+    ]
 
 varType :: Parser Type
-varType = choice [ keyword "bool"      >> pure Bool
-                 , keyword "int"       >> pure Num
-                 , keyword "TimeSpan"  >> pure TimeSpan
-                 , keyword "Time"      >> pure Time
-                 , keyword "bin"       >> pure (Bin Raw)
-                 , keyword "PubKey"    >> pure (Bin PubKey)
-                 , keyword "Ripemd160" >> pure (Bin Ripemd160)
-                 , keyword "Sha1"      >> pure (Bin Sha1)
-                 , keyword "Sha256"    >> pure (Bin Sha256)
-                 , keyword "Sig"       >> pure (Bin Sig)
-                 , keyword "DataSig"   >> pure (Bin DataSig)
+varType = choice [ keyword "bool" >> pure Bool
+                 , keyword "bit"  >> pure Bit
+                 , keyword "int"  >> pure Num
+                 , keyword "byte" >> pure Byte
+                 , try $ Generic <$> name <*> triangles (sepBy1 varType comma)
+                 , Alias <$> name
+                 , try . brackets $ Array <$> (varType <* semi) <*> decInt
+                 , try . brackets $ List <$> varType
+                 , parens $ Tuple <$> sepBy1 varType comma
+
+                --  , keyword "TimeSpan"  >> pure TimeSpan
+                --  , keyword "Time"      >> pure Time
+                --  , keyword "bin"       >> pure (Bin Raw)
+                --  , keyword "PubKey"    >> pure (Bin PubKey)
+                --  , keyword "Ripemd160" >> pure (Bin Ripemd160)
+                --  , keyword "Sha1"      >> pure (Bin Sha1)
+                --  , keyword "Sha256"    >> pure (Bin Sha256)
+                --  , keyword "Sig"       >> pure (Bin Sig)
+                --  , keyword "DataSig"   >> pure (Bin DataSig)
                  ]
 
 challenge :: Parser Challenge'
 challenge = annotate $ do
     keyword "challenge"
     n <- name
-    ps <- parens $ sepBy1 param comma
+    ps <- parens $ sepBy1 varDecl comma
     body <- block
     return $ Challenge n ps body
 
@@ -71,27 +86,16 @@ block = annotate $ do
     return $ Block stmts
 
 statement :: Parser Statement'
-statement = assign <|> split <|> verify <|> ifElse <|> block
+statement = assign <|> split <|> verify <|> fail' <|> ifElse <|> block
 
 assign :: Parser Statement'
-assign = annotate . try $ do
-    t <- varType
-    n <- name
-    val <- rval
-    return $ Assign t n val
-
+assign = annotate . try $ Assign <$> varDecl <*> rval
 
 split :: Parser Statement'
 split = annotate $ do
-    t <- varType
-    vars <- brackets $ do
-      l <- name <|> lodash
-      comma
-      r <- name <|> lodash
-      when (l == r) $ unexpected . Label $ fromList "names must be unique"
-      return (l, r)
-    val <- rval
-    return $ SplitAssign t vars val
+    vars <- parens $ sepBy1 tupleVarDecl comma
+    vals <- rval
+    return $ SplitAssign vars vals
 
 rval :: Parser Expr'
 rval = eq *> expr <* semi
@@ -102,6 +106,9 @@ verify = annotate $ do
     val <- expr
     semi
     return $ Verify val
+
+fail' :: Parser Statement'
+fail' = annotate (keyword "fail" >> semi >> return Return)
 
 ifElse :: Parser Statement'
 ifElse = annotate $ do
@@ -169,44 +176,58 @@ operators = [ [ prefix Minus $ try $ symbol "-" *> notFollowedBy digits
         return $ \ l r -> BinaryExpr op l r pos
 
 term :: Parser Expr'
-term = choice [ parens expr
-              , list
-              , boolConst
-              , timeConst
-              , timeSpanConst
-              , numConst
-              , binConst
-              , call
-              , var
-              ]
+term = tryArrayAccess . choice $
+    [ parens expr
+    , list
+    , val
+    , call
+    , var
+    ]
+
+val :: Parser Expr'
+val = choice [ boolConst
+             , numConst
+             , binConst
+             , hexConst
+             , strConst
+             , magicConst
+             , timeSpanConst
+             ]
 
 paramVal :: Parser (Name, Expr')
 paramVal = do
     paramName <- name
     eq
-    paramValue <- choice
-        [ boolConst
-        , timeConst
-        , timeSpanConst
-        , numConst
-        , binConst
-        ]
+    paramValue <- val <|> annotate (ArrayLiteral <$> brackets (sepBy val comma))
     return (paramName, paramValue)
 
 parseParamVal :: String -> Maybe (Name, Expr')
 parseParamVal = parseMaybe paramVal
 
 list :: Parser Expr'
-list = annotate . try $ Array <$> brackets (sepBy expr comma)
+list = annotate . try $ ArrayLiteral <$> brackets (sepBy expr comma)
 
 boolConst :: Parser Expr'
 boolConst = annotate (BoolConst True <$ keyword "true" <|> BoolConst False <$ keyword "false")
 
-numConst :: Parser Expr'
-numConst = annotate . try $ NumConst <$> (symbol "0x" *> hexInt <* symbol "i" <|> decInt)
-
 binConst :: Parser Expr'
-binConst = annotate . try $ BinConst <$> (symbol "0x" *> many hexByte)
+binConst = annotate . try $ BinConst <$> (symbol "0b" *> binInt)
+
+numConst :: Parser Expr'
+numConst = annotate . try $ NumConst <$> choice
+    [ symbol "0x" *> hexInt <* symbol "i"
+    , symbol "0b" *> binInt <* symbol "i"
+    , decInt
+    ]
+
+hexConst :: Parser Expr'
+hexConst = annotate . try $ HexConst <$> (symbol "0x" *> many hexByte)
+
+strConst :: Parser Expr'
+strConst = annotate . try $ StrConst <$> strLit '"'
+
+magicConst :: Parser Expr'
+magicConst = annotate . try $ StrConst <$> strLit '`'
 
 timeSpanLit :: Parser Int
 timeSpanLit = do
@@ -224,15 +245,18 @@ blockSpanLit = decInt <* symbol "b"
 timeSpanConst :: Parser Expr'
 timeSpanConst = annotate . try $ TimeSpanConst <$> (try timeSpanLit <|> blockSpanLit)
 
-timeConst :: Parser Expr'
-timeConst = annotate . try $ do
-    str <- strLit '`'
-    case parseTimeM True defaultTimeLocale "%Y-%-m-%-d %T" str of
-        Just t  -> return . TimeConst $ round . utcTimeToPOSIXSeconds $ t
-        Nothing -> unexpected . Label $ fromList "time format - should be YYYY-MM-DD hh:mm:ss"
+-- timeConst :: Parser Expr'
+-- timeConst = annotate . try $ do
+--     str <- strLit '`'
+--     case parseTimeM True defaultTimeLocale "%Y-%-m-%-d %T" str of
+--         Just t  -> return . TimeConst $ round . utcTimeToPOSIXSeconds $ t
+--         Nothing -> unexpected . Label $ fromList "time format - should be YYYY-MM-DD hh:mm:ss"
 
 call :: Parser Expr'
 call = annotate . try $ Call <$> name <*> parens (sepBy expr comma)
 
+tryArrayAccess :: Parser Expr' -> Parser Expr'
+tryArrayAccess p = (annotate . try $ ArrayAccess <$> p <*> brackets expr) <|> p
+
 var :: Parser Expr'
-var = annotate $ Var <$> name <* notFollowedBy (symbol "(")
+var = annotate $ Var <$> name -- <* notFollowedBy (choice $ symbol <$> ["(", "["])

@@ -1,69 +1,59 @@
+{-# LANGUAGE DeriveDataTypeable    #-}
 {-# LANGUAGE DeriveFoldable        #-}
 {-# LANGUAGE DeriveFunctor         #-}
-{-# LANGUAGE DeriveTraversable     #-}
-{-# LANGUAGE DeriveDataTypeable    #-}
 {-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE DeriveTraversable     #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module Syntax where
 
 import           Data.Data
-import           Data.List (intercalate)
+import           Data.List    (intercalate)
 import           Data.Word
 import           GHC.Generics
 
 type Name = String
 
 infixr 5 :->
-infixr 5 :.
 infixr 5 :|:
 data Type
     = Bool
+    | Bit
     | Num
-    | Bin BinType
-    | Time            -- | Either timestamp or blockheight
-    | TimeSpan        -- | Either seconds or blocks
+    | Byte
     | Verification    -- | Result of OP_*VERIFY
+    | Array Type Int
     | List Type
-    | Type :. Type    -- | Tuple
+    | Tuple [Type]
     | [Type] :-> Type -- | Function
     | Type :|: Type   -- | Alternative
+    | Alias Name
+    | Generic Name [Type]
+    | TypeParam Name
     | Void
+    | Any
     deriving (Eq, Data, Typeable, Generic)
+
+delimited :: [Type] -> String
+delimited ts = intercalate ", " (show <$> ts)
 
 instance Show Type where
-    show Bool         = "bool"
-    show Num          = "int"
-    show (Bin Raw)    = "bin"
-    show (Bin t)      = show t
-    show Time         = "Time"
-    show TimeSpan     = "TimeSpan"
-    show Verification = "Verification"
-    show (List t)     = "[" ++ show t ++ "...]"
-    show (a :. b)     = "[" ++ show a ++ ", " ++ show b ++ "]"
-    show (as :-> b)   = "(" ++ intercalate ", " (map show as) ++ ") -> " ++ show b
-    show (a :|: b)    = show a ++ " or " ++ show b
-    show Void         = "void"
-
-data BinType
-    = Raw
-    | PubKey
-    | Sha1
-    | Sha256
-    | Ripemd160
-    | Sig
-    | DataSig
-    deriving (Eq, Data, Typeable, Generic)
-
-instance Show BinType where
-    show Raw       = "bin"
-    show PubKey    = "PubKey"
-    show Sha1      = "Sha1"
-    show Sha256    = "Sha256"
-    show Ripemd160 = "Ripemd160"
-    show Sig       = "Sig"
-    show DataSig   = "DataSig"
+    show Bool           = "bool"
+    show Bit            = "bit"
+    show Num            = "int"
+    show Byte           = "byte"
+    show Verification   = "Verification"
+    show (Array t l)    = "[" ++ show t ++ "; " ++ show l ++ "]"
+    show (List t)       = "[" ++ show t ++ "]"
+    show (Tuple ts)     = "(" ++ delimited ts ++ ")"
+    show (ts :-> t)     = "(" ++ delimited ts ++ ") -> " ++ show t
+    show (a :|: b)      = show a ++ " | " ++ show b
+    show (Alias n)      = n
+    show (Generic n ts) = n ++ "<" ++ delimited ts ++ ">"
+    show (TypeParam n)  = n
+    show Void           = "void"
+    show Any            = "_"
 
 data UnaryOp
     = Not
@@ -98,12 +88,17 @@ class Annotated a b where
 
 data Expr a
     = BoolConst Bool a
+    | BinConst Int a
     | NumConst Int a
+    | HexConst [Word8] a
+    | StrConst String a
+    | MagicConst String a
     | TimeConst Int a
     | TimeSpanConst Int a
-    | BinConst [Word8] a
     | Var Name a
-    | Array [Expr a] a
+    | TupleLiteral [Expr a] a
+    | ArrayLiteral [Expr a] a
+    | ArrayAccess (Expr a) (Expr a) a
     | UnaryExpr UnaryOp (Expr a) a
     | BinaryExpr BinaryOp (Expr a) (Expr a) a
     | TernaryExpr (Expr a) (Expr a) (Expr a) a
@@ -111,29 +106,53 @@ data Expr a
     deriving (Eq, Show, Functor, Foldable, Traversable, Data, Typeable, Generic)
 
 data Statement a
-    = Assign Type Name (Expr a) a
-    | SplitAssign Type (Name, Name) (Expr a) a
+    = Assign (VarDecl a) (Expr a) a
+    | SplitAssign [TuplePart a] (Expr a) a
     | Verify (Expr a) a
+    | Return a
     | If (Expr a) (Statement a) (Maybe (Statement a)) a
     | Block [Statement a] a
     deriving (Eq, Show, Functor, Foldable, Traversable, Data, Typeable, Generic)
 
 instance Annotated Statement a where
-    ann (Assign _ _ _ a)      = a
-    ann (SplitAssign _ _ _ a) = a
-    ann (Verify _ a)          = a
-    ann (If _ _ _ a)          = a
-    ann (Block _ a)           = a
+    ann (Assign _ _ a)      = a
+    ann (SplitAssign _ _ a) = a
+    ann (Verify _ a)        = a
+    ann (Return a)          = a
+    ann (If _ _ _ a)        = a
+    ann (Block _ a)         = a
 
-data Challenge a = Challenge Name [Param a] (Statement a) a
+data Challenge a = Challenge Name [VarDecl a] (Statement a) a
     deriving (Eq, Show, Functor, Foldable, Traversable, Data, Typeable, Generic)
 
-data Param a = Param Type Name a
+data VarDecl a = VarDecl Type Name a
+    deriving (Eq, Show, Functor, Foldable, Traversable, Data, Typeable, Generic)
+
+data TuplePart a
+    = TupleVarDecl Type Name a
+    | Gap a
     deriving (Eq, Show, Functor, Foldable, Traversable, Data, Typeable, Generic)
 
 data Contract a = Contract
     { contractName       :: !Name
-    , contractParams     :: ![Param a]
+    , contractParams     :: ![VarDecl a]
     , contractChallenges :: ![Challenge a]
     , contractAnnotation :: a
+    } deriving (Eq, Show, Functor, Foldable, Traversable, Data, Typeable, Generic)
+
+contractType :: Contract a -> Type
+contractType (Contract n _ _ _) = Alias n
+
+data Def a
+    = TypeDef Name Type a
+    | FunDef Name Type (Expr a)
+    deriving (Eq, Show, Functor, Foldable, Traversable, Data, Typeable, Generic)
+
+data Import a = Import String a
+    deriving (Eq, Show, Functor, Foldable, Traversable, Data, Typeable, Generic)
+
+data Module a = Module
+    { imports   :: ![Import a]
+    , defs      :: ![Def a]
+    , contracts :: ![Contract a]
     } deriving (Eq, Show, Functor, Foldable, Traversable, Data, Typeable, Generic)

@@ -11,6 +11,26 @@ import           Syntax
 
 type SymbolTable = Map.Map Name Type
 
+aliases :: SymbolTable
+aliases = Map.fromList
+    [ ("PubKey",    Array Byte 33)
+    , ("Ripemd160", Array Byte 20)
+    , ("Sha1",      Array Byte 16)
+    , ("Sha256",    Array Byte 32)
+    , ("Sig",       Array Byte 65)
+    , ("DataSig",   Array Byte 64)
+    , ("TimeSpan",  Num)
+    , ("Time",      Num)
+    ]
+
+unAlias :: SymbolTable -> Type -> Type
+unAlias as (Alias n)      = fromMaybe (Alias n) (Map.lookup n as)
+unAlias as (Array t n)    = Array (unAlias as t) n
+unAlias as (List t)       = List $ unAlias as t
+unAlias as (Tuple ts)     = Tuple $ unAlias as <$> ts
+unAlias as (Generic n ts) = Generic n $ unAlias as <$> ts
+unAlias _ t               = t
+
 globals :: SymbolTable
 globals = Map.fromList
       -- Simple math
@@ -20,38 +40,38 @@ globals = Map.fromList
     , ("within",        [Num, Num, Num] :-> Bool)
 
       -- Hashing
-    , ("ripemd160",     [Bin Raw]       :-> Bin Ripemd160)
-    , ("sha1",          [Bin Raw]       :-> Bin Sha1)
-    , ("sha256",        [Bin Raw]       :-> Bin Sha256)
-    , ("hash160",       [Bin Raw]       :-> Bin Ripemd160)
-    , ("hash256",       [Bin Raw]       :-> Bin Sha256)
-    
+    , ("ripemd160",     [List Byte] :-> Alias "Ripemd160")
+    , ("sha1",          [List Byte] :-> Alias "Sha1")
+    , ("sha256",        [List Byte] :-> Alias "Sha256")
+    , ("hash160",       [List Byte] :-> Alias "Ripemd160")
+    , ("hash256",       [List Byte] :-> Alias "Sha256")
+
       -- Checking
-    , ("checkSig",      [Bin Sig, Bin PubKey]                  :-> Bool)
-    , ("checkMultiSig", [List $ Bin Sig, List $ Bin PubKey]    :-> Bool)
-    , ("checkDataSig",  [Bin DataSig, Bin Raw, Bin PubKey]     :-> Bool)
-    , ("checkLockTime", [Time]                                 :-> Verification)
-    , ("checkSequence", [TimeSpan]                             :-> Verification)
-    
+    , ("checkSig",      [Alias "Sig", Alias "PubKey"]                         :-> Bool)
+    , ("checkMultiSig", [List Bit, List $ Alias "Sig", List $ Alias "PubKey"] :-> Bool)
+    , ("checkDataSig",  [Alias "DataSig", List Byte, Alias "PubKey"]          :-> Bool)
+    , ("checkLockTime", [Alias "Time"]                                        :-> Verification)
+    , ("checkSequence", [Alias "TimeSpan"]                                    :-> Verification)
+
       -- Array manipulation
-    , ("num2bin",       [Num, Num]       :-> Bin Raw)
-    , ("bin2num",       [Bin Raw]        :-> Num)
-    , ("size",          [Bin Raw]        :-> Num)
+    , ("num2bin",       [Num, Num]  :-> List Byte)
+    , ("bin2num",       [List Byte] :-> Num)
+    , ("size",          [List Byte] :-> Num)
 
       -- Type constructors
-    , ("PubKey",        [Bin Raw]        :-> Bin PubKey)
-    , ("Ripemd160",     [Bin Raw]        :-> Bin Ripemd160)
-    , ("Sha1",          [Bin Raw]        :-> Bin Sha1)
-    , ("Sha256",        [Bin Raw]        :-> Bin Sha256)
-    , ("Sig",           [Bin Raw]        :-> Bin Sig)
-    , ("DataSig",       [Bin Raw]        :-> Bin DataSig)
-    , ("Blocks",        [Num]            :-> TimeSpan)
-    , ("TimeStamp",     [Num]            :-> Time)
+    , ("PubKey",        [List Byte] :-> Alias "PubKey")
+    , ("Ripemd160",     [List Byte] :-> Alias "Ripemd160")
+    , ("Sha1",          [List Byte] :-> Alias "Sha1")
+    , ("Sha256",        [List Byte] :-> Alias "Sha256")
+    , ("Sig",           [List Byte] :-> Alias "Sig")
+    , ("DataSig",       [List Byte] :-> Alias "DataSig")
+    , ("Blocks",        [Num]       :-> Alias "TimeSpan")
+    , ("TimeStamp",     [Num]       :-> Alias "Time")
 
       -- Macros
-    , ("fst",           [Bin Raw :. Bin Raw] :-> Bin Raw)
-    , ("snd",           [Bin Raw :. Bin Raw] :-> Bin Raw)
-    , ("toDataSig",     [Bin Sig]            :-> Bin DataSig)
+    , ("fst",           [Tuple [TypeParam "a", TypeParam "b"]] :-> TypeParam "a")
+    , ("snd",           [Tuple [TypeParam "a", TypeParam "b"]] :-> TypeParam "b")
+    , ("toDataSig",     [Alias "Sig"]                          :-> Alias "DataSig")
     ]
 
 typeConstructors :: [String]

@@ -36,6 +36,9 @@ brackets = between (symbol "[") (symbol "]")
 braces :: Parser a -> Parser a
 braces = between (symbol "{") (symbol "}")
 
+triangles :: Parser a -> Parser a
+triangles = between (symbol "<") (symbol ">")
+
 semi :: Parser ()
 semi = void . symbol $ ";"
 
@@ -45,6 +48,9 @@ comma = void . symbol $ ","
 eq :: Parser ()
 eq = void . symbol $ "="
 
+lodash :: Parser ()
+lodash = void . symbol $ "_"
+
 operator :: String -> Parser String
 operator o = lexeme . try $ string o <* notFollowedBy (symbolChar <|> punctuationChar)
 
@@ -52,17 +58,20 @@ keyword :: String -> Parser ()
 keyword w = lexeme . try $ string w *> notFollowedBy alphaNumChar
 
 keywords :: [String]
-keywords = ["contract","challenge","if","else","verify","true","false","int","bin"]
+keywords = ["contract","challenge","if","else","verify","true","false","fail","type","import"]
+
+nameHead :: Parser Char
+nameHead = letterChar <|> char '_'
+
+nameInner :: Parser Char
+nameInner = alphaNumChar <|> char '_'
 
 name :: Parser Name
 name = lexeme . try $ do
-    word <- (:) <$> letterChar <*> many alphaNumChar
+    word <- (:) <$> nameHead <*> many nameInner
     if word `elem` keywords
       then fail $ "keyword " ++ show word ++ " cannot be an identifier"
       else return word
-
-lodash :: Parser Name
-lodash = symbol "_"
 
 digits :: Parser Int
 digits = lexeme L.decimal
@@ -74,10 +83,13 @@ hexInt :: Parser Int
 hexInt = lexeme L.hexadecimal
 
 hexByte :: Parser Word8
-hexByte = do
+hexByte = lexeme $ do
     h <- hexDigitChar 
     l <- hexDigitChar
     return . fromIntegral $ digitToInt h * 16 + digitToInt l
+
+binInt :: Parser Int
+binInt = lexeme L.binary
 
 strLit :: Char -> Parser String
 strLit q = char q >> manyTill L.charLiteral (char q)
