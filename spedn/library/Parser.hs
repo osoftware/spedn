@@ -1,12 +1,9 @@
 
 module Parser where
 
-import           Control.Monad
+import           Control.Monad()
 import           Control.Monad.Combinators.Expr
 import           Data.Bits
-import           Data.List.NonEmpty
-import           Data.Time
-import           Data.Time.Clock.POSIX
 import           Text.Megaparsec
 
 import           Lexer
@@ -103,9 +100,9 @@ rval = eq *> expr <* semi
 verify :: Parser Statement'
 verify = annotate $ do
     keyword "verify"
-    val <- expr
+    value <- expr
     semi
-    return $ Verify val
+    return $ Verify value
 
 fail' :: Parser Statement'
 fail' = annotate (keyword "fail" >> semi >> return Return)
@@ -211,7 +208,7 @@ boolConst :: Parser Expr'
 boolConst = annotate (BoolConst True <$ keyword "true" <|> BoolConst False <$ keyword "false")
 
 binConst :: Parser Expr'
-binConst = annotate . try $ BinConst <$> (symbol "0b" *> binInt)
+binConst = annotate . try $ BinConst <$> (symbol "0b" *> many binBit)
 
 numConst :: Parser Expr'
 numConst = annotate . try $ NumConst <$> choice
@@ -227,7 +224,7 @@ strConst :: Parser Expr'
 strConst = annotate . try $ StrConst <$> strLit '"'
 
 magicConst :: Parser Expr'
-magicConst = annotate . try $ StrConst <$> strLit '`'
+magicConst = annotate . try $ MagicConst <$> strLit '`'
 
 timeSpanLit :: Parser Int
 timeSpanLit = do
@@ -244,13 +241,6 @@ blockSpanLit = decInt <* symbol "b"
 
 timeSpanConst :: Parser Expr'
 timeSpanConst = annotate . try $ TimeSpanConst <$> (try timeSpanLit <|> blockSpanLit)
-
--- timeConst :: Parser Expr'
--- timeConst = annotate . try $ do
---     str <- strLit '`'
---     case parseTimeM True defaultTimeLocale "%Y-%-m-%-d %T" str of
---         Just t  -> return . TimeConst $ round . utcTimeToPOSIXSeconds $ t
---         Nothing -> unexpected . Label $ fromList "time format - should be YYYY-MM-DD hh:mm:ss"
 
 call :: Parser Expr'
 call = annotate . try $ Call <$> name <*> parens (sepBy expr comma)

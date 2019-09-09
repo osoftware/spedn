@@ -88,12 +88,11 @@ class Annotated a b where
 
 data Expr a
     = BoolConst Bool a
-    | BinConst Int a
+    | BinConst [Bool] a
     | NumConst Int a
     | HexConst [Word8] a
     | StrConst String a
     | MagicConst String a
-    | TimeConst Int a
     | TimeSpanConst Int a
     | Var Name a
     | TupleLiteral [Expr a] a

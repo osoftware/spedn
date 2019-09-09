@@ -91,5 +91,10 @@ hexByte = lexeme $ do
 binInt :: Parser Int
 binInt = lexeme L.binary
 
+binBit :: Parser Bool
+binBit = lexeme . choice $ [ symbol "0" >> pure False
+                           , symbol "1" >> pure True
+                           ]
+
 strLit :: Char -> Parser String
 strLit q = char q >> manyTill L.charLiteral (char q)
