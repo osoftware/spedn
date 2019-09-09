@@ -5,6 +5,7 @@ import           Control.Monad.State
 import           Data.Time
 import           Data.Time.Clock.POSIX
 
+import           Bytes
 import           Env
 import           Errors
 import           Syntax
@@ -165,10 +166,16 @@ typeofM expr = do
 
 typeof :: Env -> Expr a -> Check Type
 typeof _ (BoolConst _ _)            = return Bool
-typeof _ (BinConst bits _)          = return $ Array Bit $ length bits
+typeof _ (BinConst bits _)
+    | length bits <= 15             = return $ Array Bit $ length bits
+    | otherwise                     = throwError $ Overflow 15 $ length bits
 typeof _ (NumConst _ _)             = return Num
-typeof _ (HexConst bs _)            = return $ Array Byte $ length bs
-typeof _ (StrConst cs _)            = return $ Array Byte $ length cs -- TODO: consider UTF-8
+typeof _ (HexConst bs _)
+    | length bs <= 520              = return $ Array Byte $ length bs
+    | otherwise                     = throwError $ Overflow 520 $ length bs
+typeof _ (StrConst cs _)
+    | strlen cs <= 520              = return $ Array Byte $ strlen cs
+    | otherwise                     = throwError $ Overflow 520 $ strlen cs
 typeof _ (MagicConst cs _)          = throwError $ Ambigious $ "Cannot infer type of `" ++ cs ++ "`."
 typeof _ (TimeSpanConst _ _)        = return $ Alias "TimeSpan"
 typeof env (Var varName _)          = case Env.lookup env varName of
@@ -257,7 +264,7 @@ catArrays env (Right l@(Alias _)) r                    = catArrays env (unAlias 
 catArrays env l (Right r@(Alias _))                    = catArrays env l (unAlias env r)
 catArrays _ (Right (Array Byte l)) (Right (Array Byte r))
     | l + r <= 520                                     = Right $ Array Byte (l + r)
-    | otherwise                                        = Left $ ByteOverflow (l + r)
+    | otherwise                                        = Left $ Overflow 520 (l + r)
 catArrays _ (Right (List Byte)) (Right (Array Byte _)) = Right $ List Byte
 catArrays _ (Right (Array Byte _)) (Right (List Byte)) = Right $ List Byte
 catArrays _ (Right (List Byte)) (Right (List Byte))    = Right $ List Byte

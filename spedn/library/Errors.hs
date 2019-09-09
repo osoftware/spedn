@@ -13,7 +13,7 @@ data Error
     | ArgumentMismatch Name Type [Either Error Type]
     | NotInScope String
     | OutOfRange Int Int
-    | ByteOverflow Int
+    | Overflow Int Int
     | NameConflict String
     | SyntaxError String
     | Ambigious String
@@ -28,7 +28,7 @@ instance Show Error where
                                         ++ "` called with `(" ++ intercalate ", " (disp <$> ts) ++ ")`."
     show (NotInScope n)  = "Symbol not found: `" ++ n ++ "`."
     show (OutOfRange bound i) = "Index `" ++ show i ++ "` exceedes the array bounds, which is [0:" ++ show bound ++ "]."
-    show (ByteOverflow i) = "The array size is `" ++ show i ++ "` bytes, which exceeds the protocol limit of 520."
+    show (Overflow bound i) = "The array size is `" ++ show i ++ "`, which exceeds the protocol limit of " ++ show bound ++ "."
     show (NameConflict n)  = "Symbol already defined: `" ++ n ++ "``."
     show (SyntaxError descr) = "Syntax error: " ++ descr
     show (Ambigious descr) = "Ambigious expression: " ++ descr
