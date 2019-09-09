@@ -11,6 +11,8 @@ import           Syntax
 
 {-# ANN module "HLint: ignore" #-}
 
+type Module' = Module SourcePos
+type Def' = Def SourcePos
 type Contract' = Contract SourcePos
 type VarDecl' = VarDecl SourcePos
 type TuplePart' = TuplePart SourcePos
@@ -18,8 +20,11 @@ type Challenge' = Challenge SourcePos
 type Statement' = Statement SourcePos
 type Expr' = Expr SourcePos
 
-sourceFile :: Parser Contract'
-sourceFile = between spaceConsumer eof contract
+sourceFile :: Parser Module'
+sourceFile = between spaceConsumer eof $ do
+    defs <- many typedef
+    contracts <- many contract
+    return $ Module [] defs contracts
 
 annotate :: Parser (SourcePos -> a) -> Parser a
 annotate parser = do
@@ -27,10 +32,19 @@ annotate parser = do
     x <- parser
     return $ x pos
 
+typedef :: Parser Def'
+typedef = annotate $ do
+    keyword "type"
+    n <- typeName
+    eq
+    t <- varType
+    semi
+    return $ TypeDef n t
+
 contract :: Parser Contract'
 contract = annotate $ do
     keyword "contract"
-    n <- name
+    n <- typeName
     ps <- params
     cs <- braces $ many challenge
     return $ Contract n ps cs
@@ -52,8 +66,8 @@ varType = choice [ keyword "bool" >> pure Bool
                  , keyword "bit"  >> pure Bit
                  , keyword "int"  >> pure Num
                  , keyword "byte" >> pure Byte
-                 , try $ Generic <$> name <*> triangles (sepBy1 varType comma)
-                 , Alias <$> name
+                 , try $ Generic <$> typeName <*> triangles (sepBy1 varType comma)
+                 , Alias <$> typeName
                  , try . brackets $ Array <$> (varType <* semi) <*> decInt
                  , try . brackets $ List <$> varType
                  , parens $ Tuple <$> sepBy1 varType comma

@@ -60,18 +60,18 @@ keyword w = lexeme . try $ string w *> notFollowedBy alphaNumChar
 keywords :: [String]
 keywords = ["contract","challenge","if","else","verify","true","false","fail","type","import"]
 
-nameHead :: Parser Char
-nameHead = letterChar <|> char '_'
-
-nameInner :: Parser Char
-nameInner = alphaNumChar <|> char '_'
+nameStartingWith :: Parser Char -> Parser Name
+nameStartingWith first = lexeme . try $ do
+  word <- (:) <$> first <*> many (alphaNumChar <|> char '_')
+  if word `elem` keywords
+    then fail $ "keyword " ++ show word ++ " cannot be an identifier"
+    else return word
 
 name :: Parser Name
-name = lexeme . try $ do
-    word <- (:) <$> nameHead <*> many nameInner
-    if word `elem` keywords
-      then fail $ "keyword " ++ show word ++ " cannot be an identifier"
-      else return word
+name = nameStartingWith (letterChar <|> char '_')
+
+typeName :: Parser Name
+typeName = nameStartingWith upperChar
 
 digits :: Parser Int
 digits = lexeme L.decimal

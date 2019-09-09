@@ -151,7 +151,7 @@ data Import a = Import String a
     deriving (Eq, Show, Functor, Foldable, Traversable, Data, Typeable, Generic)
 
 data Module a = Module
-    { imports   :: ![Import a]
-    , defs      :: ![Def a]
-    , contracts :: ![Contract a]
+    { moduleImports   :: ![Import a]
+    , moduleDefs      :: ![Def a]
+    , moduleContracts :: ![Contract a]
     } deriving (Eq, Show, Functor, Foldable, Traversable, Data, Typeable, Generic)

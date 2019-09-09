@@ -88,7 +88,7 @@ add env@(s:ss) n t | isJust (Env.lookup env n) = throwError $ NameConflict n
                    | otherwise                 = return $ Map.insert n t s : ss
 
 unAlias :: Env -> Type -> Either Error Type
-unAlias env a@(Alias n)    = case Env.lookup env ("type " ++ n) of
+unAlias env (Alias n)    = case Env.lookup env ("type " ++ n) of
                                 Just  t -> Right t
                                 Nothing -> Left $ NotInScope n
 unAlias env (Array t n)    = Array <$> unAlias env t <*> pure n

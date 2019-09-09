@@ -13,6 +13,20 @@ type Check = Either Error
 type Checker = State Env
 type TypeChecker n a = Checker (n (Check Type, a))
 
+checkSourceFile :: Module a -> TypeChecker Module a
+checkSourceFile (Module _ defs contracts) = do
+    defs' <- mapM checkDef defs
+    contracts' <- mapM checkContract contracts
+    return $ Module [] defs' contracts'
+
+checkDef :: Def a -> TypeChecker Def a
+checkDef (TypeDef n t a) = do
+    def <- addM ("type " ++ n) t
+    let rawType = case t of { Array Byte _ -> List Byte; x -> x }
+    ctor <- addM n ([rawType] :-> Alias n)
+    return $ TypeDef n t (def >> ctor >> (Right $ Alias n), a)
+checkDef _ = error "not implemented"
+
 checkContract :: Contract a -> TypeChecker Contract a
 checkContract (Contract n ps cs a) = do
     enterM
@@ -138,9 +152,11 @@ leaveM = do
 addM :: Name -> Type -> Checker (Check Type)
 addM n t = do
     env <- get
-    case add env n t of
-        Right e  -> put e >> return (Right t)
-        Left err -> return $ Left err
+    case unAlias env t of
+        Right _ -> case add env n t of
+            Right e  -> put e >> return (Right t)
+            Left err -> return $ Left err
+        l       -> return l
 
 typeofM :: Expr a -> Checker (Check Type)
 typeofM expr = do
