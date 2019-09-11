@@ -27,11 +27,13 @@ globals = Map.fromList
     , ("hash256",        [List Byte] :-> Alias "Sha256")
 
       -- Checking
-    , ("checkSig",       [Alias "Sig", Alias "PubKey"]                         :-> Bool)
-    , ("checkMultiSig",  [List Bit, List $ Alias "Sig", List $ Alias "PubKey"] :-> Bool)
-    , ("checkDataSig",   [Alias "DataSig", List Byte, Alias "PubKey"]          :-> Bool)
-    , ("checkLockTime",  [Alias "Time"]                                        :-> Verification)
-    , ("checkSequence",  [Alias "TimeSpan"]                                    :-> Verification)
+    , ("checkSig",       [Alias "Sig", Alias "PubKey"]                :-> Bool)
+    , ("checkMultiSig",  [Array Bit $ SizeParam "k",
+                          Array (Alias "Sig") $ SizeParam "s", 
+                          Array (Alias "PubKey") $ SizeParam "k"]     :-> Bool)
+    , ("checkDataSig",   [Alias "DataSig", List Byte, Alias "PubKey"] :-> Bool)
+    , ("checkLockTime",  [Alias "Time"]                               :-> Verification)
+    , ("checkSequence",  [Alias "TimeSpan"]                           :-> Verification)
 
       -- Array manipulation
     , ("num2bin",        [Num, Num]  :-> List Byte)
@@ -39,12 +41,12 @@ globals = Map.fromList
     , ("size",           [List Byte] :-> Num)
 
       -- Type aliases
-    , ("type PubKey",    Array Byte 33)
-    , ("type Ripemd160", Array Byte 20)
-    , ("type Sha1",      Array Byte 16)
-    , ("type Sha256",    Array Byte 32)
-    , ("type Sig",       Array Byte 65)
-    , ("type DataSig",   Array Byte 64)
+    , ("type PubKey",    Array Byte $ ConstSize 33)
+    , ("type Ripemd160", Array Byte $ ConstSize 20)
+    , ("type Sha1",      Array Byte $ ConstSize 16)
+    , ("type Sha256",    Array Byte $ ConstSize 32)
+    , ("type Sig",       Array Byte $ ConstSize 65)
+    , ("type DataSig",   Array Byte $ ConstSize 64)
     , ("type TimeSpan",  Num)
     , ("type Time",      Num)
 

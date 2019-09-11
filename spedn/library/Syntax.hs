@@ -15,6 +15,15 @@ import           GHC.Generics
 
 type Name = String
 
+data Size 
+    = ConstSize Int 
+    | SizeParam Name
+    deriving (Eq, Data, Typeable, Generic)
+
+instance Show Size where
+    show (ConstSize s) = show s
+    show (SizeParam n) = n
+
 infixr 5 :->
 infixr 5 :|:
 data Type
@@ -23,7 +32,7 @@ data Type
     | Num
     | Byte
     | Verification    -- | Result of OP_*VERIFY
-    | Array Type Int
+    | Array Type Size
     | List Type
     | Tuple [Type]
     | [Type] :-> Type -- | Function

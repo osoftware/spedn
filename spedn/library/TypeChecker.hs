@@ -96,10 +96,10 @@ checkBranch stmt = do
 
 checkExpr :: Type -> Expr a -> TypeChecker Expr a
 checkExpr t (BoolConst v a)     = return $ BoolConst v (expect t $ Right Bool, a)
-checkExpr t (BinConst v a)      = return $ BinConst v (expect t $ Right $ Array Bit (length v), a)
+checkExpr t (BinConst v a)      = return $ BinConst v (expect t $ Right $ Array Bit (ConstSize $ length v), a)
 checkExpr t (NumConst v a)      = return $ NumConst v (expect t $ Right Num, a)
-checkExpr t (HexConst v a)      = return $ HexConst v (expect t $ Right $ Array Byte (length v), a)
-checkExpr t (StrConst v a)      = return $ StrConst v (expect t $ Right $ Array Byte (length v), a)
+checkExpr t (HexConst v a)      = return $ HexConst v (expect t $ Right $ Array Byte (ConstSize $ length v), a)
+checkExpr t (StrConst v a)      = return $ StrConst v (expect t $ Right $ Array Byte (ConstSize $ length v), a)
 checkExpr t (TimeSpanConst v a) = return $ TimeSpanConst v (expect t $ Right $ Alias "TimeSpan", a)
 checkExpr t (MagicConst str a) = case parseTimeM True defaultTimeLocale "%Y-%-m-%-d %T" str of
     Just time  -> return $ NumConst (round . utcTimeToPOSIXSeconds $ time) (expect t $ Right $ Alias "Time", a)
@@ -167,14 +167,14 @@ typeofM expr = do
 typeof :: Env -> Expr a -> Check Type
 typeof _ (BoolConst _ _)            = return Bool
 typeof _ (BinConst bits _)
-    | length bits <= 15             = return $ Array Bit $ length bits
+    | length bits <= 15             = return $ Array Bit $ ConstSize $ length bits
     | otherwise                     = throwError $ Overflow 15 $ length bits
 typeof _ (NumConst _ _)             = return Num
 typeof _ (HexConst bs _)
-    | length bs <= 520              = return $ Array Byte $ length bs
+    | length bs <= 520              = return $ Array Byte $ ConstSize $ length bs
     | otherwise                     = throwError $ Overflow 520 $ length bs
 typeof _ (StrConst cs _)
-    | strlen cs <= 520              = return $ Array Byte $ strlen cs
+    | strlen cs <= 520              = return $ Array Byte $ ConstSize $ strlen cs
     | otherwise                     = throwError $ Overflow 520 $ strlen cs
 typeof _ (MagicConst cs _)          = throwError $ Ambigious $ "Cannot infer type of `" ++ cs ++ "`."
 typeof _ (TimeSpanConst _ _)        = return $ Alias "TimeSpan"
@@ -182,7 +182,7 @@ typeof env (Var varName _)          = case Env.lookup env varName of
                                         Just t -> return t
                                         _      -> throwError $ NotInScope varName
 typeof env (TupleLiteral es _)      = Tuple <$> sequence (typeof env <$> es)
-typeof env (ArrayLiteral es _)      = Array <$> allSame (typeof env <$> es) <*> pure (length es)
+typeof env (ArrayLiteral es _)      = Array <$> allSame (typeof env <$> es) <*> pure (ConstSize $ length es)
 typeof env (ArrayAccess e i _)      = expect Num (typeof env i) >> typeofElem (typeof env e) i
 typeof env (UnaryExpr Not expr _)   = expect Bool $ typeof env expr
 typeof env (UnaryExpr Minus expr _) = expect Num $ typeof env expr
@@ -236,7 +236,7 @@ typeofTuple ps = Tuple $ partToType <$> ps
     partToType (Gap _)              = Any
 
 typeofElem :: Check Type -> Expr a -> Check Type
-typeofElem (Right (Array t l)) (NumConst i _)
+typeofElem (Right (Array t (ConstSize l))) (NumConst i _)
     | l > i && i >= 0   = Right t
     | otherwise         = Left $ OutOfRange l i
 typeofElem (Right (List t)) (NumConst i _)
@@ -244,15 +244,15 @@ typeofElem (Right (List t)) (NumConst i _)
     | otherwise         = Left $ OutOfRange 520 i
 typeofElem (Right (Array t _)) _ = Right t
 typeofElem (Right (List t)) _    = Right t
-typeofElem t _          = Left $ TypeMismatch (List Any) t
+typeofElem t _          = Left $ TypeMismatch (List Byte :|: (List $ List Byte)) t
 
 toSplitTuple :: Env -> Check Type -> Expr a -> Check Type
 toSplitTuple env (Right l@(Alias _)) r  = toSplitTuple env (unAlias env l) r
-toSplitTuple _ (Right (Array Byte l)) (NumConst pos _)
-    | l > pos && pos >= 0               = Right $ Tuple [Array Byte pos, Array Byte (l - pos)]
+toSplitTuple _ (Right (Array Byte (ConstSize l))) (NumConst pos _)
+    | l > pos && pos >= 0               = Right $ Tuple [Array Byte (ConstSize pos), Array Byte (ConstSize $ l - pos)]
     | otherwise                         = Left $ OutOfRange l pos
 toSplitTuple _ (Right (List Byte)) (NumConst pos _)
-    | pos < 520 && pos >= 0             = Right $ Tuple [Array Byte pos, List Byte]
+    | pos < 520 && pos >= 0             = Right $ Tuple [Array Byte (ConstSize pos), List Byte]
     | otherwise                         = Left $ OutOfRange 520 pos
 toSplitTuple _ (Right (Array Byte _)) _ = Right $ Tuple [List Byte, List Byte]
 toSplitTuple _ (Right (List Byte)) _    = Right $ Tuple [List Byte, List Byte]
@@ -262,8 +262,8 @@ toSplitTuple _ l _                      = l
 catArrays :: Env -> Check Type -> Check Type -> Check Type
 catArrays env (Right l@(Alias _)) r                    = catArrays env (unAlias env l) r
 catArrays env l (Right r@(Alias _))                    = catArrays env l (unAlias env r)
-catArrays _ (Right (Array Byte l)) (Right (Array Byte r))
-    | l + r <= 520                                     = Right $ Array Byte (l + r)
+catArrays _ (Right (Array Byte (ConstSize l))) (Right (Array Byte (ConstSize r)))
+    | l + r <= 520                                     = Right $ Array Byte (ConstSize $ l + r)
     | otherwise                                        = Left $ Overflow 520 (l + r)
 catArrays _ (Right (List Byte)) (Right (Array Byte _)) = Right $ List Byte
 catArrays _ (Right (Array Byte _)) (Right (List Byte)) = Right $ List Byte
@@ -295,13 +295,21 @@ checkCall ins out args = do
 
 checkArg :: (Type, Check Type) -> Checker (Check Type)
 checkArg (_, Left e)  = return $ Left e
-checkArg (t, Right a) = do
+checkArg (TypeParam n, Right a)  = do
+    e <- expected n a
+    return $ expect e (Right a)
+checkArg (t@(Array l (SizeParam n)), Right a@(Array r(ConstSize _)))
+    | l == r    = do
+        e <- expected ('$':n) a
+        return $ expect e (Right a)
+    | otherwise = return $ expect t (Right a)
+checkArg (t, a) = return $ expect t a
+
+expected :: Name -> Type -> Checker Type
+expected n a = do
     env <- get
-    expected <- case t of
-        TypeParam n -> case Env.lookup env n of
-            Just t' -> return t'
-            Nothing -> case add env n a of
-                Right e -> put e >> return a
-                _       -> error "Environment corrupted"
-        t'           -> return t'
-    return $ expect expected (Right a)
+    case Env.lookup env n of
+        Just t' -> return t'
+        Nothing -> case add env n a of
+            Right e -> put e >> return a
+            _       -> error "Environment corrupted"

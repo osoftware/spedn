@@ -67,19 +67,9 @@ varType = choice [ keyword "bool" >> pure Bool
                  , keyword "byte" >> pure Byte
                  , try $ Generic <$> typeName <*> triangles (sepBy1 varType comma)
                  , Alias <$> typeName
-                 , try . brackets $ Array <$> (varType <* semi) <*> decInt
+                 , try . brackets $ Array <$> (varType <* semi) <*> (ConstSize <$> decInt)
                  , try . brackets $ List <$> varType
                  , parens $ Tuple <$> sepBy1 varType comma
-
-                --  , keyword "TimeSpan"  >> pure TimeSpan
-                --  , keyword "Time"      >> pure Time
-                --  , keyword "bin"       >> pure (Bin Raw)
-                --  , keyword "PubKey"    >> pure (Bin PubKey)
-                --  , keyword "Ripemd160" >> pure (Bin Ripemd160)
-                --  , keyword "Sha1"      >> pure (Bin Sha1)
-                --  , keyword "Sha256"    >> pure (Bin Sha256)
-                --  , keyword "Sig"       >> pure (Bin Sig)
-                --  , keyword "DataSig"   >> pure (Bin DataSig)
                  ]
 
 challenge :: Parser Challenge'
