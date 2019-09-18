@@ -9,10 +9,11 @@ import           Bytes
 import           Env
 import           Errors
 import           Syntax
+import           Util
 
 type Check = Either Error
 type Checker = State Env
-type TypeChecker n a = Checker (n (Check Type, a))
+type TypeChecker n a = Checker (n (Check Type, Env, a))
 
 checkSourceFile :: Module a -> TypeChecker Module a
 checkSourceFile (Module _ defs contracts) = do
@@ -25,7 +26,8 @@ checkDef (TypeDef n t a) = do
     def <- addM ("type " ++ n) t
     let rawType = case t of { Array Byte _ -> List Byte; x -> x }
     ctor <- addM n ([rawType] :-> Alias n)
-    return $ TypeDef n t (def >> ctor >> (Right $ Alias n), a)
+    env <- get
+    return $ TypeDef n t (def >> ctor >> (Right $ Alias n), env, a)
 checkDef _ = error "not implemented"
 
 checkContract :: Contract a -> TypeChecker Contract a
@@ -34,58 +36,83 @@ checkContract (Contract n ps cs a) = do
     ps' <- mapM checkVarDecl ps
     cs' <- mapM checkChallenge cs
     leaveM
-    return $ Contract n ps' cs' (Right $ Alias n, a)
+    env <- get
+    return $ Contract n ps' cs' (Right $ Alias n, env, a)
 
 checkChallenge :: Challenge a -> TypeChecker Challenge a
 checkChallenge (Challenge n ps s a) = do
     enterM
     ps' <- mapM checkVarDecl ps
     s' <- checkStatement s
-    let check = expect Verification (fst . ann $ s')
+    let check = expect Verification (fst3 . ann $ s')
     leaveM
-    return $ Challenge n ps' s' (check, a)
+    env <- get
+    return $ Challenge n ps' s' (check, env, a)
 
 checkVarDecl :: VarDecl a -> TypeChecker VarDecl a
 checkVarDecl (VarDecl t n a) = do
-    t' <- addM n t
-    return $ VarDecl t n (t', a)
+    env <- get
+    t' <- case unAlias env t of 
+        Right (List Byte) -> addM n t
+        Right (List e)    -> return $ Left $ TypeMismatch (Array e (SizeParam "length")) (unAlias env t)
+        Right _           -> addM n t
+        l                 -> return l
+    env' <- get
+    return $ VarDecl t n (t', env', a)
 
 checkTuplePart :: TuplePart a -> TypeChecker TuplePart a
 checkTuplePart (TupleVarDecl t n a) = do
-    t' <- addM n t
-    return $ TupleVarDecl t n (t', a)
-checkTuplePart (Gap a) = return $ Gap (Right Any, a)
+    env <- get
+    t' <- case unAlias env t of
+        Right (List Byte)    -> addM n t
+        Right (Array Bit _)  -> addM n t
+        Right (Array Byte _) -> addM n t
+        Right (List _)       -> return $ Left $ TypeMismatch (List Byte) (unAlias env t)
+        Right (Array _ l)    -> return $ Left $ TypeMismatch (Array Byte l) (unAlias env t)
+        Right _              -> addM n t
+        l                    -> return l
+    env' <- get
+    return $ TupleVarDecl t n (t', env', a)
+checkTuplePart (Gap a) = do
+    env <- get
+    return $ Gap (Right Any, env, a)
 
 checkStatement :: Statement a -> TypeChecker Statement a
 checkStatement (Assign d@(VarDecl t _ _) e a) = do
     e' <- checkExpr t e
     d' <- checkVarDecl d
-    return $ Assign d' e' (Right Void, a)
+    env <- get
+    return $ Assign d' e' (Right Void, env, a)
 checkStatement (SplitAssign ps e a) = do
     e' <- checkExpr (typeofTuple ps) e
     ps' <- mapM checkTuplePart ps
-    return $ SplitAssign ps' e' (Right Void, a)
+    env <- get
+    return $ SplitAssign ps' e' (Right Void, env, a)
 checkStatement (Verify e a) = do
     e' <- checkExpr (Bool :|: Verification) e
-    return $ Verify e' (Right Verification, a)
-checkStatement (Return a) =
-    return $ Return (Right Verification, a)
+    env <- get
+    return $ Verify e' (Right Verification, env, a)
+checkStatement (Return a) = do
+    env <- get
+    return $ Return (Right Verification, env, a)
 checkStatement (If cond t f a) = do
     cond' <- checkExpr Bool cond
     t' <- checkBranch t
-    let tc = fst . ann $ t'
+    let tc = fst3 . ann $ t'
+    env <- get
     case f of
-        Nothing -> return $ If cond' t' Nothing (tc, a)
+        Nothing -> return $ If cond' t' Nothing (tc, env, a)
         Just f' -> do
             f'' <- checkBranch f'
-            let fc = fst . ann $ f''
-            return $ If cond' t' (Just f'') (both Verification tc fc, a)
+            let fc = fst3 . ann $ f''
+            return $ If cond' t' (Just f'') (both Verification tc fc, env, a)
 checkStatement (Block stmts a) = do
     enterM
     stmts' <- mapM checkStatement stmts
-    let check = fst . ann . last $ stmts'
+    let check = fst3 . ann . last $ stmts'
     leaveM
-    return $ Block stmts' (check, a)
+    env <- get
+    return $ Block stmts' (check, env, a)
 
 checkBranch :: Statement a -> TypeChecker Statement a
 checkBranch stmt = do
@@ -95,50 +122,72 @@ checkBranch stmt = do
     return stmt'
 
 checkExpr :: Type -> Expr a -> TypeChecker Expr a
-checkExpr t (BoolConst v a)     = return $ BoolConst v (expect t $ Right Bool, a)
-checkExpr t (BinConst v a)      = return $ BinConst v (expect t $ Right $ Array Bit (ConstSize $ length v), a)
-checkExpr t (NumConst v a)      = return $ NumConst v (expect t $ Right Num, a)
-checkExpr t (HexConst v a)      = return $ HexConst v (expect t $ Right $ Array Byte (ConstSize $ length v), a)
-checkExpr t (StrConst v a)      = return $ StrConst v (expect t $ Right $ Array Byte (ConstSize $ length v), a)
-checkExpr t (TimeSpanConst v a) = return $ TimeSpanConst v (expect t $ Right $ Alias "TimeSpan", a)
-checkExpr t (MagicConst str a) = case parseTimeM True defaultTimeLocale "%Y-%-m-%-d %T" str of
-    Just time  -> return $ NumConst (round . utcTimeToPOSIXSeconds $ time) (expect t $ Right $ Alias "Time", a)
-    Nothing -> return $ MagicConst str (Left $ SyntaxError "Cannot parse as Time - expected YYYY-MM-DD hh:mm:ss", a)
+checkExpr t (BoolConst v a) = do
+    env <- get
+    return $ BoolConst v (expect t $ Right Bool, env, a)
+checkExpr t (BinConst v a) = do
+    env <- get
+    return $ BinConst v (expect t $ Right $ Array Bit (ConstSize $ length v), env, a)
+checkExpr t (NumConst v a) = do
+    env <- get
+    return $ NumConst v (expect t $ Right Num, env, a)
+checkExpr t (HexConst v a) = do
+    env <- get
+    return $ HexConst v (expect t $ Right $ Array Byte (ConstSize $ length v), env, a)
+checkExpr t (StrConst v a) = do
+    env <- get
+    return $ StrConst v (expect t $ Right $ Array Byte (ConstSize $ length v), env, a)
+checkExpr t (TimeSpanConst v a) = do
+    env <- get
+    return $ TimeSpanConst v (expect t $ Right $ Alias "TimeSpan", env, a)
+checkExpr t (MagicConst str a) = do
+    env <- get
+    case parseTimeM True defaultTimeLocale "%Y-%-m-%-d %T" str of
+        Just time  -> return $ NumConst (round . utcTimeToPOSIXSeconds $ time) (expect t $ Right $ Alias "Time", env, a)
+        Nothing -> return $ MagicConst str (Left $ SyntaxError "Cannot parse as Time - expected YYYY-MM-DD hh:mm:ss", env, a)
 checkExpr t expr@(Var n a) = do
     t' <- typeofM expr
-    return $ Var n (expect t t', a)
+    env <- get
+    return $ Var n (expect t t', env, a)
 checkExpr t expr@(ArrayLiteral es a) = do
-    t' <- typeofM expr
     es' <- mapM (checkExpr Any) es
-    return $ ArrayLiteral es' (expect t t', a)
+    t' <- typeofM expr
+    env <- get
+    return $ ArrayLiteral es' (expect t t', env, a)
 checkExpr t expr@(TupleLiteral es a) = do
     t' <- typeofM expr
     es' <- mapM (checkExpr Any) es
-    return $ TupleLiteral es' (expect t t', a)
+    env <- get
+    return $ TupleLiteral es' (expect t t', env, a)
 checkExpr t expr@(ArrayAccess e i a) = do
     t' <- typeofM expr
     e' <- checkExpr Any e
     i' <- checkExpr Num i
-    return $ ArrayAccess e' i' (expect t t', a)
+    env <- get
+    return $ ArrayAccess e' i' (expect t t', env, a)
 checkExpr t expr@(UnaryExpr op e a) = do
     t' <- typeofM expr
     e' <- checkExpr Any e
-    return $ UnaryExpr op e' (expect t t', a)
+    env <- get
+    return $ UnaryExpr op e' (expect t t', env, a)
 checkExpr t expr@(BinaryExpr op l r a) = do
     t' <- typeofM expr
     l' <- checkExpr Any l
     r' <- checkExpr Any r
-    return $ BinaryExpr op l' r' (expect t t', a)
+    env <- get
+    return $ BinaryExpr op l' r' (expect t t', env, a)
 checkExpr t expr@(TernaryExpr cond tr fl a) = do
     t' <- typeofM expr
     cond' <- checkExpr Bool cond
     tr' <- checkExpr Any tr
     fl' <- checkExpr Any fl
-    return $ TernaryExpr cond' tr' fl' (expect t t', a)
+    env <- get
+    return $ TernaryExpr cond' tr' fl' (expect t t', env, a)
 checkExpr t expr@(Call n args a) = do
     t' <- typeofM expr
     args' <- mapM (checkExpr Any) args
-    return $ Call n args' (expect t t', a)
+    env <- get
+    return $ Call n args' (expect t t', env,a)
 
 enterM :: Checker ()
 enterM = do
@@ -313,3 +362,4 @@ expected n a = do
         Nothing -> case add env n a of
             Right e -> put e >> return a
             _       -> error "Environment corrupted"
+

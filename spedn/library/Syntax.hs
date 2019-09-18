@@ -15,8 +15,8 @@ import           GHC.Generics
 
 type Name = String
 
-data Size 
-    = ConstSize Int 
+data Size
+    = ConstSize Int
     | SizeParam Name
     deriving (Eq, Data, Typeable, Generic)
 
@@ -112,6 +112,23 @@ data Expr a
     | TernaryExpr (Expr a) (Expr a) (Expr a) a
     | Call Name [Expr a] a
     deriving (Eq, Show, Functor, Foldable, Traversable, Data, Typeable, Generic)
+
+instance Annotated Expr a where
+    ann (BoolConst _ a)       = a
+    ann (BinConst _ a)        = a
+    ann (NumConst _ a)        = a
+    ann (HexConst _ a)        = a
+    ann (StrConst _ a)        = a
+    ann (MagicConst _ a)      = a
+    ann (TimeSpanConst _ a)   = a
+    ann (Var _ a)             = a
+    ann (TupleLiteral _ a)    = a
+    ann (ArrayLiteral _ a)    = a
+    ann (ArrayAccess _ _ a)   = a
+    ann (UnaryExpr _ _ a)     = a
+    ann (BinaryExpr _ _ _ a)  = a
+    ann (TernaryExpr _ _ _ a) = a
+    ann (Call _ _ a)          = a
 
 data Statement a
     = Assign (VarDecl a) (Expr a) a

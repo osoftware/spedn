@@ -5,19 +5,26 @@ import           Control.Monad.Writer
 import           Data.List
 import           Data.Maybe
 import           Data.Word
+import           Text.Megaparsec
 
-import           Syntax
+import           Bytes
 import           Env
+import           Syntax
+import           TypeChecker
+
+{-# ANN module "HLint: ignore" #-}
 
 data OpCode
-    = OpPick Int
-    | OpRoll Int
+    = OpPick
+    | OpRoll
     | OpCall Name
     | OpVerify
+    | OpReturn
     | OpPush Name
     | OpPushBool Bool
+    | OpPushBits [Bool]
     | OpPushNum Int
-    | OpPushBin [Word8]
+    | OpPushBytes [Word8]
     | OpIf
     | OpElse
     | OpEndIf
@@ -28,6 +35,7 @@ data OpCode
 type IR = [OpCode]
 type Stack = [Name]
 type Compiler = StateT Stack (Writer IR) ()
+type Ann = (Check Type, Env, SourcePos)
 
 emit :: [OpCode] -> Compiler
 emit = tell
@@ -54,13 +62,13 @@ from name stack = fromJust $ name `elemIndex` stack
 emitPickM :: Name -> Compiler
 emitPickM name = do
     stack <- get
-    emit [OpPick $ name `from` stack]
+    emit [OpPushNum $ name `from` stack, OpPick]
     pushM $ "$" ++ name
 
 emitRollM :: Name -> Compiler
 emitRollM name = do
     stack <- get
-    emit [OpRoll $ name `from` stack]
+    emit [OpPushNum $ name `from` stack, OpRoll]
     rollM name
 
 emitDropM :: Compiler
@@ -76,22 +84,54 @@ emitNipM = do
                   _          -> fail "Invalid stack"
     emit [OpNip]
 
-contractCompiler :: Contract a -> Compiler
-contractCompiler (Contract _ ps cs _) = do
-    mapM_ (\n -> emit [OpPush n]) $ nameof <$> ps
+pushParamM :: VarDecl Ann -> Compiler
+pushParamM (VarDecl t name (_, env, _)) =
+    case unAlias env t of
+        Right (Array Byte _) -> do
+            pushM name
+        Right (List Byte) -> do
+            pushM name
+        Right (Array _ (ConstSize l)) -> do
+            mapM_ (\i -> pushM $ name ++ "$" ++ show i) [0..(l - 1)]
+        Right (Tuple ts) -> do
+            mapM_ (\i -> pushM $ name ++ "$" ++ show i) [0..(length ts - 1)]
+        _ -> do
+            pushM name
+
+emitPushParamM :: VarDecl Ann -> Compiler
+emitPushParamM (VarDecl t name (_, env, _)) =
+    case unAlias env t of
+        Right (Array Byte _) -> do
+            pushM name
+            emit [OpPush name]
+        Right (List Byte) -> do
+            pushM name
+            emit [OpPush name]
+        Right (Array _ (ConstSize l)) -> do
+            mapM_ (\i -> pushM $ name ++ "$" ++ show i) [0..(l - 1)]
+            mapM_ (\i -> emit [OpPush $ name ++ "$" ++ show i]) [0..(l - 1)]
+        Right (Tuple ts) -> do
+            mapM_ (\i -> pushM $ name ++ "$" ++ show i) [0..(length ts - 1)]
+            mapM_ (\i -> emit [OpPush $ name ++ "$" ++ show i]) [0..(length ts - 1)]
+        _ -> do
+            pushM name
+            emit [OpPush name]
+
+contractCompiler :: Contract Ann -> Compiler
+contractCompiler (Contract _ ps cs _) =
     if length cs == 1
     then singleChallengeCompiler ps (head cs)
     else challengesCompiler ps cs
 
 
-singleChallengeCompiler :: [Param a] -> Challenge a -> Compiler
+singleChallengeCompiler :: [VarDecl Ann] -> Challenge Ann -> Compiler
 singleChallengeCompiler ps (Challenge _ args s _) = do
-    mapM_ pushM $ nameof <$> args
-    mapM_ pushM $ nameof <$> ps
+    mapM_ pushParamM args
+    mapM_ emitPushParamM ps
     stmtCompiler s True
     replicateM_ (length args + length ps) emitNipM
 
-challengesCompiler :: [Param a] -> [Challenge a] -> Compiler
+challengesCompiler :: [VarDecl Ann] -> [Challenge Ann] -> Compiler
 challengesCompiler ps cs = do
     let cases = length cs
     mapM_ (nthChallengeCompiler ps) (zip cs [1..])
@@ -99,11 +139,11 @@ challengesCompiler ps cs = do
     pushM "$default"
     replicateM_ cases $ emit [OpEndIf]
 
-nthChallengeCompiler :: [Param a] -> (Challenge a, Int) -> Compiler
+nthChallengeCompiler :: [VarDecl Ann] -> (Challenge Ann, Int) -> Compiler
 nthChallengeCompiler ps (Challenge _ args s _, num) = do
-    mapM_ pushM $ nameof <$> args
+    mapM_ pushParamM args
     pushM "$case"
-    mapM_ pushM $ nameof <$> ps
+    mapM_ emitPushParamM ps
     emitPickM "$case"
     emit [OpPushNum num, OpCall "Eq", OpIf]
     popM
@@ -112,27 +152,40 @@ nthChallengeCompiler ps (Challenge _ args s _, num) = do
     emit [OpElse]
     popM
 
-nameof :: Param a -> Name
-nameof (Param _ n _) = n
+nameof :: VarDecl Ann -> Name
+nameof (VarDecl _ n _) = n
 
-stmtCompiler :: Statement a -> Bool -> Compiler
-stmtCompiler (Assign _ name expr _) _ = do
+stmtCompiler :: Statement Ann -> Bool -> Compiler
+stmtCompiler (Assign (VarDecl (Array _ (SizeParam _)) _ _) _ _) _ = error "AST corrupted"
+stmtCompiler (Assign (VarDecl t name _) expr (_, env, _)) _ = do
     exprCompiler expr
-    popM
-    pushM name
-stmtCompiler (SplitAssign _ (l, r) expr _) _ = do
+    case unAlias env t of
+        Right (Array Byte _) -> do
+            popM
+            pushM name
+        Right (List Byte) -> do
+            popM
+            pushM name
+        Right (Array _ (ConstSize l)) -> do
+            replicateM_ l popM
+            mapM_ (\i -> pushM $ name ++ "$" ++ show i) [0..(l - 1)]
+        Right (Tuple ts) -> do
+            replicateM_ (length ts) popM
+            mapM_ (\i -> pushM $ name ++ "$" ++ show i) [0..(length ts - 1)]
+        _ -> do
+            popM
+            pushM name
+stmtCompiler (SplitAssign parts expr _) _ = do
     exprCompiler expr
-    popM
-    popM
-    pushM l
-    pushM r
-    when (l == "_") emitNipM
-    when (r == "_") emitDropM
+    replicateM_ (length parts) popM
+    mapM_ tuplePartCompiler parts
+    dropGapsM
 stmtCompiler (Verify expr _) final = do
     exprCompiler expr
     unless final $ do
         emit [OpVerify]
         popM
+stmtCompiler (Return _) _ = emit [OpReturn]
 stmtCompiler (If cond t f _) final = do
     exprCompiler cond
     emit [OpIf]
@@ -154,20 +207,45 @@ stmtCompiler (Block ss _) final = do
     then replicateM_ (diff - 1) emitNipM
     else replicateM_ diff emitDropM
 
+tuplePartCompiler :: TuplePart Ann -> Compiler
+tuplePartCompiler (TupleVarDecl _ n _) = pushM n
+tuplePartCompiler (Gap _)              = pushM "$gap"
 
-sequenceCompiler :: [Statement a] -> Bool -> Compiler
+dropGapsM :: Compiler
+dropGapsM = do
+    stack <- get
+    case "$gap" `elemIndex` stack of
+        Nothing -> return ()
+        Just 0  -> emitDropM >> dropGapsM
+        Just 1  -> emitNipM >> dropGapsM
+        Just _  -> emitRollM "$gap" >> emitDropM >> dropGapsM
+
+sequenceCompiler :: [Statement Ann] -> Bool -> Compiler
 sequenceCompiler [s] final    = stmtCompiler s final
 sequenceCompiler (s:ss) final = stmtCompiler s False >> sequenceCompiler ss final
 sequenceCompiler [] _         = return ()
 
-exprCompiler :: Expr a -> Compiler
+exprCompiler :: Expr Ann -> Compiler
 exprCompiler (BoolConst val _)     = emit [OpPushBool val] >> pushM "$const"
+exprCompiler (BinConst val _)      = emit [OpPushBits val] >> pushM "$const"
 exprCompiler (NumConst val _)      = emit [OpPushNum val]  >> pushM "$const"
-exprCompiler (BinConst val _)      = emit [OpPushBin val]  >> pushM "$const"
-exprCompiler (TimeConst val _)     = emit [OpPushNum val]  >> pushM "$const"
+exprCompiler (HexConst val _)      = emit [OpPushBytes val]  >> pushM "$const"
+exprCompiler (StrConst val _)      = emit [OpPushBytes $ serializeStr val] >> pushM "$const"
 exprCompiler (TimeSpanConst val _) = emit [OpPushNum val]  >> pushM "$const"
 exprCompiler (Var name _)          = emitPickM name
-exprCompiler (Array es _)          = mapM_ exprCompiler es
+exprCompiler (TupleLiteral es _)   = mapM_ exprCompiler es
+exprCompiler (ArrayLiteral es _)   = mapM_ exprCompiler es
+exprCompiler (ArrayAccess (Var name (Right t, env, _)) (NumConst i _) _) =
+    case unAlias env t of
+        Right (Array Byte _) -> byteAtM name i
+        Right (List Byte)    -> byteAtM name i
+        _                    -> emitPickM $ name ++ "$" ++ show i
+exprCompiler (ArrayAccess expr@(Var name (Right t, env, _)) i _) =
+    case unAlias env t of
+        Right (Array Byte _) -> byteAtExprM expr i
+        Right (List Byte)    -> byteAtExprM expr i
+        _                    -> elemAtM name i
+exprCompiler (ArrayAccess expr i _) = byteAtExprM expr i
 exprCompiler (UnaryExpr op e _) = do
     exprCompiler e
     emit [OpCall $ show op]
@@ -192,12 +270,12 @@ exprCompiler (TernaryExpr cond t f _) = do
     popM
     emit [OpEndIf]
     pushM "$tmp"
-exprCompiler (Call "checkMultiSig" [Array sigs _, Array keys _] _) = do
-    emit [OpPushBool False] -- even Satoshi made an off by one mistake
-    mapM_ exprCompiler sigs
-    emit [OpPushNum $ length sigs]
-    mapM_ exprCompiler keys
-    emit [OpPushNum $ length keys]
+exprCompiler (Call "checkMultiSig" [checkbits, sigs, keys] _) = do
+    exprCompiler checkbits
+    exprCompiler sigs
+    emit [OpPushNum $ height sigs]
+    exprCompiler keys
+    emit [OpPushNum $ height keys]
     emit [OpCall "checkMultiSig"]
     replicateM_ (length sigs + length keys) popM
     pushM "$tmp"
@@ -209,3 +287,41 @@ exprCompiler (Call name args _)
         replicateM_ (length args) popM
         when (name `elem` ["fst", "snd"]) popM
         pushM "$tmp"
+exprCompiler (MagicConst _ _)      = error "AST corrupted"
+
+
+byteAtM :: Name -> Int -> Compiler
+byteAtM name i = do
+    emitPickM name
+    emit [OpPushNum i, OpCall "Split", OpNip, OpPushNum 1, OpCall "Split", OpDrop]
+    popM
+    pushM "$tmp"
+
+byteAtExprM :: Expr Ann -> Expr Ann -> Compiler
+byteAtExprM expr i = do
+    exprCompiler expr
+    exprCompiler i
+    emit [OpCall "Split", OpNip, OpPushNum 1, OpCall "Split", OpDrop]
+    popM
+    popM
+    pushM "$tmp"
+
+elemAtM :: Name -> Expr Ann -> Compiler
+elemAtM name expr = do
+    stack <- get
+    let i = (name ++ "$0") `from` stack + 1
+    emit [OpPushNum i]
+    pushM "$const"
+    exprCompiler expr
+    emit [OpCall "Sub", OpPick]
+    popM
+    popM
+    pushM $ name ++ "$tmp"
+
+height :: Expr Ann -> Int
+height (ArrayLiteral es _)                           = sum $ height <$> es
+height (TupleLiteral es _)                           = sum $ height <$> es
+height (Var _ (Right (Array Byte _), _, _))          = 1
+height (Var _ (Right (Array Bit _), _, _))           = 1
+height (Var _ (Right (Array _ (ConstSize n)), _, _)) = n
+height _                                             = 1
