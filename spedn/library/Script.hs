@@ -290,15 +290,22 @@ compileOp (OpPushNum val) | val == -1            = [OP_1NEGATE]
                           | val == 0             = [OP_FALSE]
                           | val == 1             = [OP_TRUE]
                           | val > 1 && val <= 16 = [OP_N val]
-                          | otherwise            = let payload = serialize val
-                                                   in [OP_PUSHDATA0 (head . serialize . length $ payload) payload]
-compileOp (OpPushBin val) | length val <= 0x4b   = [OP_PUSHDATA0 (head . serialize . length $ val) val]
-                          | length val <= 0xff   = [OP_PUSHDATA1 (head . serialize . length $ val) val]
-                          | length val <= 0xffff = [OP_PUSHDATA2 (serialize . length $ val) val]
-                          | otherwise            = [OP_PUSHDATA4 (serialize . length $ val) val]
+                          | otherwise            = let payload = serializeInt val
+                                                   in [OP_PUSHDATA0 (head . serializeInt . length $ payload) payload]
+compileOp (OpPushBytes val)
+  | length val == 1 && head val == 0x81              = [OP_1NEGATE]
+  | length val == 1 && head val == 0                 = [OP_FALSE]
+  | length val == 1 && head val == 1                 = [OP_TRUE]
+  | length val == 1 && head val > 1 && head val <=16 = [OP_N $ fromIntegral . head $ val]
+  | length val <= 0x4b                               = [OP_PUSHDATA0 (head . serializeInt . length $ val) val]
+  | length val <= 0xff                               = [OP_PUSHDATA1 (head . serializeInt . length $ val) val]
+  | length val <= 0xffff                             = [OP_PUSHDATA2 (serializeInt . length $ val) val]
+  | otherwise                                        = [OP_PUSHDATA4 (serializeInt . length $ val) val]
+compileOp (OpPushBits val)
+  | val == [True, False, False, False, False, False, False, True] = [OP_1NEGATE]
+  | length val <= 8                                               = compileOp $ OpPushNum $ bitsToInt val
+  | otherwise                                                     = compileOp $ OpPushBytes $ serializeBits val
 compileOp (OpPush name) = [OP_PUSH name]
-compileOp (OpPick i)  = compileOp (OpPushNum i) ++ [OP_PICK]
-compileOp (OpRoll i)  = compileOp (OpPushNum i) ++ [OP_ROLL]
 compileOp (OpCall op) = case op of
                           -- Operators
                           "Not"           -> [OP_NOT]
@@ -345,7 +352,10 @@ compileOp (OpCall op) = case op of
                           "snd"           -> [OP_NIP]
                           "toDataSig"     -> [OP_SIZE, OP_1SUB, OP_SPLIT, OP_DROP]
                           _               -> fail "Unknown function"
+compileOp OpPick   = [OP_PICK]
+compileOp OpRoll   = [OP_ROLL]
 compileOp OpVerify = [OP_VERIFY]
+compileOp OpReturn = [OP_RETURN]
 compileOp OpIf     = [OP_IF]
 compileOp OpElse   = [OP_ELSE]
 compileOp OpEndIf  = [OP_ENDIF]

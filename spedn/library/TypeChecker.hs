@@ -216,8 +216,8 @@ typeofM expr = do
 typeof :: Env -> Expr a -> Check Type
 typeof _ (BoolConst _ _)            = return Bool
 typeof _ (BinConst bits _)
-    | length bits <= 15             = return $ Array Bit $ ConstSize $ length bits
-    | otherwise                     = throwError $ Overflow 15 $ length bits
+    | length bits <= 20             = return $ Array Bit $ ConstSize $ length bits
+    | otherwise                     = throwError $ Overflow 20 $ length bits
 typeof _ (NumConst _ _)             = return Num
 typeof _ (HexConst bs _)
     | length bs <= 520              = return $ Array Byte $ ConstSize $ length bs
