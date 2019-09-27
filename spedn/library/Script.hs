@@ -341,8 +341,8 @@ compileOp (OpCall op) = case op of
                           "checkLockTime" -> [OP_CHECKLOCKTIME, OP_DROP, OP_TRUE]
                           "checkSequence" -> [OP_CHECKSEQUENCE, OP_DROP, OP_TRUE]
                           "checkDataSig"  -> [OP_CHECKDATASIG]
-                          "fst"           -> [OP_SPLIT, OP_DROP]
-                          "snd"           -> [OP_SPLIT, OP_NIP]
+                          "fst"           -> [OP_DROP]
+                          "snd"           -> [OP_NIP]
                           "toDataSig"     -> [OP_SIZE, OP_1SUB, OP_SPLIT, OP_DROP]
                           _               -> fail "Unknown function"
 compileOp OpVerify = [OP_VERIFY]
