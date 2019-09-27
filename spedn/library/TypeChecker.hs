@@ -52,7 +52,7 @@ checkChallenge (Challenge n ps s a) = do
 checkVarDecl :: VarDecl a -> TypeChecker VarDecl a
 checkVarDecl (VarDecl t n a) = do
     env <- get
-    t' <- case unAlias env t of 
+    t' <- case unAlias env t of
         Right (List Byte) -> addM n t
         Right (List e)    -> return $ Left $ TypeMismatch (Array e (SizeParam "length")) (unAlias env t)
         Right _           -> addM n t
@@ -323,10 +323,10 @@ catArrays _ _ r                                        = Left $ TypeMismatch (Li
 
 typeofCall :: Name -> [Type] -> Type -> [Check Type] -> Check Type
 typeofCall fn ins out args = if length ins == length args
-                                then case evalState (checkCall ins out args) [] of
-                                    Left _ -> throwError $ ArgumentMismatch fn (ins :-> out) args
-                                    t      -> t
-                                else throwError $ ArgumentMismatch fn (ins :-> out) args
+                             then case evalState (checkCall ins out args) [] of
+                                Left _ -> throwError $ ArgumentMismatch fn (ins :-> out) args
+                                t      -> t
+                             else throwError $ ArgumentMismatch fn (ins :-> out) args
 
 checkCall :: [Type] -> Type -> [Check Type] -> Checker (Check Type)
 checkCall ins out args = do
@@ -334,7 +334,7 @@ checkCall ins out args = do
     let pairs = zip ins args
     args' <- mapM checkArg pairs
     env <- get
-    return $ case foldr (>>) (Right Any) args' of
+    return $ case foldr1 (>>) args' of
         e@(Left _) -> e
         _          -> case out of
             TypeParam n -> case Env.lookup env n of
@@ -344,7 +344,7 @@ checkCall ins out args = do
 
 checkArg :: (Type, Check Type) -> Checker (Check Type)
 checkArg (_, Left e)  = return $ Left e
-checkArg (TypeParam n, Right a)  = do
+checkArg (TypeParam n, Right a) = do
     e <- expected n a
     return $ expect e (Right a)
 checkArg (t@(Array l (SizeParam n)), Right a@(Array r(ConstSize _)))
@@ -352,6 +352,13 @@ checkArg (t@(Array l (SizeParam n)), Right a@(Array r(ConstSize _)))
         e <- expected ('$':n) a
         return $ expect e (Right a)
     | otherwise = return $ expect t (Right a)
+checkArg (t@(Tuple ts), a@(Right (Tuple as))) =
+    if length ts /= length as
+    then return $ Left $ TypeMismatch t a
+    else do
+        let pairs = zip ts (pure <$> as)
+        args <- mapM checkArg pairs
+        return $ foldr1 (>>) args
 checkArg (t, a) = return $ expect t a
 
 expected :: Name -> Type -> Checker Type
