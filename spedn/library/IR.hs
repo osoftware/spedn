@@ -139,7 +139,10 @@ stmtCompiler (If cond t f _) final = do
     popM
     stmtCompiler t final
     case f of
-        Just fl -> emit [OpElse] >> stmtCompiler fl final
+        Just fl -> do
+            when final popM
+            emit [OpElse]
+            stmtCompiler fl final
         Nothing -> when final $ emit [OpElse, OpPushBool True]
     emit [OpEndIf]
 stmtCompiler (Block ss _) final = do
