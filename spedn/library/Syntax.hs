@@ -95,6 +95,9 @@ data BinaryOp
 class Annotated a b where
     ann :: a b -> b
 
+class Named a where
+    nameof :: a -> Name
+
 data Expr a
     = BoolConst Bool a
     | BinConst [Bool] a
@@ -150,13 +153,23 @@ instance Annotated Statement a where
 data Challenge a = Challenge Name [VarDecl a] (Statement a) a
     deriving (Eq, Show, Functor, Foldable, Traversable, Data, Typeable, Generic)
 
+instance Named (Challenge a) where
+    nameof (Challenge n _ _ _) = n
+
 data VarDecl a = VarDecl Type Name a
     deriving (Eq, Show, Functor, Foldable, Traversable, Data, Typeable, Generic)
+
+instance Named (VarDecl a) where
+    nameof (VarDecl _ n _) = n
 
 data TuplePart a
     = TupleVarDecl Type Name a
     | Gap a
     deriving (Eq, Show, Functor, Foldable, Traversable, Data, Typeable, Generic)
+
+instance Named (TuplePart a) where
+    nameof (TupleVarDecl _ n _) = n
+    nameof (Gap _)              = "_"
 
 data Contract a = Contract
     { contractName       :: !Name
@@ -167,6 +180,9 @@ data Contract a = Contract
 
 contractType :: Contract a -> Type
 contractType (Contract n _ _ _) = Alias n
+
+instance Named (Contract a) where
+    nameof = contractName
 
 data Def a
     = TypeDef Name Type a

@@ -129,7 +129,7 @@ singleChallengeCompiler ps (Challenge _ args s _) = do
     mapM_ pushParamM args
     mapM_ emitPushParamM ps
     stmtCompiler s True
-    replicateM_ (length args + length ps) emitNipM
+    replicateM_ (sum $ declHeight <$> args ++ ps) emitNipM
 
 challengesCompiler :: [VarDecl Ann] -> [Challenge Ann] -> Compiler
 challengesCompiler ps cs = do
@@ -148,12 +148,9 @@ nthChallengeCompiler ps (Challenge _ args s _, num) = do
     emit [OpPushNum num, OpCall "Eq", OpIf]
     popM
     stmtCompiler s True
-    replicateM_ (length args + length ps + 1) emitNipM
+    replicateM_ (sum (declHeight <$> args ++ ps) + 1) emitNipM
     emit [OpElse]
     popM
-
-nameof :: VarDecl Ann -> Name
-nameof (VarDecl _ n _) = n
 
 stmtCompiler :: Statement Ann -> Bool -> Compiler
 stmtCompiler (Assign (VarDecl (Array _ (SizeParam _)) _ _) _ _) _ = error "AST corrupted"
@@ -232,7 +229,15 @@ exprCompiler (NumConst val _)      = emit [OpPushNum val]  >> pushM "$const"
 exprCompiler (HexConst val _)      = emit [OpPushBytes val]  >> pushM "$const"
 exprCompiler (StrConst val _)      = emit [OpPushBytes $ serializeStr val] >> pushM "$const"
 exprCompiler (TimeSpanConst val _) = emit [OpPushNum val]  >> pushM "$const"
-exprCompiler (Var name _)          = emitPickM name
+exprCompiler (Var name (Right t, env, _)) =
+    case unAlias env t of
+        Right (Array Byte _)          -> emitPickM name
+        Right (List Byte)             -> emitPickM name
+        Right (Array _ (ConstSize n)) -> mapM_ (\i -> emitPickM $ name ++ "$" ++ show i) [0..(n - 1)]
+        Right (Tuple ts)              -> mapM_ (\i -> emitPickM $ name ++ "$" ++ show i) [0..(length ts - 1)]
+        Right (Array _ _)             -> error "AST corrupted"
+        Right (List _)                -> error "AST corrupted"
+        _                             -> emitPickM name
 exprCompiler (TupleLiteral es _)   = mapM_ exprCompiler es
 exprCompiler (ArrayLiteral es _)   = mapM_ exprCompiler es
 exprCompiler (ArrayAccess (Var name (Right t, env, _)) (NumConst i _) _) =
@@ -319,9 +324,17 @@ elemAtM name expr = do
     pushM $ name ++ "$tmp"
 
 height :: Expr Ann -> Int
-height (ArrayLiteral es _)                           = sum $ height <$> es
-height (TupleLiteral es _)                           = sum $ height <$> es
-height (Var _ (Right (Array Byte _), _, _))          = 1
-height (Var _ (Right (Array Bit _), _, _))           = 1
-height (Var _ (Right (Array _ (ConstSize n)), _, _)) = n
-height _                                             = 1
+height (ArrayLiteral es _)     = sum $ height <$> es
+height (TupleLiteral es _)     = sum $ height <$> es
+height (Var _ (Right t, _, _)) = typeHeight t
+height _                       = 1
+
+declHeight :: VarDecl a -> Int
+declHeight (VarDecl t _ _) = typeHeight t
+
+typeHeight :: Type -> Int
+typeHeight (Array Byte _)          = 1
+typeHeight (Array Bit _)           = 1
+typeHeight (Array _ (ConstSize n)) = n
+typeHeight (Tuple ts)              = sum $ typeHeight <$> ts
+typeHeight _                       = 1
