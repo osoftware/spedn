@@ -42,6 +42,7 @@ executables:
     - bytestring
     - base16-bytestring
     - optparse-applicative
+    - containers
     ghc-options:
     - -rtsopts
     - -threaded
