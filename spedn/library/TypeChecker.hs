@@ -44,9 +44,9 @@ checkChallenge (Challenge n ps s a) = do
     enterM
     ps' <- mapM checkVarDecl ps
     s' <- checkStatement s
-    let check = expect Verification (fst3 . ann $ s')
-    leaveM
     env <- get
+    let check = expect env Verification (fst3 . ann $ s')
+    leaveM
     return $ Challenge n ps' s' (check, env, a)
 
 checkVarDecl :: VarDecl a -> TypeChecker VarDecl a
@@ -105,7 +105,7 @@ checkStatement (If cond t f a) = do
         Just f' -> do
             f'' <- checkBranch f'
             let fc = fst3 . ann $ f''
-            return $ If cond' t' (Just f'') (both Verification tc fc, env, a)
+            return $ If cond' t' (Just f'') (both env Verification tc fc, env, a)
 checkStatement (Block stmts a) = do
     enterM
     stmts' <- mapM checkStatement stmts
@@ -124,70 +124,70 @@ checkBranch stmt = do
 checkExpr :: Type -> Expr a -> TypeChecker Expr a
 checkExpr t (BoolConst v a) = do
     env <- get
-    return $ BoolConst v (expect t $ Right Bool, env, a)
+    return $ BoolConst v (expect env t $ Right Bool, env, a)
 checkExpr t (BinConst v a) = do
     env <- get
-    return $ BinConst v (expect t $ Right $ Array Bit (ConstSize $ length v), env, a)
+    return $ BinConst v (expect env t $ Right $ Array Bit (ConstSize $ length v), env, a)
 checkExpr t (NumConst v a) = do
     env <- get
-    return $ NumConst v (expect t $ Right Num, env, a)
+    return $ NumConst v (expect env t $ Right Num, env, a)
 checkExpr t (HexConst v a) = do
     env <- get
-    return $ HexConst v (expect t $ Right $ Array Byte (ConstSize $ length v), env, a)
+    return $ HexConst v (expect env t $ Right $ Array Byte (ConstSize $ length v), env, a)
 checkExpr t (StrConst v a) = do
     env <- get
-    return $ StrConst v (expect t $ Right $ Array Byte (ConstSize $ length v), env, a)
+    return $ StrConst v (expect env t $ Right $ Array Byte (ConstSize $ length v), env, a)
 checkExpr t (TimeSpanConst v a) = do
     env <- get
-    return $ TimeSpanConst v (expect t $ Right $ Alias "TimeSpan", env, a)
+    return $ TimeSpanConst v (expect env t $ Right $ Alias "TimeSpan", env, a)
 checkExpr t (MagicConst str a) = do
     env <- get
     case parseTimeM True defaultTimeLocale "%Y-%-m-%-d %T" str of
-        Just time  -> return $ NumConst (round . utcTimeToPOSIXSeconds $ time) (expect t $ Right $ Alias "Time", env, a)
+        Just time  -> return $ NumConst (round . utcTimeToPOSIXSeconds $ time) (expect env t $ Right $ Alias "Time", env, a)
         Nothing -> return $ MagicConst str (Left $ SyntaxError "Cannot parse as Time - expected YYYY-MM-DD hh:mm:ss", env, a)
 checkExpr t expr@(Var n a) = do
     t' <- typeofM expr
     env <- get
-    return $ Var n (expect t t', env, a)
+    return $ Var n (expect env t t', env, a)
 checkExpr t expr@(ArrayLiteral es a) = do
     es' <- mapM (checkExpr Any) es
     t' <- typeofM expr
     env <- get
-    return $ ArrayLiteral es' (expect t t', env, a)
+    return $ ArrayLiteral es' (expect env t t', env, a)
 checkExpr t expr@(TupleLiteral es a) = do
     t' <- typeofM expr
     es' <- mapM (checkExpr Any) es
     env <- get
-    return $ TupleLiteral es' (expect t t', env, a)
+    return $ TupleLiteral es' (expect env t t', env, a)
 checkExpr t expr@(ArrayAccess e i a) = do
     t' <- typeofM expr
     e' <- checkExpr Any e
     i' <- checkExpr Num i
     env <- get
-    return $ ArrayAccess e' i' (expect t t', env, a)
+    return $ ArrayAccess e' i' (expect env t t', env, a)
 checkExpr t expr@(UnaryExpr op e a) = do
     t' <- typeofM expr
     e' <- checkExpr Any e
     env <- get
-    return $ UnaryExpr op e' (expect t t', env, a)
+    return $ UnaryExpr op e' (expect env t t', env, a)
 checkExpr t expr@(BinaryExpr op l r a) = do
     t' <- typeofM expr
     l' <- checkExpr Any l
     r' <- checkExpr Any r
     env <- get
-    return $ BinaryExpr op l' r' (expect t t', env, a)
+    return $ BinaryExpr op l' r' (expect env t t', env, a)
 checkExpr t expr@(TernaryExpr cond tr fl a) = do
     t' <- typeofM expr
     cond' <- checkExpr Bool cond
     tr' <- checkExpr Any tr
     fl' <- checkExpr Any fl
     env <- get
-    return $ TernaryExpr cond' tr' fl' (expect t t', env, a)
+    return $ TernaryExpr cond' tr' fl' (expect env t t', env, a)
 checkExpr t expr@(Call n args a) = do
     t' <- typeofM expr
     args' <- mapM (checkExpr Any) args
     env <- get
-    return $ Call n args' (expect t t', env,a)
+    return $ Call n args' (expect env t t', env,a)
 
 enterM :: Checker ()
 enterM = do
@@ -231,10 +231,10 @@ typeof env (Var varName _)          = case Env.lookup env varName of
                                         Just t -> return t
                                         _      -> throwError $ NotInScope varName
 typeof env (TupleLiteral es _)      = Tuple <$> sequence (typeof env <$> es)
-typeof env (ArrayLiteral es _)      = Array <$> allSame (typeof env <$> es) <*> pure (ConstSize $ length es)
-typeof env (ArrayAccess e i _)      = expect Num (typeof env i) >> typeofElem (typeof env e) i
-typeof env (UnaryExpr Not expr _)   = expect Bool $ typeof env expr
-typeof env (UnaryExpr Minus expr _) = expect Num $ typeof env expr
+typeof env (ArrayLiteral es _)      = Array <$> allSame env (typeof env <$> es) <*> pure (ConstSize $ length es)
+typeof env (ArrayAccess e i _)      = expect env Num (typeof env i) >> typeofElem (typeof env e) i
+typeof env (UnaryExpr Not expr _)   = expect env Bool $ typeof env expr
+typeof env (UnaryExpr Minus expr _) = expect env Num $ typeof env expr
 typeof env (BinaryExpr op l r _)
     | op == Split                 = let pos = typeof env r
                                         arr = typeof env l
@@ -244,39 +244,41 @@ typeof env (BinaryExpr op l r _)
                                         err         -> err
     | op == Cat                   = catArrays env (typeof env l) (typeof env r)
     | op `elem` [Add, Sub, Div, Mod]
-                                  = both Num (typeof env l) (typeof env r)
+                                  = both env Num (typeof env l) (typeof env r)
     | op `elem` [NumEq, NumNeq, Gt, Gte, Lt, Lte]
-                                  = both Num (typeof env l) (typeof env r) >> return Bool
-    | op `elem` [Eq, Neq]         = bothSame (typeof env l) (typeof env r) >> return Bool
-    | op `elem` [BoolAnd, BoolOr] = both Bool (typeof env l) (typeof env r)
-    | otherwise                   = bothSame (typeof env l) (typeof env r)
-typeof env (TernaryExpr cond t f _) = expect Bool (typeof env cond) >> bothSame (typeof env t) (typeof env f)
+                                  = both env Num (typeof env l) (typeof env r) >> return Bool
+    | op `elem` [Eq, Neq]         = bothSame env (typeof env l) (typeof env r) >> return Bool
+    | op `elem` [BoolAnd, BoolOr] = both env Bool (typeof env l) (typeof env r)
+    | otherwise                   = bothSame env (typeof env l) (typeof env r)
+typeof env (TernaryExpr cond t f _) = expect env Bool (typeof env cond) >> bothSame env (typeof env t) (typeof env f)
 typeof env (Call fn args _)         = let argtypes = typeof env <$> args
                                       in case Env.lookup env fn of
-                                          Just (ts :-> t) -> typeofCall fn ts t argtypes
+                                          Just (ts :-> t) -> typeofCall env fn ts t argtypes
                                           _               -> throwError $ NotInScope fn
 
-expect :: Type -> Check Type -> Check Type
-expect (List Byte) (Right (Array Byte _)) = return $ List Byte
-expect t@(a :|: b) x@(Right _)  = case expect a x of
-                                    Left _  -> case expect b x of
+expect :: Env -> Type -> Check Type -> Check Type
+expect _ t@(Alias nt) a@(Right (Alias na)) = if nt == na then return t else throwError $ TypeMismatch t a
+expect env t (Right a@(Alias _)) = expect env t (unAlias env a)
+expect _ (List Byte) (Right (Array Byte _)) = return $ List Byte
+expect env t@(a :|: b) x@(Right _) = case expect env a x of
+                                    Left _  -> case expect env b x of
                                         Left _ -> throwError $ TypeMismatch t x
                                         rb     -> rb
                                     ra      -> ra
-expect Any t                    = t
-expect (TypeParam _) t          = t
-expect t a@(Right ra)           = if t == ra then return t else throwError $ TypeMismatch t a
-expect _ l                      = l
+expect _ Any t                    = t
+expect _ (TypeParam _) t          = t
+expect _ t a@(Right ra)           = if t == ra then return t else throwError $ TypeMismatch t a
+expect _ _ l                      = l
 
-both :: Type -> Check Type -> Check Type -> Check Type
-both t a b = expect t a >> expect t b
+both :: Env -> Type -> Check Type -> Check Type -> Check Type
+both env t a b = expect env t a >> expect env t b
 
-bothSame :: Check Type -> Check Type -> Check Type
-bothSame (Right a) b  = expect a b
-bothSame l@(Left _) _ = l
+bothSame :: Env -> Check Type -> Check Type -> Check Type
+bothSame env (Right a) b = expect env a b
+bothSame _ l@(Left _) _  = l
 
-allSame :: [Check Type] -> Check Type
-allSame ts = foldr bothSame (head ts) ts
+allSame :: Env -> [Check Type] -> Check Type
+allSame env ts = foldr (bothSame env) (head ts) ts
 
 typeofTuple :: [TuplePart a] -> Type
 typeofTuple ps = Tuple $ partToType <$> ps
@@ -321,12 +323,12 @@ catArrays _ (Left e) _                                 = Left e
 catArrays _ _ (Left e)                                 = Left e
 catArrays _ _ r                                        = Left $ TypeMismatch (List Byte) r
 
-typeofCall :: Name -> [Type] -> Type -> [Check Type] -> Check Type
-typeofCall fn ins out args = if length ins == length args
-                             then case evalState (checkCall ins out args) [] of
-                                Left _ -> throwError $ ArgumentMismatch fn (ins :-> out) args
-                                t      -> t
-                             else throwError $ ArgumentMismatch fn (ins :-> out) args
+typeofCall :: Env -> Name -> [Type] -> Type -> [Check Type] -> Check Type
+typeofCall env fn ins out args = if length ins == length args
+                                 then case evalState (checkCall ins out args) env of
+                                    Left _ -> throwError $ ArgumentMismatch fn (ins :-> out) args
+                                    t      -> t
+                                 else throwError $ ArgumentMismatch fn (ins :-> out) args
 
 checkCall :: [Type] -> Type -> [Check Type] -> Checker (Check Type)
 checkCall ins out args = do
@@ -334,6 +336,7 @@ checkCall ins out args = do
     let pairs = zip ins args
     args' <- mapM checkArg pairs
     env <- get
+    leaveM
     return $ case foldr1 (>>) args' of
         e@(Left _) -> e
         _          -> case out of
@@ -346,12 +349,16 @@ checkArg :: (Type, Check Type) -> Checker (Check Type)
 checkArg (_, Left e)  = return $ Left e
 checkArg (TypeParam n, Right a) = do
     e <- expected n a
-    return $ expect e (Right a)
+    env <- get
+    return $ expect env e (Right a)
 checkArg (t@(Array l (SizeParam n)), Right a@(Array r(ConstSize _)))
     | l == r    = do
         e <- expected ('$':n) a
-        return $ expect e (Right a)
-    | otherwise = return $ expect t (Right a)
+        env <- get
+        return $ expect env e (Right a)
+    | otherwise = do
+        env <- get
+        return $ expect env t (Right a)
 checkArg (t@(Tuple ts), a@(Right (Tuple as))) =
     if length ts /= length as
     then return $ Left $ TypeMismatch t a
@@ -359,7 +366,9 @@ checkArg (t@(Tuple ts), a@(Right (Tuple as))) =
         let pairs = zip ts (pure <$> as)
         args <- mapM checkArg pairs
         return $ foldr1 (>>) args
-checkArg (t, a) = return $ expect t a
+checkArg (t, a) = do
+    env <- get
+    return $ expect env t a
 
 expected :: Name -> Type -> Checker Type
 expected n a = do
