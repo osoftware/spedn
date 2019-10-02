@@ -186,12 +186,12 @@ term = tryArrayAccess . choice $
 
 val :: Parser Expr'
 val = choice [ boolConst
+             , timeSpanConst
              , numConst
              , binConst
              , hexConst
              , strConst
              , magicConst
-             , timeSpanConst
              ]
 
 paramVal :: Parser (Name, Expr')
