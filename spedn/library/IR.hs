@@ -292,7 +292,7 @@ exprCompiler (Call name args _)
         replicateM_ (length args) popM
         when (name `elem` ["fst", "snd"]) popM
         pushM "$tmp"
-exprCompiler (MagicConst _ _)      = error "AST corrupted"
+exprCompiler _                     = error "AST corrupted"
 
 
 byteAtM :: Name -> Int -> Compiler

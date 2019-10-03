@@ -1,21 +1,21 @@
 import { BITBOX } from "bitbox-sdk";
 import { Spedn } from "./compiler";
-import { Contract } from "./contracts";
+import {  Module } from "./contracts";
 import { using } from "./disposable";
 import { P2PKH } from "./P2PKH";
 
 describe("ExpiringTip contract", () => {
-  let ExpiringTip: Contract;
+  let mod: Module;
   beforeAll(
     async () =>
       await using(new Spedn(), async compiler => {
-        ExpiringTip = await compiler.compileFile("../../examples/ExpiringTip.spedn");
+        mod = await compiler.compileFile("../../examples/ExpiringTip.spedn");
       })
   );
 
   describe("template", () => {
     it("should have 2 parameters", () => {
-      expect(ExpiringTip.params).toEqual({
+      expect(mod.ExpiringTip.params).toEqual({
         alice: "Ripemd160",
         bob: "Ripemd160"
       });
@@ -24,13 +24,13 @@ describe("ExpiringTip contract", () => {
 
   describe("instance", () => {
     it("should throw on missing parameters", () => {
-      expect(() => new ExpiringTip({})).toThrow("Missing parameter: Ripemd160 alice");
+      expect(() => new mod.ExpiringTip({})).toThrow("Missing parameter: Ripemd160 alice");
     });
     it("should throw on invalid parameters", () => {
-      expect(() => new ExpiringTip({ alice: 1, bob: true })).toThrow("Incorrect value for Ripemd160 alice");
+      expect(() => new mod.ExpiringTip({ alice: 1, bob: true })).toThrow("Incorrect value for Ripemd160 alice");
     });
     it("should have 2 challenges", () => {
-      const instance = new ExpiringTip({
+      const instance = new mod.ExpiringTip({
         alice: Buffer.alloc(20),
         bob: Buffer.alloc(20)
       });

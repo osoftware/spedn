@@ -39,6 +39,7 @@ library
       Script
       Syntax
       TypeChecker
+      Util
   other-modules:
       Paths_spedn
   hs-source-dirs:
@@ -67,6 +68,7 @@ executable spedn
       base
     , base16-bytestring
     , bytestring
+    , containers
     , optparse-applicative
     , spedn
   default-language: Haskell2010

@@ -6,12 +6,12 @@ import {
   Coin,
   ContractCoin,
   crypto,
-  encodeParam,
   Instance,
+  ModuleFactory,
   ParamTypes,
   ParamValues,
   script,
-  validateParamValues
+  stdlib
 } from "./contracts";
 
 export class GenericP2SH implements Instance {
@@ -19,9 +19,10 @@ export class GenericP2SH implements Instance {
   public challengeSpecs: ChallengeSpecs;
   public challenges: Challenges = {
     spend: params => {
-      validateParamValues(params, this.challengeSpecs.spend);
-      const argStack = Object.keys(this.challengeSpecs.spend).map((n: string) => encodeParam(params[n]));
-      argStack.push(encodeParam(this.redeemScript));
+      const std = new ModuleFactory(stdlib);
+      std.validateParamValues(params, this.challengeSpecs.spend);
+      const argStack = Object.keys(this.challengeSpecs.spend).map((n: string) => std.encodeParam(params[n]));
+      argStack.push(std.encodeParam(this.redeemScript));
       return script.encode(argStack);
     }
   };

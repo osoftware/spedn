@@ -39,6 +39,7 @@ library
       Script
       Syntax
       TypeChecker
+      Util
   other-modules:
       Paths_spedn
   hs-source-dirs:
@@ -66,6 +67,7 @@ executable spedn
       base
     , base16-bytestring
     , bytestring
+    , containers
     , ghcjs-base
     , megaparsec
     , spedn

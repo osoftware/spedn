@@ -1,5 +1,5 @@
 import { Spedn } from "./compiler";
-import { Contract } from "./contracts";
+import { Module } from "./contracts";
 
 describe("compiler", () => {
   let compiler: Spedn;
@@ -14,11 +14,11 @@ describe("compiler", () => {
     });
 
     describe("with valid code", () => {
-      let ExpiringTip: Contract;
-      beforeAll(async () => (ExpiringTip = await compiler.compileFile("../../examples/ExpiringTip.spedn")));
-      it("should create a contract", () => expect(ExpiringTip).toBeDefined());
+      let mod: Module;
+      beforeAll(async () => (mod = await compiler.compileFile("../../examples/ExpiringTip.spedn")));
+      it("should create a contract", () => expect(mod.ExpiringTip).toBeDefined());
       it("should recognize parameters types", () => {
-        expect(ExpiringTip.params).toEqual({
+        expect(mod.ExpiringTip.params).toEqual({
           alice: "Ripemd160",
           bob: "Ripemd160"
         });
@@ -27,7 +27,7 @@ describe("compiler", () => {
 
     describe("with invalid code", () => {
       it("should return a list of errors", () => {
-        return expect(compiler.compileFile("../../examples/Invalid.spedn")).rejects.toHaveLength(2);
+        return expect(compiler.compileFile("../../examples/Invalid.spedn")).rejects.toHaveLength(1);
       });
     });
   });

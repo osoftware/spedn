@@ -6,12 +6,12 @@ import {
   ChallengeSpecs,
   Coin,
   crypto,
-  encodeParam,
   Instance,
+  ModuleFactory,
   ParamValues,
   script,
-  Utxo,
-  validateParamValues
+  stdlib,
+  Utxo
 } from "./contracts";
 
 export class P2PKH implements Instance {
@@ -42,8 +42,9 @@ export class P2PKH implements Instance {
 export class P2PKHCoin implements Coin {
   challenges = {
     spend: ({ sig, pubKey }: ParamValues) => {
-      validateParamValues({ sig, pubKey }, { sig: "Sig", pubKey: "PubKey" });
-      return script.encodeP2PKHInput(encodeParam(sig), encodeParam(pubKey));
+      const std = new ModuleFactory(stdlib);
+      std.validateParamValues({ sig, pubKey }, { sig: "Sig", pubKey: "PubKey" });
+      return script.encodeP2PKHInput(std.encodeParam(sig), std.encodeParam(pubKey));
     }
   };
 

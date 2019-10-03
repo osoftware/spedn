@@ -1,6 +1,6 @@
 import { BITBOX } from "bitbox-sdk";
 import { Spedn, using } from ".";
-import { Contract, ContractCoin } from "./contracts";
+import { ContractCoin, Module } from "./contracts";
 import { P2PKH, P2PKHCoin, signWith } from "./P2PKH";
 import { SigHash, TxBuilder } from "./TxBuilder";
 
@@ -99,16 +99,16 @@ describe("TxBuilder", () => {
   });
 
   describe("build", () => {
-    let PayToPublicKeyHash: Contract;
+    let mod: Module;
     beforeAll(
       async () =>
         await using(new Spedn(), async compiler => {
-          PayToPublicKeyHash = await compiler.compileFile("../../examples/PayToPublicKeyHash.spedn");
+          mod = await compiler.compileFile("../../examples/PayToPublicKeyHash.spedn");
         })
     );
 
     it("should generate valid signature", () => {
-      const address = new PayToPublicKeyHash({ pubKeyHash: bitbox.Crypto.sha256(key1.getPublicKeyBuffer()) });
+      const address = new mod.PayToPublicKeyHash({ pubKeyHash: bitbox.Crypto.sha256(key1.getPublicKeyBuffer()) });
       const utxo0 = new ContractCoin(
         {
           txid: "6b5c8d90e8ac791d00c1d70bcc7a52fb4fd9077bf07387b0db9240a919cdabdf",
