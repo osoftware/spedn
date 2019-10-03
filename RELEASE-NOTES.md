@@ -1,3 +1,23 @@
+# Release 0.2.0 alpha 1
+
+This is 15th Nov 2019 hard-fork compatibility update with a bunch of breaking changes and new features.
+
+* Introducing an array type with syntax `[type; length]`, for example `[Sig; 3] signatures, [byte; 10] message`.
+The compiler type-checks the lengths so for example a type of `message . message` expression will be inferred as `[byte; 20]`.
+* Syntax for tuple assignment now allows its items to be of different type: `(int a, Sig b, PubKey c) = expr;`
+* Array elements can be accessed with `x[i]` syntax.
+* Introducing a `bit` type. In practice only arrays of bits are useful, as they represent a type of `checkbits` argument in the `checkMultiSig` function which was upgraded for Schnorr support. Bit array literal is also introduced, ex. `[bit; 5] checkbits = 0b00110`.
+* As mentioned - `checkMultiSig` accepts an additional `checkbits` argument, as described in Nov 15 hard-fork spec.
+* For a byte array of unknown size there is `[byte]` type which replaces the former `bin` type.
+* Introducing (UTF-8) string literals, ex. `[byte] message = "Hello, World";`.
+* Introducing custom type declarations (type aliases) which can be placed before contract declarations and then used as any other type in the contract. 
+Ex. `type Message = [byte; 10];`. Actually, `Sig`, `DataSig`, `PubKey`, `Ripemd160`, `Sha1`, `Sha256`, `Time` and `TimeSpan` are defined internally as aliases.
+* Introducing `separator;` statement that compiles to `OP_CODESEPARATOR`.
+* Introducing `fail;` statement that compiles to `OP_RETURN`.
+* Variable names can now contain underscores, ex. `[byte] my_string`.
+
+Contracts crafted with Spedn 0.1.5 (with an exception for `checkMultiSig`) and adjusted to the 0.2 syntax changes (if necessary) should compile to exactly the same Script.
+
 # Release 0.1.5
 
 * fix bug with final `else` statement generating unnecessary `OP_NIP`.
