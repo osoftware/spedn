@@ -2,7 +2,7 @@ import { Crypto, TransactionBuilder } from "bitbox-sdk";
 import { ECPair } from "bitcoincashjs-lib";
 import { castArray, last } from "lodash/fp";
 import * as varuint from "varuint-bitcoin";
-import { bitbox, Challenges, Coin, ScriptSig } from "./contracts";
+import { bitbox, Challenges, Coin, script, ScriptSig } from "./contracts";
 
 export interface SigningContext {
   vin: number;
@@ -41,16 +41,16 @@ class SchnorrContext implements SigningContext {
     this.tx = this.builder.transaction.buildIncomplete();
   }
 
-  sign(key: ECPair, hashType: SigHash = SigHash.SIGHASH_ALL): Buffer {
+  sign(key: ECPair, hashType: SigHash = SigHash.SIGHASH_ALL, fromSeparator: number = 0): Buffer {
     hashType = hashType | SigHash.SIGHASH_FORKID;
-    return key.sign(crypto.hash256(this.preimage(hashType)), 1).toScriptSignature(hashType, SCHNORR);
+    return key.sign(crypto.hash256(this.preimage(hashType, fromSeparator)), 1).toScriptSignature(hashType, SCHNORR);
   }
 
   signData(key: ECPair, data: Buffer): Buffer {
     return key.sign(crypto.sha256(data), SCHNORR).toRSBuffer();
   }
 
-  preimage(hashType: SigHash = SigHash.SIGHASH_ALL) {
+  preimage(hashType: SigHash = SigHash.SIGHASH_ALL, fromSeparator: number = 0) {
     let tbuffer: Buffer;
     let toffset: number;
 
@@ -129,7 +129,16 @@ class SchnorrContext implements SigningContext {
 
     const input = this.tx.ins[this.vin];
 
-    tbuffer = Buffer.allocUnsafe(156 + varSliceSize(this.redeemScript));
+    let codeOffset = 0;
+    while (fromSeparator > 0) {
+      codeOffset = this.redeemScript.indexOf(script.opcodes.OP_CODESEPARATOR, codeOffset);
+      if (codeOffset < 0) throw Error("Not enough OP_CODESEPARATORs in redeemScript");
+      codeOffset++;
+      fromSeparator--;
+    }
+    const redeemScript = this.redeemScript.subarray(codeOffset);
+
+    tbuffer = Buffer.allocUnsafe(156 + varSliceSize(redeemScript));
     toffset = 0;
 
     writeUInt32(this.tx.version);
@@ -137,7 +146,7 @@ class SchnorrContext implements SigningContext {
     writeSlice(hashSequence);
     writeSlice(input.hash);
     writeUInt32(input.index);
-    writeVarSlice(this.redeemScript);
+    writeVarSlice(redeemScript);
     writeUInt64(this.satoshis);
     writeUInt32(input.sequence);
     writeSlice(hashOutputs);

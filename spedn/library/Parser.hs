@@ -86,7 +86,7 @@ block = annotate $ do
     return $ Block stmts
 
 statement :: Parser Statement'
-statement = assign <|> split <|> verify <|> fail' <|> ifElse <|> block
+statement = assign <|> split <|> verify <|> fail' <|> separator <|> ifElse <|> block
 
 assign :: Parser Statement'
 assign = annotate . try $ Assign <$> varDecl <*> rval
@@ -109,6 +109,9 @@ verify = annotate $ do
 
 fail' :: Parser Statement'
 fail' = annotate (keyword "fail" >> semi >> return Return)
+
+separator :: Parser Statement'
+separator = annotate (keyword "separator" >> semi >> return Separator)
 
 ifElse :: Parser Statement'
 ifElse = annotate $ do

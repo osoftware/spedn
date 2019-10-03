@@ -352,15 +352,16 @@ compileOp (OpCall op) = case op of
                           "snd"           -> [OP_NIP]
                           "toDataSig"     -> [OP_SIZE, OP_1SUB, OP_SPLIT, OP_DROP]
                           _               -> fail "Unknown function"
-compileOp OpPick   = [OP_PICK]
-compileOp OpRoll   = [OP_ROLL]
-compileOp OpVerify = [OP_VERIFY]
-compileOp OpReturn = [OP_RETURN]
-compileOp OpIf     = [OP_IF]
-compileOp OpElse   = [OP_ELSE]
-compileOp OpEndIf  = [OP_ENDIF]
-compileOp OpDrop   = [OP_DROP]
-compileOp OpNip    = [OP_NIP]
+compileOp OpPick          = [OP_PICK]
+compileOp OpRoll          = [OP_ROLL]
+compileOp OpVerify        = [OP_VERIFY]
+compileOp OpReturn        = [OP_RETURN]
+compileOp OpCodeSeparator = [OP_CODESEPARATOR]
+compileOp OpIf            = [OP_IF]
+compileOp OpElse          = [OP_ELSE]
+compileOp OpEndIf         = [OP_ENDIF]
+compileOp OpDrop          = [OP_DROP]
+compileOp OpNip           = [OP_NIP]
 
 
 -- Remove pseudo-opcode

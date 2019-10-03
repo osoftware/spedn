@@ -20,6 +20,7 @@ data OpCode
     | OpCall Name
     | OpVerify
     | OpReturn
+    | OpCodeSeparator
     | OpPush Name
     | OpPushBool Bool
     | OpPushBits [Bool]
@@ -183,6 +184,7 @@ stmtCompiler (Verify expr _) final = do
         emit [OpVerify]
         popM
 stmtCompiler (Return _) _ = emit [OpReturn]
+stmtCompiler (Separator _) _ = emit [OpCodeSeparator]
 stmtCompiler (If cond t f _) final = do
     exprCompiler cond
     emit [OpIf]

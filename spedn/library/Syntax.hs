@@ -138,6 +138,7 @@ data Statement a
     | SplitAssign [TuplePart a] (Expr a) a
     | Verify (Expr a) a
     | Return a
+    | Separator a
     | If (Expr a) (Statement a) (Maybe (Statement a)) a
     | Block [Statement a] a
     deriving (Eq, Show, Functor, Foldable, Traversable, Data, Typeable, Generic)
@@ -147,6 +148,7 @@ instance Annotated Statement a where
     ann (SplitAssign _ _ a) = a
     ann (Verify _ a)        = a
     ann (Return a)          = a
+    ann (Separator a)       = a
     ann (If _ _ _ a)        = a
     ann (Block _ a)         = a
 

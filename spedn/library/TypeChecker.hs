@@ -95,6 +95,9 @@ checkStatement (Verify e a) = do
 checkStatement (Return a) = do
     env <- get
     return $ Return (Right Verification, env, a)
+checkStatement (Separator a) = do
+    env <- get
+    return $ Separator (Right Void, env, a)
 checkStatement (If cond t f a) = do
     cond' <- checkExpr Bool cond
     t' <- checkBranch t
