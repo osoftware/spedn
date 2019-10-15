@@ -1,3 +1,8 @@
+# Release 0.1.6
+
+* fix bug with dummy element in `checkMultiSig`.
+* strenghten typechecking of comparison expressions.
+
 # Release 0.1.5
 
 * fix bug with final `else` statement generating unnecessary `OP_NIP`.
