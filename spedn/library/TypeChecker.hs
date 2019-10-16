@@ -185,8 +185,9 @@ both :: Type -> Check Type -> Check Type -> Check Type
 both t a b = expect t a >> expect t b
 
 bothSame :: Check Type -> Check Type -> Check Type
-bothSame (Right a) b  = expect a b
+bothSame l@(Right a) r@(Right b)  = expect a r >> expect b l
 bothSame l@(Left _) _ = l
+bothSame _ r@(Left _) = r
 
 allSame :: [Check Type] -> Check Type
 allSame ts = foldr bothSame (head ts) ts
