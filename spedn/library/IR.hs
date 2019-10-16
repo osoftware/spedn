@@ -281,10 +281,12 @@ exprCompiler (Call "checkMultiSig" [checkbits, sigs, keys] _) = do
     exprCompiler checkbits
     exprCompiler sigs
     emit [OpPushNum $ height sigs]
+    pushM "$height"
     exprCompiler keys
     emit [OpPushNum $ height keys]
+    pushM "$height"
     emit [OpCall "checkMultiSig"]
-    replicateM_ (length sigs + length keys) popM
+    replicateM_ (height sigs + height keys + 3) popM
     pushM "$tmp"
 exprCompiler (Call name args _)
     | name `elem` typeConstructors = exprCompiler $ head args
