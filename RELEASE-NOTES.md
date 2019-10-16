@@ -1,6 +1,9 @@
-# Release 0.1.6
+# Release 0.1.7
 
 * fix bug with dummy element in `checkMultiSig`.
+
+# Release 0.1.6
+
 * strenghten typechecking of comparison expressions.
 
 # Release 0.1.5
