@@ -270,6 +270,14 @@ expect env t@(a :|: b) x@(Right _) = case expect env a x of
                                     ra      -> ra
 expect _ Any t                    = t
 expect _ (TypeParam _) t          = t
+expect env t@(Tuple ts) a@(Right (Tuple as)) = -- foldr1 (>>) (expect env $ zip ts as)
+    let pairs = zip ts (pure <$> as)
+        args = uncurry (expect env) <$> pairs
+    in  if length ts /= length as
+        then throwError $ TypeMismatch t a
+        else case foldr1 (>>) args of
+            Left _ -> throwError $ TypeMismatch t a
+            r      -> r
 expect _ t a@(Right ra)           = if t == ra then return t else throwError $ TypeMismatch t a
 expect _ _ l                      = l
 
@@ -277,8 +285,9 @@ both :: Env -> Type -> Check Type -> Check Type -> Check Type
 both env t a b = expect env t a >> expect env t b
 
 bothSame :: Env -> Check Type -> Check Type -> Check Type
-bothSame env (Right a) b = expect env a b
+bothSame env l@(Right a) r@(Right b) = expect env a r >> expect env b l
 bothSame _ l@(Left _) _  = l
+bothSame _ _ l@(Left _)  = l
 
 allSame :: Env -> [Check Type] -> Check Type
 allSame env ts = foldr (bothSame env) (head ts) ts
