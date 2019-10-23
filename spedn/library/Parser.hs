@@ -164,6 +164,8 @@ operators = [ [ prefix Minus $ try $ symbol "-" *> notFollowedBy digits
               ]
             , [ infixN Split $ symbol "@"
               ]
+            , [ ternR (symbol "?") (symbol ":")
+              ]
             ]
   where
     prefix op parser = Prefix $ do
@@ -177,6 +179,10 @@ operators = [ [ prefix Minus $ try $ symbol "-" *> notFollowedBy digits
     infixN op parser = InfixN $ do
         pos <- getSourcePos <* parser
         return $ \ l r -> BinaryExpr op l r pos
+
+    ternR a b = TernR $ do
+        pos <- getSourcePos <* a
+        return $ b *> (return $ \ x y z -> TernaryExpr x y z pos)
 
 term :: Parser Expr'
 term = tryArrayAccess . choice $
@@ -243,7 +249,7 @@ timeSpanLit = do
     return $ sum parts `div` 512 .|. (1 `shiftL` 22)
 
 blockSpanLit :: Parser Int
-blockSpanLit = decInt <* symbol "b"
+blockSpanLit = decInt <* symbol "b" <* notFollowedBy binBit
 
 timeSpanConst :: Parser Expr'
 timeSpanConst = annotate . try $ TimeSpanConst <$> (try timeSpanLit <|> blockSpanLit)
