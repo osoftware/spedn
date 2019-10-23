@@ -263,6 +263,9 @@ expect :: Env -> Type -> Check Type -> Check Type
 expect _ t@(Alias nt) a@(Right (Alias na)) = if nt == na then return t else throwError $ TypeMismatch t a
 expect env t (Right a@(Alias _)) = expect env t (unAlias env a)
 expect _ (List Byte) (Right (Array Byte _)) = return $ List Byte
+expect _ Byte (Right (Array Byte (ConstSize 1))) = return Byte
+expect _ (Array Byte (ConstSize 1)) (Right Byte) = return $ Array Byte (ConstSize 1)
+expect _ (List Byte) (Right Byte) = return $ Array Byte (ConstSize 1)
 expect env t@(a :|: b) x@(Right _) = case expect env a x of
                                     Left _  -> case expect env b x of
                                         Left _ -> throwError $ TypeMismatch t x
@@ -325,12 +328,15 @@ toSplitTuple _ l _                      = l
 catArrays :: Env -> Check Type -> Check Type -> Check Type
 catArrays env (Right l@(Alias _)) r                    = catArrays env (unAlias env l) r
 catArrays env l (Right r@(Alias _))                    = catArrays env l (unAlias env r)
+catArrays env (Right Byte) r                           = catArrays env (Right (Array Byte (ConstSize 1))) r
+catArrays env l (Right Byte)                           = catArrays env l (Right (Array Byte (ConstSize 1)))
 catArrays _ (Right (Array Byte (ConstSize l))) (Right (Array Byte (ConstSize r)))
     | l + r <= 520                                     = Right $ Array Byte (ConstSize $ l + r)
     | otherwise                                        = Left $ Overflow 520 (l + r)
 catArrays _ (Right (List Byte)) (Right (Array Byte _)) = Right $ List Byte
 catArrays _ (Right (Array Byte _)) (Right (List Byte)) = Right $ List Byte
 catArrays _ (Right (List Byte)) (Right (List Byte))    = Right $ List Byte
+
 catArrays _ (Left e) _                                 = Left e
 catArrays _ _ (Left e)                                 = Left e
 catArrays _ _ r                                        = Left $ TypeMismatch (List Byte) r
