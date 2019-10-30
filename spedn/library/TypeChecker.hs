@@ -319,10 +319,10 @@ typeofElem t _          = Left $ TypeMismatch (List Byte :|: (List $ List Byte))
 toSplitTuple :: Env -> Check Type -> Expr a -> Check Type
 toSplitTuple env (Right l@(Alias _)) r  = toSplitTuple env (unAlias env l) r
 toSplitTuple _ (Right (Array Byte (ConstSize l))) (NumConst pos _)
-    | l > pos && pos >= 0               = Right $ Tuple [Array Byte (ConstSize pos), Array Byte (ConstSize $ l - pos)]
+    | l >= pos && pos >= 0              = Right $ Tuple [Array Byte (ConstSize pos), Array Byte (ConstSize $ l - pos)]
     | otherwise                         = Left $ OutOfRange l pos
 toSplitTuple _ (Right (List Byte)) (NumConst pos _)
-    | pos < 520 && pos >= 0             = Right $ Tuple [Array Byte (ConstSize pos), List Byte]
+    | pos <= 520 && pos >= 0            = Right $ Tuple [Array Byte (ConstSize pos), List Byte]
     | otherwise                         = Left $ OutOfRange 520 pos
 toSplitTuple _ (Right (Array Byte _)) _ = Right $ Tuple [List Byte, List Byte]
 toSplitTuple _ (Right (List Byte)) _    = Right $ Tuple [List Byte, List Byte]
