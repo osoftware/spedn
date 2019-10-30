@@ -228,7 +228,9 @@ typeof _ (HexConst bs _)
 typeof _ (StrConst cs _)
     | strlen cs <= 520              = return $ Array Byte $ ConstSize $ strlen cs
     | otherwise                     = throwError $ Overflow 520 $ strlen cs
-typeof _ (MagicConst cs _)          = throwError $ Ambigious $ "Cannot infer type of `" ++ cs ++ "`."
+typeof _ (MagicConst str _)         = case parseTimeM True defaultTimeLocale "%Y-%-m-%-d %T" str :: Maybe UTCTime of
+                                        Just _  -> return $ Alias "Time"
+                                        _       -> throwError $ SyntaxError "Cannot parse as Time - expected YYYY-MM-DD hh:mm:ss"
 typeof _ (TimeSpanConst _ _)        = return $ Alias "TimeSpan"
 typeof env (Var varName _)          = case Env.lookup env varName of
                                         Just t -> return t
@@ -273,7 +275,7 @@ expect env t@(a :|: b) x@(Right _) = case expect env a x of
                                     ra      -> ra
 expect _ Any t                    = t
 expect _ (TypeParam _) t          = t
-expect env t@(Tuple ts) a@(Right (Tuple as)) = -- foldr1 (>>) (expect env $ zip ts as)
+expect env t@(Tuple ts) a@(Right (Tuple as)) =
     let pairs = zip ts (pure <$> as)
         args = uncurry (expect env) <$> pairs
     in  if length ts /= length as
@@ -288,9 +290,11 @@ both :: Env -> Type -> Check Type -> Check Type -> Check Type
 both env t a b = expect env t a >> expect env t b
 
 bothSame :: Env -> Check Type -> Check Type -> Check Type
-bothSame env l@(Right a) r@(Right b) = expect env a r >> expect env b l
-bothSame _ l@(Left _) _  = l
-bothSame _ _ l@(Left _)  = l
+bothSame _ (Right (List Byte)) (Right (Array Byte _)) = return $ List Byte
+bothSame _ (Right (Array Byte _)) (Right (List Byte)) = return $ List Byte
+bothSame env l@(Right a) r@(Right b)                  = expect env a r >> expect env b l
+bothSame _ l@(Left _) _                               = l
+bothSame _ _ l@(Left _)                               = l
 
 allSame :: Env -> [Check Type] -> Check Type
 allSame env ts = foldr (bothSame env) (head ts) ts
