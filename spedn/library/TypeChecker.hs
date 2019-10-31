@@ -373,7 +373,7 @@ checkArg (TypeParam n, Right a) = do
     e <- expected n a
     env <- get
     return $ expect env e (Right a)
-checkArg (t@(Array l (SizeParam n)), Right a@(Array r(ConstSize _)))
+checkArg (t@(Array l (SizeParam n)), Right a@(Array r (ConstSize _)))
     | l == r    = do
         e <- expected ('$':n) a
         env <- get
@@ -396,8 +396,11 @@ expected :: Name -> Type -> Checker Type
 expected n a = do
     env <- get
     case Env.lookup env n of
-        Just t' -> return t'
-        Nothing -> case add env n a of
+        Just (Array _ (ConstSize s)) -> case a of
+            Array t' _ -> return $ Array t' (ConstSize s)
+            _          -> error "Environment corrupted"
+        Just t                       -> return t
+        Nothing                      -> case add env n a of
             Right e -> put e >> return a
             _       -> error "Environment corrupted"
 
