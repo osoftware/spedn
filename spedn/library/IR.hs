@@ -158,6 +158,9 @@ stmtCompiler (Assign (VarDecl (Array _ (SizeParam _)) _ _) _ _) _ = error "AST c
 stmtCompiler (Assign (VarDecl t name _) expr (_, env, _)) _ = do
     exprCompiler expr
     case unAlias env t of
+        Right (Array Bit _) -> do
+            popM
+            pushM name
         Right (Array Byte _) -> do
             popM
             pushM name
@@ -234,6 +237,7 @@ exprCompiler (TimeSpanConst val _) = emit [OpPushNum val]  >> pushM "$const"
 exprCompiler (Var name (Right t, env, _)) =
     case unAlias env t of
         Right (Array Byte _)          -> emitPickM name
+        Right (Array Bit _)           -> emitPickM name
         Right (List Byte)             -> emitPickM name
         Right (Array _ (ConstSize n)) -> mapM_ (\i -> emitPickM $ name ++ "$" ++ show i) [0..(n - 1)]
         Right (Tuple ts)              -> mapM_ (\i -> emitPickM $ name ++ "$" ++ show i) [0..(length ts - 1)]
