@@ -76,10 +76,12 @@ tests:
     - mtl
     - containers
     - time
+    - megaparsec
     - tasty
     - tasty-hspec
     - hspec
     - QuickCheck
+    - quickcheck-instances
     - QuickCheck-GenT
     ghc-options:
     - -rtsopts

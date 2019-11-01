@@ -6,20 +6,26 @@
 module Generators where
 
 import           Control.Monad.State
-import qualified Data.Map.Lazy       as Map
-import           Env
-import           QuickCheck.GenT     (GenT, liftGen, runGenT)
-import qualified QuickCheck.GenT     as GT
-import           Syntax
+import qualified Data.Map.Lazy                  as Map
+import           Data.Time
+import           QuickCheck.GenT                (GenT, liftGen, runGenT)
+import qualified QuickCheck.GenT                as GT
 import           Test.QuickCheck
+import           Test.QuickCheck.Instances.Time ()
+import           Text.Megaparsec                (SourcePos, initialPos)
 
-type Expr' = Expr ()
-type Statement' = Statement ()
-type Challenge' =  Challenge ()
-type Param' = Param ()
-type Contract' = Contract ()
+import           Env
+import           Parser                         (Challenge', Contract', Expr',
+                                                 Module', Statement',
+                                                 TuplePart', VarDecl')
+import           Syntax
+
+
 
 type Context = State [[(Name, Type)]]
+
+sp :: SourcePos
+sp = initialPos ""
 
 runContext ::GenT Context a -> Gen a
 runContext gen = evalState <$> runGenT gen <*> pure [Map.toList globals]
@@ -58,15 +64,18 @@ newName t = do
     return name
 
 available :: Type -> Context Bool
-available t = any ((==t) . snd) <$> gets concat
+available t = any (isVar t) <$> gets concat
 
 existingName :: Type -> GenT Context Name
 existingName t = do
     ctx <- lift get
-    GT.elements $ fst <$> filter ((==t) . snd) (concat ctx)
+    GT.elements $ fst <$> filter (isVar t) (concat ctx)
 
-arbitraryConst :: Arbitrary a => (a -> () -> b) -> Gen b
-arbitraryConst a = a <$> arbitrary <*> pure ()
+isVar :: Type -> (Name, Type) -> Bool
+isVar t (n, t') = t == t' && take 5 n /= "type "
+
+arbitraryConst :: Arbitrary a => (a -> SourcePos -> b) -> Gen b
+arbitraryConst a = a <$> arbitrary <*> pure sp
 
 boolConst :: Gen Expr'
 boolConst = arbitraryConst BoolConst
@@ -74,28 +83,31 @@ boolConst = arbitraryConst BoolConst
 numConst :: Gen Expr'
 numConst =  arbitraryConst NumConst
 
+indexConst :: Int -> Gen Expr'
+indexConst l = NumConst <$> arbitrary `suchThat` (\n -> n >= 0 && n <= l)  <*> pure sp
+
 timeConst :: Gen Expr'
-timeConst =  arbitraryConst TimeConst
+timeConst =  MagicConst <$> (formatTime defaultTimeLocale "%Y-%-m-%-d %T" <$> (arbitrary :: Gen UTCTime)) <*> pure sp
 
 timeSpanConst :: Gen Expr'
 timeSpanConst =  arbitraryConst TimeSpanConst
 
-binConst :: Gen Expr'
-binConst = resize 8 $ arbitraryConst BinConst
+hexConst :: Int -> Gen Expr'
+hexConst n = HexConst <$> vectorOf n arbitrary <*> pure sp
 
 constOf :: Type -> Gen Expr'
-constOf Bool            = boolConst
-constOf Num             = numConst
-constOf (Bin Raw)       = binConst
-constOf (Bin PubKey)    = Call "PubKey" <$> vectorOf 1 binConst <*> pure ()
-constOf (Bin Sha1)      = Call "Sha1" <$> vectorOf 1 binConst <*> pure ()
-constOf (Bin Sha256)    = Call "Sha256" <$> vectorOf 1 binConst <*> pure ()
-constOf (Bin Ripemd160) = Call "Ripemd160" <$> vectorOf 1 binConst <*> pure ()
-constOf (Bin Sig)       = Call "Sig" <$> vectorOf 1 binConst <*> pure ()
-constOf (Bin DataSig)   = Call "DataSig" <$> vectorOf 1 binConst <*> pure ()
-constOf Time            = timeConst
-constOf TimeSpan        = timeSpanConst
-constOf _               = fail "impossible constant"
+constOf Bool                = boolConst
+constOf Num                 = numConst
+constOf (List Byte)         = sized $ \n -> hexConst n
+constOf (Alias "PubKey")    = Call "PubKey" <$> vectorOf 1 (hexConst 33) <*> pure sp
+constOf (Alias "Sha1")      = Call "Sha1" <$> vectorOf 1 (hexConst 16) <*> pure sp
+constOf (Alias "Sha256")    = Call "Sha256" <$> vectorOf 1 (hexConst 32) <*> pure sp
+constOf (Alias "Ripemd160") = Call "Ripemd160" <$> vectorOf 1 (hexConst 20) <*> pure sp
+constOf (Alias "Sig")       = Call "Sig" <$> vectorOf 1 (hexConst 65) <*> pure sp
+constOf (Alias "DataSig")   = Call "DataSig" <$> vectorOf 1 (hexConst 64) <*> pure sp
+constOf (Alias "Time")      = timeConst
+constOf (Alias "TimeSpan")  = timeSpanConst
+constOf _                   = fail "impossible constant"
 
 instance Arbitrary UnaryOp where
     arbitrary = elements
@@ -107,7 +119,7 @@ varOf :: Type -> GenT Context Expr'
 varOf t = do
     exists <- lift $ available t
     if exists
-        then Var <$> existingName t <*> pure ()
+        then Var <$> existingName t <*> pure sp
         else liftGen $ constOf t
 
 
@@ -116,7 +128,7 @@ callReturning t = do
     fs <- lift get
     let matching = filter (returning t) (concat fs)
     ~(name, input :-> _) <- GT.elements matching
-    Call name <$> sequence (exprOf <$> input) <*> pure ()
+    Call name <$> sequence (exprOf <$> input) <*> pure sp
   where
     returning expected (_, x) = case x of
         _ :-> actual -> expected == actual
@@ -127,18 +139,18 @@ boolExpr = GT.frequency
     [ (2, liftGen boolConst)
     , (2, varOf Bool)
     , (2, callReturning Bool)
-    , (1, UnaryExpr Not <$> boolExpr <*> pure ())
-    , (1, BinaryExpr <$> GT.elements [BoolAnd, BoolOr] <*> boolExpr <*> boolExpr <*> pure ())
-    , (1, BinaryExpr <$> GT.elements [Eq, Neq] <*> boolExpr <*> boolExpr <*> pure ())
-    , (1, BinaryExpr <$> GT.elements [Eq, Neq] <*> numExpr <*> numExpr <*> pure ())
-    , (1, BinaryExpr <$> GT.elements [Eq, Neq] <*> binExpr <*> binExpr <*> pure ())
-    , (1, BinaryExpr <$> GT.elements [NumEq, NumNeq, Gt, Gte, Lt, Lte] <*> numExpr <*> numExpr <*> pure ())
+    , (1, UnaryExpr Not <$> boolExpr <*> pure sp)
+    , (1, BinaryExpr <$> GT.elements [BoolAnd, BoolOr] <*> boolExpr <*> boolExpr <*> pure sp)
+    , (1, BinaryExpr <$> GT.elements [Eq, Neq] <*> boolExpr <*> boolExpr <*> pure sp)
+    , (1, BinaryExpr <$> GT.elements [Eq, Neq] <*> numExpr <*> numExpr <*> pure sp)
+    , (1, BinaryExpr <$> GT.elements [Eq, Neq] <*> binExpr <*> binExpr <*> pure sp)
+    , (1, BinaryExpr <$> GT.elements [NumEq, NumNeq, Gt, Gte, Lt, Lte] <*> numExpr <*> numExpr <*> pure sp)
     ]
 
 verExpr :: GenT Context Expr'
 verExpr = GT.oneof
-    [ Call "checkLockTime" <$> GT.vectorOf 1 (exprOf Time) <*> pure ()
-    , Call "checkSequence" <$> GT.vectorOf 1 (exprOf TimeSpan) <*> pure ()
+    [ Call "checkLockTime" <$> GT.vectorOf 1 (exprOf $ Alias "Time") <*> pure sp
+    , Call "checkSequence" <$> GT.vectorOf 1 (exprOf $ Alias "TimeSpan") <*> pure sp
     ]
 
 numExpr :: GenT Context Expr'
@@ -146,33 +158,40 @@ numExpr = GT.oneof
     [ liftGen numConst
     , varOf Num
     , callReturning Num
-    , BinaryExpr <$> GT.elements [Add, Sub, Div, Mod] <*> numExpr <*> numExpr <*> pure ()
+    , BinaryExpr <$> GT.elements [Add, Sub, Div, Mod] <*> numExpr <*> numExpr <*> pure sp
     ]
 
 binExpr :: GenT Context Expr'
-binExpr = GT.oneof
-    [ liftGen binConst
-    , varOf $ Bin Raw
-    , callReturning $ Bin Raw
-    , BinaryExpr <$> GT.elements [And, Or, Xor, Cat] <*> binExpr <*> binExpr <*> pure ()
+binExpr = GT.sized $ \n -> GT.oneof
+    [ liftGen . hexConst $ n
+    , varOf $ List Byte
+    , callReturning $ List Byte
+    , liftGen $ BinaryExpr <$> GT.elements [And, Or, Xor] <*> hexConst n <*> hexConst n <*> pure sp
+    , liftGen $ BinaryExpr Cat <$> hexConst (n `div` 2) <*> hexConst (n - n `div` 2) <*> pure sp
     ]
 
 exprOf :: Type -> GenT Context Expr'
-exprOf Bool             = boolExpr
-exprOf Num              = numExpr
-exprOf (Bin Raw)        = binExpr
-exprOf (Bin PubKey)     = Call "PubKey" <$> GT.vectorOf 1 (exprOf $ Bin Raw) <*> pure ()
-exprOf (Bin Sha1)       = Call "Sha1" <$> GT.vectorOf 1 (exprOf $ Bin Raw) <*> pure ()
-exprOf (Bin Sha256)     = Call "Sha256" <$> GT.vectorOf 1 (exprOf $ Bin Raw) <*> pure ()
-exprOf (Bin Ripemd160)  = Call "Ripemd160" <$> GT.vectorOf 1 (exprOf $ Bin Raw) <*> pure ()
-exprOf (Bin Sig)        = Call "Sig" <$> GT.vectorOf 1 (exprOf $ Bin Raw) <*> pure ()
-exprOf (Bin DataSig)    = Call "DataSig" <$> GT.vectorOf 1 (exprOf $ Bin Raw) <*> pure ()
-exprOf Time             = liftGen timeConst
-exprOf TimeSpan         = liftGen timeSpanConst
-exprOf (List (Bin t))   = Array <$> GT.listOf1 (exprOf $ Bin t) <*> pure ()
-exprOf (Bin Raw :. Bin Raw)
-                        = downscale $ BinaryExpr Split <$> (exprOf $ Bin Raw) <*> exprOf Num <*> pure ()
-exprOf _                = fail "impossible expr"
+exprOf Bool                           = boolExpr
+exprOf Num                            = numExpr
+exprOf (List Byte)                    = binExpr
+exprOf (Array Byte (ConstSize n))     = liftGen $ hexConst n
+exprOf (Alias "PubKey")               = Call "PubKey" <$> GT.vectorOf 1 (exprOf $ List Byte) <*> pure sp
+exprOf (Alias "Sha1")                 = Call "Sha1" <$> GT.vectorOf 1 (exprOf $ List Byte) <*> pure sp
+exprOf (Alias "Sha256")               = Call "Sha256" <$> GT.vectorOf 1 (exprOf $ List Byte) <*> pure sp
+exprOf (Alias "Ripemd160")            = Call "Ripemd160" <$> GT.vectorOf 1 (exprOf $ List Byte) <*> pure sp
+exprOf (Alias "Sig")                  = Call "Sig" <$> GT.vectorOf 1 (exprOf $ List Byte) <*> pure sp
+exprOf (Alias "DataSig")              = Call "DataSig" <$> GT.vectorOf 1 (exprOf $ List Byte) <*> pure sp
+exprOf (Alias "Time")                 = liftGen timeConst
+exprOf (Alias "TimeSpan")             = liftGen timeSpanConst
+exprOf (Tuple [List Byte, List Byte]) = downscale $ BinaryExpr Split
+                                                    <$> exprOf (List Byte)
+                                                    <*> liftGen (indexConst 520)
+                                                    <*> pure sp
+exprOf (Array Bit (SizeParam "k"))    = BinConst <$> liftGen (vectorOf 3 arbitrary) <*> pure sp
+exprOf (Array a (SizeParam "k"))      = ArrayLiteral <$> GT.vectorOf 3 (exprOf a) <*> pure sp
+exprOf (Array a (SizeParam "s"))      = ArrayLiteral <$> GT.vectorOf 2 (exprOf a) <*> pure sp
+exprOf (List (Alias t))               = ArrayLiteral <$> GT.listOf1 (exprOf $ Alias t) <*> pure sp
+exprOf e                              = fail $ "impossible expr: " ++ show e
 
 instance Arbitrary Expr' where
     arbitrary = runContext $ do
@@ -181,10 +200,10 @@ instance Arbitrary Expr' where
     shrink expr = case expr of
         UnaryExpr _ e _                             -> [e]
         BinaryExpr op l r _
-            | op `elem` [Eq, Neq, Lt, Lte, Gt, Gte] -> [BoolConst True ()]
-            | op `elem` [BoolAnd, BoolOr]           -> [BinConst [] (), l, r]
-            | op `elem` [And, Or, Xor]              -> [BinConst [] (), l, r]
-            | op `elem` [Add, Sub, Div, Mod]        -> [NumConst 0 (), l, r]
+            | op `elem` [Eq, Neq, Lt, Lte, Gt, Gte] -> [BoolConst True sp]
+            | op `elem` [BoolAnd, BoolOr]           -> [HexConst [] sp, l, r]
+            | op `elem` [And, Or, Xor]              -> [HexConst [] sp, l, r]
+            | op `elem` [Add, Sub, Div, Mod]        -> [NumConst 0 sp, l, r]
             | otherwise                             -> []
         _ -> []
 
@@ -193,15 +212,18 @@ arbitraryAssignment = do
     t <- liftGen arbitrary
     expr <- exprOf t
     name <- newName t
-    return $ Assign t name expr ()
+    return $ Assign (VarDecl t name sp) expr sp
 
 arbitrarySplit :: GenT Context Statement'
-arbitrarySplit = do
-    expr <- exprOf $ Bin Raw
-    pos <- exprOf Num
-    left <- newName $ Bin Raw
-    right <- newName $ Bin Raw
-    return $ SplitAssign (Bin Raw) (left, right) (BinaryExpr Split expr pos ()) ()
+arbitrarySplit = GT.sized $ \n -> do
+    expr <- exprOf $ Array Byte (ConstSize n)
+    pos <- liftGen $ indexConst n
+    left <- newName $ List Byte
+    right <- newName $ List Byte
+    return $ SplitAssign
+        [TupleVarDecl (List Byte) left sp, TupleVarDecl (List Byte) right sp]
+        (BinaryExpr Split expr pos sp)
+        sp
 
 arbitraryBlock :: GenT Context Statement'
 arbitraryBlock = scoped $ downscale $ Block
@@ -209,7 +231,7 @@ arbitraryBlock = scoped $ downscale $ Block
         stmts <- GT.listOf arbitraryStatement
         stmt <- arbitraryVerification
         return $ stmts ++ [stmt]
-    <*> pure ()
+    <*> pure sp
 
 maybeArbitrary :: GenT Context a -> GenT Context (Maybe a)
 maybeArbitrary gen = do
@@ -223,12 +245,12 @@ arbitraryConditional = do
     cond <- boolExpr
     t <- downscale $ scoped arbitraryChallengeBody
     f <- downscale $ maybeArbitrary (scoped arbitraryChallengeBody)
-    return $ If cond t f ()
+    return $ If cond t f sp
 
 arbitraryVerification :: GenT Context Statement'
 arbitraryVerification = GT.oneof
-    [ Verify <$> boolExpr <*> pure ()
-    , Verify <$> verExpr <*> pure ()
+    [ Verify <$> boolExpr <*> pure sp
+    , Verify <$> verExpr <*> pure sp
     ]
 
 arbitraryStatement :: GenT Context Statement'
@@ -253,29 +275,34 @@ instance Arbitrary Type where
     arbitrary = elements
         [ Bool
         , Num
-        , Bin Raw
-        , Bin PubKey
-        , Bin Sig
-        , Bin DataSig
-        , Time
-        , TimeSpan
+        , List Byte
+        , Alias "PubKey"
+        , Alias "Sig"
+        , Alias "DataSig"
+        , Alias "Time"
+        , Alias "TimeSpan"
         ]
 
-arbitraryParam :: GenT Context Param'
+arbitraryParam :: GenT Context VarDecl'
 arbitraryParam = do
     t <- liftGen arbitrary
-    Param t <$> newName t <*> pure ()
+    VarDecl t <$> newName t <*> pure sp
 
 arbitraryChallenge :: GenT Context Challenge'
 arbitraryChallenge = GT.resize 2 $ scoped $ do
     name <- liftGen arbitraryName
     params <- GT.listOf1 arbitraryParam
     stmt <- arbitraryChallengeBody
-    return $ Challenge name params stmt ()
+    return $ Challenge name params stmt sp
 
 instance Arbitrary Contract' where
     arbitrary = runContext $ GT.resize 2 $ do
         name <- liftGen arbitraryName
         params <- GT.listOf arbitraryParam
         challenges <- GT.listOf1 arbitraryChallenge
-        return $ Contract name params challenges ()
+        return $ Contract name params challenges sp
+
+instance Arbitrary Module' where
+    arbitrary = do
+        c <- arbitrary
+        return $ Module [] [] [c]
