@@ -59,6 +59,7 @@ globals = Map.fromList
     , ("DataSig",        [List Byte] :-> Alias "DataSig")
     , ("Blocks",         [Num]       :-> Alias "TimeSpan")
     , ("TimeStamp",      [Num]       :-> Alias "Time")
+    , ("Bytes",          [Num]       :-> List Byte)
 
       -- Macros
     , ("fst",            [Tuple [TypeParam "a", TypeParam "b"]] :-> TypeParam "a")
