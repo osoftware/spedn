@@ -34,6 +34,7 @@ globals = Map.fromList
     , ("checkDataSig",   [Alias "DataSig", List Byte, Alias "PubKey"] :-> Bool)
     , ("checkLockTime",  [Alias "Time"]                               :-> Verification)
     , ("checkSequence",  [Alias "TimeSpan"]                           :-> Verification)
+    , ("checkSize",      [Array Byte $ SizeParam "s"]                 :-> Bool)
 
       -- Array manipulation
     , ("num2bin",        [Num, Num]  :-> List Byte)
