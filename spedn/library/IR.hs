@@ -295,9 +295,7 @@ exprCompiler (Call "checkMultiSig" [checkbits, sigs, keys] _) = do
 exprCompiler (Call "checkSize" [arg] _) = do
     exprCompiler arg
     let (Right t, env, _) = ann arg
-    let l = case unAlias env t of
-            Right (Array Byte (ConstSize s)) -> s
-            _                                -> error $ "AST corrupted"
+    let Right (Array Byte (ConstSize l)) = unAlias env t
     emit [OpCall "size", OpPushNum l, OpCall "NumEq"]
     popM
     pushM "$tmp"

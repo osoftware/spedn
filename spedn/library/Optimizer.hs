@@ -17,7 +17,9 @@ optimize' (OP_EQUAL:OP_VERIFY:ops)            = OP_EQUALVERIFY : optimize' ops
 optimize' (OP_NUMEQUAL:OP_VERIFY:ops)         = OP_NUMEQUALVERIFY : optimize' ops
 optimize' (OP_NOT:OP_IF:ops)                  = OP_NOTIF : optimize' ops
 optimize' (OP_FALSE:OP_PICK:ops)              = OP_DUP : optimize' ops
+optimize' (OP_FALSE:OP_ROLL:ops)              = optimize' ops
 optimize' (OP_TRUE:OP_PICK:ops)               = OP_OVER : optimize' ops
+optimize' (OP_TRUE:OP_ROLL:ops)               = OP_SWAP : optimize' ops
 optimize' (OP_OVER:OP_OVER:ops)               = OP_2DUP : optimize' ops
 optimize' (OP_TRUE:OP_ADD:ops)                = OP_1ADD : optimize' ops
 optimize' (OP_TRUE:OP_SUB:ops)                = OP_1SUB : optimize' ops
@@ -27,4 +29,5 @@ optimize' (OP_N 3:OP_PICK:OP_N 3:OP_PICK:ops) = OP_2OVER : optimize' ops
 optimize' (OP_N a:OP_PICK:OP_N b:OP_PICK:ops) | a + 1 == b
                                               = OP_N a:OP_PICK : OP_DUP : optimize' ops
 optimize' (OP_DROP:OP_DROP:ops)               = OP_2DROP : optimize' ops
+optimize' (OP_DUP:OP_SIZE:OP_NIP:ops)         = OP_SIZE : optimize' ops
 optimize' (op:ops)                            = op : optimize' ops
