@@ -290,6 +290,8 @@ both :: Env -> Type -> Check Type -> Check Type -> Check Type
 both env t a b = expect env t a >> expect env t b
 
 bothSame :: Env -> Check Type -> Check Type -> Check Type
+bothSame _ (Right (List Byte)) (Right Byte)           = return $ List Byte
+bothSame _ (Right Byte) (Right (List Byte))           = return $ List Byte
 bothSame _ (Right (List Byte)) (Right (Array Byte _)) = return $ List Byte
 bothSame _ (Right (Array Byte _)) (Right (List Byte)) = return $ List Byte
 bothSame env l@(Right a) r@(Right b)                  = expect env a r >> expect env b l

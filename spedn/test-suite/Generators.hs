@@ -154,11 +154,12 @@ verExpr = GT.oneof
     ]
 
 numExpr :: GenT Context Expr'
-numExpr = GT.oneof
-    [ liftGen numConst
-    , varOf Num
-    , callReturning Num
-    , BinaryExpr <$> GT.elements [Add, Sub, Div, Mod] <*> numExpr <*> numExpr <*> pure sp
+numExpr = GT.frequency
+    [ (2, liftGen numConst)
+    , (2, varOf Num)
+    , (2, callReturning Num)
+    , (1, BinaryExpr <$> GT.elements [Add, Sub, Div, Mod] <*> downscale numExpr <*> downscale numExpr <*> pure sp)
+    , (1, TernaryExpr <$> downscale boolExpr <*> downscale numExpr <*> downscale numExpr <*> pure sp)
     ]
 
 binExpr :: GenT Context Expr'
@@ -168,13 +169,16 @@ binExpr = GT.sized $ \n -> GT.oneof
     , callReturning $ List Byte
     , liftGen $ BinaryExpr <$> GT.elements [And, Or, Xor] <*> hexConst n <*> hexConst n <*> pure sp
     , liftGen $ BinaryExpr Cat <$> hexConst (n `div` 2) <*> hexConst (n - n `div` 2) <*> pure sp
+    , TernaryExpr <$> boolExpr <*> liftGen (hexConst n) <*> liftGen (hexConst n) <*> pure sp
     ]
 
 exprOf :: Type -> GenT Context Expr'
 exprOf Bool                           = boolExpr
 exprOf Num                            = numExpr
+-- exprOf Byte                           = liftGen $ hexConst 1
 exprOf (List Byte)                    = binExpr
 exprOf (Array Byte (ConstSize n))     = liftGen $ hexConst n
+exprOf (Array Byte (SizeParam _))     = liftGen . sized $ \n -> hexConst n
 exprOf (Alias "PubKey")               = Call "PubKey" <$> GT.vectorOf 1 (exprOf $ List Byte) <*> pure sp
 exprOf (Alias "Sha1")                 = Call "Sha1" <$> GT.vectorOf 1 (exprOf $ List Byte) <*> pure sp
 exprOf (Alias "Sha256")               = Call "Sha256" <$> GT.vectorOf 1 (exprOf $ List Byte) <*> pure sp
@@ -216,8 +220,8 @@ arbitraryAssignment = do
 
 arbitrarySplit :: GenT Context Statement'
 arbitrarySplit = GT.sized $ \n -> do
-    expr <- exprOf $ Array Byte (ConstSize n)
-    pos <- liftGen $ indexConst n
+    expr <- exprOf $ Array Byte (ConstSize $ n * 2)
+    pos <- liftGen $ indexConst $ n * 2
     left <- newName $ List Byte
     right <- newName $ List Byte
     return $ SplitAssign
