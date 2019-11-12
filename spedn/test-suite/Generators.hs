@@ -16,8 +16,7 @@ import           Text.Megaparsec                (SourcePos, initialPos)
 
 import           Env
 import           Parser                         (Challenge', Contract', Expr',
-                                                 Module', Statement',
-                                                 TuplePart', VarDecl')
+                                                 Module', Statement', VarDecl')
 import           Syntax
 
 
@@ -175,7 +174,6 @@ binExpr = GT.sized $ \n -> GT.oneof
 exprOf :: Type -> GenT Context Expr'
 exprOf Bool                           = boolExpr
 exprOf Num                            = numExpr
--- exprOf Byte                           = liftGen $ hexConst 1
 exprOf (List Byte)                    = binExpr
 exprOf (Array Byte (ConstSize n))     = liftGen $ hexConst n
 exprOf (Array Byte (SizeParam _))     = liftGen . sized $ \n -> hexConst n

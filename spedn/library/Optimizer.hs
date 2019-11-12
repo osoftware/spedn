@@ -30,4 +30,5 @@ optimize' (OP_N a:OP_PICK:OP_N b:OP_PICK:ops) | a + 1 == b
                                               = OP_N a:OP_PICK : OP_DUP : optimize' ops
 optimize' (OP_DROP:OP_DROP:ops)               = OP_2DROP : optimize' ops
 optimize' (OP_DUP:OP_SIZE:OP_NIP:ops)         = OP_SIZE : optimize' ops
+optimize' (OP_FALSE:OP_SPLIT:OP_NIP:ops)      = optimize' ops
 optimize' (op:ops)                            = op : optimize' ops
