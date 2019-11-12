@@ -139,7 +139,7 @@ checkExpr t (HexConst v a) = do
     return $ HexConst v (expect env t $ Right $ Array Byte (ConstSize $ length v), env, a)
 checkExpr t (StrConst v a) = do
     env <- get
-    return $ StrConst v (expect env t $ Right $ Array Byte (ConstSize $ length v), env, a)
+    return $ StrConst v (expect env t $ Right $ Array Byte (ConstSize $ strlen v), env, a)
 checkExpr t (TimeSpanConst v a) = do
     env <- get
     return $ TimeSpanConst v (expect env t $ Right $ Alias "TimeSpan", env, a)
