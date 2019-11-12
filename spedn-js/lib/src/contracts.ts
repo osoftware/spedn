@@ -151,7 +151,7 @@ export class ModuleFactory {
         case "byte":
           return arg instanceof Buffer && arg.length === length;
         case "bit":
-          throw Error("no idea how to do that");
+          return arg instanceof Buffer && arg.length <= 3 || typeof arg === "number" && Math.trunc(arg) === arg;
         default:
           return arg instanceof Array && arg.length === length && arg.every(a => this.typeMatches(subType, a));
       }
