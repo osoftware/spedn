@@ -89,7 +89,7 @@ statement :: Parser Statement'
 statement = assign <|> split <|> verify <|> fail' <|> separator <|> ifElse <|> block
 
 assign :: Parser Statement'
-assign = annotate . try $ Assign <$> varDecl <*> rval
+assign = annotate $ Assign <$> try varDecl <*> try rval
 
 split :: Parser Statement'
 split = annotate $ do

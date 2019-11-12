@@ -97,4 +97,4 @@ binBit = lexeme . choice $ [ symbol "0" >> pure False
                            ]
 
 strLit :: Char -> Parser String
-strLit q = char q >> manyTill L.charLiteral (char q)
+strLit q = lexeme $ char q >> manyTill L.charLiteral (char q)
