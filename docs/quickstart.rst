@@ -39,12 +39,12 @@ Create a file mycontract.spedn with a following content:
 .. code-block:: c
 
     contract ExpiringTip(Ripemd160 alice, Ripemd160 bob) {
-    
+
         challenge receive(Sig sig, PubKey pubKey) {
             verify hash160(pubKey) == bob;
             verify checkSig(sig, pubKey);
         }
-    
+
         challenge revoke(Sig sig, PubKey pubKey) {
             verify checkSequence(7d);
             verify hash160(pubKey) == alice;
@@ -63,8 +63,3 @@ You should get a compiled contract template similar to this:
 .. code-block:: forth
 
     <alice> <bob> 2 PICK TRUE EQUAL IF 3 PICK HASH160 OVER EQUALVERIFY (...)
-
-Coming soon
-===========
-
-Instantiating the template. Address generation. Redeeming.

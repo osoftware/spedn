@@ -6,6 +6,6 @@ contract ChainBetBobEscrow(PubKey alicePK, PubKey bobPK) {
     }
 
     challenge proceed(Sig aliceSig, Sig bobSig) {
-        verify checkMultiSig([aliceSig, bobSig], [alicePK, bobPK]);
+        verify checkMultiSig(0b11, [aliceSig, bobSig], [alicePK, bobPK]);
     }
 }

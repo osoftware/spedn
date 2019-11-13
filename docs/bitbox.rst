@@ -64,9 +64,9 @@ To compile source code in a string, use ``compileCode``.
 
 .. code-block:: TypeScript
 
-   const BlindEscrow = await compiler.compileFile("./BlindEscrow.spedn");
+   const { BlindEscrow } = await compiler.compileFile("./BlindEscrow.spedn");
 
-   const ExpiringTip = await compiler.compileCode(::`
+   const { ExpiringTip } = await compiler.compileCode(::`
       contract ExpiringTip(Ripemd160 alice, Ripemd160 bob) {
          challenge receive(Sig sig, PubKey pubKey) {
             verify hash160(pubKey) == bob;

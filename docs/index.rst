@@ -9,9 +9,10 @@ It is designed for explicitness and safety:
 * It is statically typed - detects many errors at compile time
 * It is explicitly typed - no guessing what the expression is supposed to return
 * It is purely-functional - free of side effects, the common source of bugs
-* It has a familiar C-like syntax
+* It has a familiar syntax resembling C# or Rust
 
 .. Warning:: Spedn is an experimental tool. It is not recommended to be used on mainnet yet.
+   Or at least do a lot of tests on testnet first.
 
 .. toctree::
    :maxdepth: 1
@@ -19,9 +20,10 @@ It is designed for explicitness and safety:
 
    quickstart
    script
+   migration
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Language Specification:
 
    syntax
@@ -42,20 +44,6 @@ It is designed for explicitness and safety:
 
    0conf
    chainbet
-
-Roadmap
--------
-
-Spedn is an early, experimental tool with a lot of plans:
-
-* Macros
-* Extended support for covenants and tx preimage introspection
-* Compiled code optimizations
-* IDE with a debugger
-* ...and more
-
-Check out the `Trello board <https://trello.com/b/u6vD1EWO/spedn>`_
-to see what's currently going on.
 
 Contributing
 ------------
@@ -83,5 +71,4 @@ Contract
 
 * `Telegram Channel <https://t.me/bch_compilers>`_
 * `Issue tracker <https://bitbucket.org/o-studio/spedn/issues?status=new&status=open>`_
-* `#spedn-lang channel on Electron Cash Slack <https://electroncash.slack.com/messages/CD81XT49X>`_
 * `Twitter <http://twitter.com/tendo_pein_sama>`_

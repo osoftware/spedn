@@ -2,11 +2,20 @@
 Syntax overview
 ===============
 
+Module
+======
+
+A single code file is called a *module*. It can contain any number of type definitions and contract templates.
+Typed should be defined first, followed by contract templates.
+Single and multiline comments are supported with ``//`` and ``/* */`` delimiters respectively.
+
+
 Contract Templates
 ==================
 
 A contract template in Spedn represents a template for generating a P2SH address and corresponding redeem script.
 It can be parametrized. Contract parameters have to be specified to instantiate it, that is - to generate a particular contract with an address.
+Contract name should start with a capital letter.
 
 You can perceive a contract template as a specification of a pin tumbler lock mechanism while a contract is a particular lock and parameters are pin lengths in it.
 
@@ -26,13 +35,15 @@ Challenges
 ==========
 
 A challenge is a set of conditions that have to be met to redeem a coin locked in a contract.
-Challenges specify arguments that will be expected to be provided in ``scriptSig`` when redeeming the coin.
+Challenges specify arguments that will be expected to be pushed in ``scriptSig`` when redeeming the coin.
 A contract must contain at least one challenge and a challenge must define at least one argument.
 Challenges must have unique names.
 
 A challenge introduces a lexical scope so two different challenges can define an argument with the same name.
 
 When redeeming a coin, a redeemer must choose one of the challenges and satisfy its conditions.
+On the assemby level its done by pushing challenge's number (indexed from 1) after arguments.
+If there is only one challenge, only arguments are pushed.
 
 You can perceive a challenge as a keyhole in a lock and arguments as keys.
 
@@ -86,23 +97,23 @@ Example:
 
     int a = b + c;
 
-There is also a possibility to define 2 variables in case of using the split operator.
-If one of the results is unnecessary, you can ignore it with a low dash operator.
+There is also a possibility to deconstruct a tuple into many variables (like in case of using the split operator).
+If some of the results is unnecessary, you can ignore them with a low dash operator.
 
 Syntax:
 
-    *type* **[** *leftName* , *rightName* **] =** *expr1* **@** *expr2* **;**
+    **(** *type1* *name1* **,** *type2* *name2* **) =** *expr1* **@** *expr2* **;**
 
-    *type* **[ \_,** *rightName* ] = *expr1* **@** *expr2* **;**
+    **(_,** *type2* *name2* **) =** *expr1* **@** *expr2* **;**
 
-    *type* **[** *leftName* **, \_ ] =** *expr1* **@** *expr2* **;**
+    **(** *type* *name* **, _) =** *expr1* **@** *expr2* **;**
 
 
 Example:
 
 .. code-block:: guess
 
-    bin [prefix, _] = secret @ 4;
+    ([byte;4] prefix, _) = secret @ 4;
 
 Conditional
 -----------
@@ -121,6 +132,25 @@ Example:
         verify checkSig(sig, alice);
     else
         verify checkSig(sig, bob);
+
+Fail
+----
+
+To immediately fail the execution just type ``fail;`` - it will compile to ``OP_RETURN``.
+
+.. code-block:: c
+
+    if (num % 2 = 1)
+        verify checkSig(sig, alice);
+    else
+        fail;
+
+Separator
+---------
+
+The ``separator;`` statement compiles to ``OP_CODESEPARATOR``.
+It affects the way the tx preimage used in ``checkSig`` is generated so that only the code *after* the separator
+is included. Might by useful for reducing the size of a preimage used in covenant-style contracts.
 
 Block
 -----
@@ -144,11 +174,33 @@ Example:
         verify checkSequence(5d);
     }
 
+
 Loop
 ----
 
 There are no loops, it's Bitcoin.
 
+
+Type Definitions
+================
+
+You can defile a type alias. The name of the new type must start with a capital letter.
+
+Syntax:
+
+    **type** *Name* **=** *other type* **;**
+
+Example:
+
+.. code-block:: c
+
+    type Message = [byte;7];
+
+Once defined you can declare variables of the new type and use a type constructor for casting a raw type to an alias.
+
+    .. code-block:: c
+
+        Message msg = Message("abcdefg");
 
 Lexical scopes
 ==============
@@ -159,7 +211,7 @@ Also - name shadowing is prohibited so a nested scope cannot redefine a name pre
 
 There are following scopes in the nesting order:
 
-* **Global scope** - contains predefined functions and type constructors
+* **Module scope** - contains predefined functions and type definitions
 * **Contract scope** - introduced by the contract, contains contract parameters
 * **Challenge scope** - introduced by the challenge, contains challenge arguments and local variables
 * **Local scope** - introduced by *if/else/block* statements, contains local variables
@@ -169,6 +221,8 @@ Exhaustive example:
 .. code-block:: c
 
     // a global scope, names like checkSig, min, max are reserved.
+
+    type Msg = [byte;15];
 
     // contract scope begins
     contract X(int a, int b) { // names a, b are defined

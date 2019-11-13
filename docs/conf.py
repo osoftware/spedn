@@ -20,13 +20,13 @@
 # -- Project information -----------------------------------------------------
 
 project = u'Spedn'
-copyright = u'2018, {o} Software'
+copyright = u'2018-2019, {o} Software'
 author = u'{o} Software'
 
 # The short X.Y version
-version = u''
+version = u'0.2'
 # The full version, including alpha/beta/rc tags
-release = u''
+release = u'0.2.0'
 
 
 # -- General configuration ---------------------------------------------------

@@ -8,7 +8,7 @@ contract PointlesContract(PubKey aliceKey, int param2) {
   // Contract parameters are constants to be provided when creating a P2SH address or a redeem script.
 
   // Logic of the contract is divided into one ore more challenges that define ways of reclaiming the coin.
-  challenge spend(Sig aliceSig, bool flag, bin data) {
+  challenge spend(Sig aliceSig, bool flag, [byte] data) {
     // Each challenge defines at least one argument which is to be provided by the redeemer in the scriptSig.
 
     // challenge can contain any number of statements which include:
@@ -21,7 +21,7 @@ contract PointlesContract(PubKey aliceKey, int param2) {
     // binding of immutable variable
     int x = (param2 + 3) % 5;
     // or pair of variables in case of splitting
-    bin [left, right] = data @ x;
+    ([byte] left, [byte] right) = data @ x;
 
     // if
     if (flag) verify left == 0x1234567890abcdef;
@@ -33,30 +33,33 @@ contract PointlesContract(PubKey aliceKey, int param2) {
     }
     // (y is gone here)
 
-    bin data2 = data & 0xff;
-    verify bin2num(data2, 1) > 17;
+    [byte] data2 = data & 0xff;
+    verify bin2num(data2) > 17;
   }
 
   // Each challenge has an assigned number and the redeemer needs to push this number in scriptSig to select this branch.
-  challenge cancel(bin y) {
+  challenge cancel([byte] y) {
     // supported types
-    bool a = true;              // boolean
-    int b = 1;                  // 32-bit signed integers
-    int c = 0x01i;              // Which you can also express in hex (notice 'i' postfix)
-    bin d = 0x00ff;             // array of binary data of any kind
-    PubKey e = PubKey(d);       // Public key, subtype of bin
-    Sig f = Sig(d);             // Signature, subtype of bin
-    Ripemd160 g = ripemd160(d); // RIPEMD-160 hash, like in public key hash, subtype of bin
-    Sha1 h = sha1(d);           // SHA-1 hash, subtype of bin
-    Sha256 i = sha256(e);       // SHA-256 hash, subtype of bin
-    // Soon: types related to timelocks
+    bool a = true;                  // boolean
+    int b = 1;                      // 32-bit signed integers
+    int c = 0x01i;                  // Which you can also express in hex (notice 'i' postfix)
+    [byte;2] d = 0x00ff;            // array of binary data of any kind
+    [byte;2] dd = "xd";             // array of binary data provided as a UTF-8 string
+    PubKey e = PubKey(d);           // Public key, subtype of bin
+    Sig f = Sig(d);                 // Signature, subtype of bin
+    Ripemd160 g = ripemd160(d);     // RIPEMD-160 hash, like in public key hash, subtype of bin
+    Sha1 h = sha1(d);               // SHA-1 hash, subtype of bin
+    Sha256 i = sha256(e);           // SHA-256 hash, subtype of bin
+    Time j = `2018-10-13 21:37:00`; // Absolute time
+    Time k = TimeStamp(678);        // Absolute time provided as a block height
+    Time l = TimeStamp(1539466620); // Absolute time provided as a Unix timestamp
 
     // you can implicitly cast subtypes to parent type
-    bin j = i;
+    [byte] m = i;
     // but otherwise you need an explicit type cast, like above for variables e and f
     
     // concatenation also upcasts to bin
-    bin cat = e . f . g .h . i;
+    [byte] cat = e . f . g .h . i;
     
     verify a;
   }

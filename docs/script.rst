@@ -21,7 +21,7 @@ An output that is not yet referenced by any other transaction is called *Unspent
 
 A UTXO can be perceived as a lockbox containing a single coin.
 
-An address is a user readable representation of a standard scriptPubKey.
+An address is a user readable representation of a standard scriptPubKey. There can be many UTXOs with the same address.
 
 Kinds of boxes
 ==============
@@ -48,7 +48,8 @@ Making fancy boxes
 
 All those scripts are bytecode that run in a stack machine.
 A human readable representation (assembly language) of this bytecode is called... Script.
-Script is a FORTH-like, stack oriented language containing numerous opcodes, some generic, some very Bitcoin-specific.
+Script is a FORTH-like, stack oriented language containing numerous opcodes, some generic (like ``OP_ADD``),
+some very Bitcoin-specific (like ``OP_CHECKSIG``).
 It intentionally lacks support for recursion what guarantees that all scripts finish
 (and even do so in deterministic time).
 

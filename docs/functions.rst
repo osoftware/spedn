@@ -25,23 +25,23 @@ Math Functions
 Hashing Functions
 =================
 
-* ``Ripemd160 ripemd160(bin bytes)``
+* ``Ripemd160 ripemd160([byte] bytes)``
 
   Returns a RIPEMD-160 hash of the argument.
 
-* ``Sha1 sha1(bin bytes)``
+* ``Sha1 sha1([byte] bytes)``
 
   Returns a SHA-1 hash of the argument.
 
-* ``Sha256 sha256(bin bytes)``
+* ``Sha256 sha256([byte] bytes)``
 
   Returns a SHA-256 hash of the argument.
 
-* ``Ripemd160 hash160(bin bytes)``
+* ``Ripemd160 hash160([byte] bytes)``
 
   Returns RIPEMD-160 hash of SHA-256 hash of the argument.
 
-* ``Sha256 hash256(bin bytes)``
+* ``Sha256 hash256([byte] bytes)``
 
   Returns double SHA-256 hash of the argument.
 
@@ -56,7 +56,7 @@ Cryptographic Checks
 
   Validates the set of signatures against the set of public keys.
 
-* ``bool checkDataSig(DataSig sig, bin msg, PubKey pk)``
+* ``bool checkDataSig(DataSig sig, [byte] msg, PubKey pk)``
 
   Validates a signature ``sig`` of an arbitrary message ``msg`` against a public key ``pk``.
 
@@ -77,17 +77,25 @@ Timelock Checks
 Array Operations
 ================
 
-* ``bin num2bin(int num, int size)``
+* ``[byte] num2bin(int num, int size)``
 
-  Converts a number ``num`` into a bytes array of size ``size``.
+  Converts a number ``num`` into a bytes list. Bytes are reversed and padded with zeros up to ``size``.
 
-* ``int bin2num(bin data)``
+* ``[byte] Bytes(int num)``
 
-  Converts a bytes array ``data`` to an integer. The array is treated as little-endian.
+  Reinterprets a number ``num`` as a bytes list without affecting the byte order.
 
-* ``int size(bin data)``
+* ``int bin2num([byte] data)``
+
+  Converts a bytes list ``data`` to an integer. The list is treated as little-endian.
+
+* ``int size([byte] data)``
 
   Returns the length of ``data``.
+
+* ``int checkSize([byte; x] data)``
+
+  Returns true it the runtime size of the byte array matches the declared size ``x``.
 
 * ``bin fst([bin, bin] data)``
 

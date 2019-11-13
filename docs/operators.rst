@@ -120,3 +120,8 @@ Operators
       - ``a @ b``
       - Split bytes array ``a`` at position ``b``.
       - none
+
+    * - 13
+      - ``cond ? t : f``
+      - If ``cond`` is ``true`` returns ``t``, otherwise ``f``.
+      - right to left

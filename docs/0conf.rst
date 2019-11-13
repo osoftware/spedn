@@ -28,11 +28,11 @@ or watch a `presentation <https://www.youtube.com/watch?v=EsddVkR-MSs>`_.
         // This challenge can be used by a miner to claim the forfeit
         // if he can prove there was a doublespend attempt.
         challenge fraud(
-            Sig paymentSig,         // A signature used in payment transaction
-            bin paymentPayload,     // Signed data from the transaction
-            Sig doublespendSig,     // Another signature taken from the doublespend attempt
-            bin doublespendPayload, // Signed data from the doublespend
-            PubKey pubKey           // Public Key matching both signatures
+            DataSig paymentSig,        // A signature used in payment transaction
+            [byte] paymentPayload,     // Signed data from the transaction
+            DataSig doublespendSig,    // Another signature taken from the doublespend attempt
+            [byte] doublespendPayload, // Signed data from the doublespend
+            PubKey pubKey              // Public Key matching both signatures
         ) {
             // If the provided PK matches the one from the payment input...
             if (hash160(pubKey) == inputPKH) {
@@ -42,7 +42,7 @@ or watch a `presentation <https://www.youtube.com/watch?v=EsddVkR-MSs>`_.
                 verify checkDataSig(doublespendSig, doublespendPayload, pubKey);
             } else {
                 // otherwise don't allow to spend it
-                verify false;
+                fail;
             }
         }
     }

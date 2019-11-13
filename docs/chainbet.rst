@@ -31,7 +31,7 @@ in the situation when Bob abandonds the betting process.
 
         challenge proceed(Sig aliceSig, Sig bobSig, bin secret) {
             verify hash160(secret) == commitment;
-            verify checkMultiSig([aliceSig, bobSig], [alicePK, bobPK]);
+            verify checkMultiSig(0b11, [aliceSig, bobSig], [alicePK, bobPK]);
         }
     }
 
@@ -99,13 +99,13 @@ Alice can sign for her public key AND Hash(A)= HASH_A AND Hash(B)=HASH_B AND A+B
         PubKey alicePK,
         PubKey bobPK) {
 
-        challenge odd(bin aliceSecret, bin bobSecret, Sig aliceSig, bool cancel) {
+        challenge odd([byte] aliceSecret, [byte] bobSecret, Sig aliceSig, bool cancel) {
             if (!cancel) {
                 verify hash160(aliceSecret) == aliceCommitment;
                 verify hash160(bobSecret) == bobCommitment;
 
-                bin [a, _] = aliceSecret @ 4;
-                bin [b, _] = bobSecret @ 4;
+                ([byte;4] a, _) = aliceSecret @ 4;
+                ([byte;4] b, _) = bobSecret @ 4;
                 verify (bin2num(a) + bin2num(b)) % 2 == 1;
             }
             else verify checkSequence(8b);
@@ -113,12 +113,12 @@ Alice can sign for her public key AND Hash(A)= HASH_A AND Hash(B)=HASH_B AND A+B
             verify checkSig(aliceSig, alicePK);
         }
 
-        challenge even(bin aliceSecret, bin bobSecret, Sig bobSig) {
+        challenge even([byte] aliceSecret, [byte] bobSecret, Sig bobSig) {
             verify hash160(aliceSecret) == aliceCommitment;
             verify hash160(bobSecret) == bobCommitment;
 
-            bin [a, _] = aliceSecret @ 4;
-            bin [b, _] = bobSecret @ 4;
+            ([byte;4] a, _) = aliceSecret @ 4;
+            ([byte;4] b, _) = bobSecret @ 4;
             verify (bin2num(a) + bin2num(b)) % 2 == 0;
 
             verify checkSig(bobSig, bobPK);
