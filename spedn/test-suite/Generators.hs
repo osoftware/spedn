@@ -253,6 +253,7 @@ arbitraryVerification :: GenT Context Statement'
 arbitraryVerification = GT.oneof
     [ Verify <$> boolExpr <*> pure sp
     , Verify <$> verExpr <*> pure sp
+    , Return <$> liftGen (pure sp)
     ]
 
 arbitraryStatement :: GenT Context Statement'
@@ -262,6 +263,7 @@ arbitraryStatement = GT.oneof
     , arbitraryConditional
     , arbitraryBlock
     , arbitraryVerification
+    , Separator <$> liftGen (pure sp)
     ]
 
 arbitraryChallengeBody ::  GenT Context Statement'

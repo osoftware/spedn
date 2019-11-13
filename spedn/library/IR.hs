@@ -103,19 +103,14 @@ emitPushParamM :: VarDecl Ann -> Compiler
 emitPushParamM (VarDecl t name (_, env, _)) =
     case unAlias env t of
         Right (Array Byte _) -> do
-            pushM name
             emit [OpPush name]
         Right (List Byte) -> do
-            pushM name
             emit [OpPush name]
         Right (Array _ (ConstSize l)) -> do
-            mapM_ (\i -> pushM $ name ++ "$" ++ show i) [0..(l - 1)]
             mapM_ (\i -> emit [OpPush $ name ++ "$" ++ show i]) [0..(l - 1)]
         Right (Tuple ts) -> do
-            mapM_ (\i -> pushM $ name ++ "$" ++ show i) [0..(length ts - 1)]
             mapM_ (\i -> emit [OpPush $ name ++ "$" ++ show i]) [0..(length ts - 1)]
         _ -> do
-            pushM name
             emit [OpPush name]
 
 contractCompiler :: Contract Ann -> Compiler
@@ -128,6 +123,7 @@ contractCompiler (Contract _ ps cs _) =
 singleChallengeCompiler :: [VarDecl Ann] -> Challenge Ann -> Compiler
 singleChallengeCompiler ps (Challenge _ args s _) = do
     mapM_ pushParamM args
+    mapM_ pushParamM ps
     mapM_ emitPushParamM ps
     stmtCompiler s True
     replicateM_ (sum $ declHeight <$> args ++ ps) emitNipM
@@ -135,6 +131,7 @@ singleChallengeCompiler ps (Challenge _ args s _) = do
 challengesCompiler :: [VarDecl Ann] -> [Challenge Ann] -> Compiler
 challengesCompiler ps cs = do
     let cases = length cs
+    mapM_ emitPushParamM ps
     mapM_ (nthChallengeCompiler ps) (zip cs [1..])
     emit [OpPushBool False]
     pushM "$default"
@@ -144,7 +141,7 @@ nthChallengeCompiler :: [VarDecl Ann] -> (Challenge Ann, Int) -> Compiler
 nthChallengeCompiler ps (Challenge _ args s _, num) = do
     mapM_ pushParamM args
     pushM "$case"
-    mapM_ emitPushParamM ps
+    mapM_ pushParamM ps
     emitPickM "$case"
     emit [OpPushNum num, OpCall "Eq", OpIf]
     popM
@@ -186,7 +183,7 @@ stmtCompiler (Verify expr _) final = do
     unless final $ do
         emit [OpVerify]
         popM
-stmtCompiler (Return _) _ = emit [OpReturn]
+stmtCompiler (Return _) _ = emit [OpReturn] >> pushM "$fail"
 stmtCompiler (Separator _) _ = emit [OpCodeSeparator]
 stmtCompiler (If cond t f _) final = do
     exprCompiler cond
