@@ -1,6 +1,6 @@
 {
   "name": "spedn",
-  "version": "0.2.0-alpha1",
+  "version": "0.2.0",
   "description": "Spedn compiler SDK",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
