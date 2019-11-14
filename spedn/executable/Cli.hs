@@ -9,6 +9,7 @@ import           Syntax
 data Options
     = Compile { cSource :: FilePath, cHex :: Bool, cParams :: [(Name, Expr')] }
     | MakeAddr { maSource :: FilePath , maMainnet :: Bool, maParams :: [(Name, Expr')] }
+    | Version
     deriving (Show)
 
 sourceParser :: Parser FilePath
@@ -28,9 +29,12 @@ commandsParser = hsubparser
     (  command "compile" (info
         (Compile <$> sourceParser <*> hexParser <*> paramsParser)
         (progDesc "Compiles SOURCE to Script"))
-    <> command "makeaddr" (info
-        (MakeAddr <$> sourceParser <*> mainnetParser <*> paramsParser)
-        (progDesc "Generates P2SH address"))
+    -- <> command "makeaddr" (info
+    --     (MakeAddr <$> sourceParser <*> mainnetParser <*> paramsParser)
+    --     (progDesc "Generates P2SH address"))
+    <> command "version" (info
+        (pure Version)
+        (progDesc "Displays compiler version"))
     )
 
 cli :: ParserInfo Options
