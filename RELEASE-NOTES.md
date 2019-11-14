@@ -1,4 +1,4 @@
-# Release 0.2.0 alpha 1
+# Release 0.2.0
 
 This is 15th Nov 2019 hard-fork compatibility update with a bunch of breaking changes and new features.
 
@@ -14,9 +14,8 @@ The compiler type-checks the lengths so for example a type of `message . message
 Ex. `type Message = [byte; 10];`. Actually, `Sig`, `DataSig`, `PubKey`, `Ripemd160`, `Sha1`, `Sha256`, `Time` and `TimeSpan` are defined internally as aliases.
 * Introducing `separator;` statement that compiles to `OP_CODESEPARATOR`.
 * Introducing `fail;` statement that compiles to `OP_RETURN`.
+* Introducing `checkSize(x)` function that returns `true` if the runtime size of a byte array matches the declared type.
 * Variable names can now contain underscores, ex. `[byte] my_string`.
-
-Contracts crafted with Spedn 0.1.5 (with an exception for `checkMultiSig`) and adjusted to the 0.2 syntax changes (if necessary) should compile to exactly the same Script.
 
 # Release 0.1.5
 
