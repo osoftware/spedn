@@ -1,3 +1,8 @@
+# Release 0.2.1
+
+* fix SDK bug in validation of Buffer passed as a ``[byte]`` argument [thanks to read.cash for noticing]
+* allow to pass a string as a ``[byte]`` argument (it will by converted to a Buffer encoded in UTF-8) [thanks to read.cash for inspiration]
+
 # Release 0.2.0
 
 This is 15th Nov 2019 hard-fork compatibility update with a bunch of breaking changes and new features.
