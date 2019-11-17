@@ -52,6 +52,52 @@ const coins = [
 ];
 
 describe("TxBuilder", () => {
+  describe("type validation", () => {
+    let mod: Module;
+    let utxo: ContractCoin;
+    beforeAll(
+      async () =>
+        await using(new Spedn(), async compiler => {
+          mod = await compiler.compileCode(`
+            contract X() {
+              challenge spend(Ripemd160 hash, [byte;4] bytes4, [byte] bytes, int integer) {
+                fail;
+              }
+            }
+          `);
+          const address = new mod.X({});
+          utxo = new ContractCoin(
+            {
+              txid: "6b5c8d90e8ac791d00c1d70bcc7a52fb4fd9077bf07387b0db9240a919cdabdf",
+              vout: 0,
+              amount: 5000000,
+              satoshis: 5000000,
+              confirmations: 10,
+              height: 100
+            },
+            (address as any).challenges,
+            address.redeemScript
+          );
+        })
+    );
+
+    it("should accept correct types", () => {
+      expect(
+        utxo.challenges.spend({ hash: Buffer.alloc(20), bytes4: Buffer.alloc(4), bytes: Buffer.alloc(15), integer: 5 })
+      ).toBeDefined();
+    });
+    it("should convert strings to Buffers", () => {
+      expect(
+        utxo.challenges.spend({ hash: "12345678901234567890", bytes4: "abcd", bytes: "qwerty", integer: 5 })
+      ).toBeDefined();
+    });
+    it("should throw on wrong sizes of arrays", () => {
+      expect(() =>
+        utxo.challenges.spend({ hash: "1234567890", bytes4: "abcde", bytes: "qwerty", integer: 5 })
+      ).toThrow();
+    });
+  });
+
   describe("size calculation", () => {
     let builder: TxBuilder;
     beforeEach(

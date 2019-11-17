@@ -28,7 +28,7 @@ export interface Arr {
 
 export interface List {
   tag: "List";
-  contents: [ParamType];
+  contents: ParamType;
 }
 
 export interface Tuple {
@@ -149,16 +149,19 @@ export class ModuleFactory {
       const [subType, length] = spednType.contents;
       switch (subType) {
         case "byte":
-          return arg instanceof Buffer && arg.length === length;
+          return (
+            (arg instanceof Buffer && arg.length === length) ||
+            (typeof arg === "string" && Buffer.from(arg, "utf-8").length === length)
+          );
         case "bit":
-          return arg instanceof Buffer && arg.length <= 3 || typeof arg === "number" && Math.trunc(arg) === arg;
+          return (arg instanceof Buffer && arg.length <= 3) || (typeof arg === "number" && Math.trunc(arg) === arg);
         default:
           return arg instanceof Array && arg.length === length && arg.every(a => this.typeMatches(subType, a));
       }
     }
     if (isList(spednType)) {
-      const [subType] = spednType.contents;
-      if (subType === "byte") return arg instanceof Buffer;
+      const subType = spednType.contents;
+      if (subType === "byte") return arg instanceof Buffer || typeof arg === "string";
       else throw Error("invalid type");
     }
     if (isTuple(spednType)) {
@@ -208,6 +211,7 @@ export class ModuleFactory {
   encodeParam(value: ParamValue): Buffer {
     if (typeof value === "boolean") return script.encodeNumber(value ? 1 : 0);
     if (typeof value === "number") return script.encodeNumber(value);
+    if (typeof value === "string") return Buffer.from(value, "utf8");
     if (value instanceof Buffer) return value;
 
     throw TypeError("Invalid parameter type.");
