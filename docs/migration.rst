@@ -5,19 +5,19 @@ Migration Guide
 Migrating from v0.1 to v0.2
 ===========================
 
-There are several syntax changes that might cause your contract compiled for v.0.1 version of Spedn
+There are several syntax changes that might cause your contract compiled for v0.1 version of Spedn
 doesn't compile anymore. Here's how to fix it:
 
 1. The ``bin`` type has been replced by ``[byte]``. Just replace all occurences.
    This will be good enough but consider being more strict by providing the exact size of the byte array,
    like ``[byte;5]``.
 
-2. Tuple destructuring has a new syntax. instead of ``bin [a, b]``, use ``([byte] a, [byte] b)``.
+2. Tuple destructuring has a new syntax. Instead of ``bin [a, b]``, use ``([byte] a, [byte] b)``.
    As before, consider being more strict, ex. ``([byte;4] a, [byte;28] b)``.
 
 3. With the November 2019 BCH protcol upgrade, ``OP_CHECKMULTISIG`` started to support Schnorr signatures
    but using this requires providing a checkbits argument instead of null dummy.
-   Spedn 0.2 supports this mode exclusively so you'll have to provide this:
+   Spedn 0.2 supports this mode exclusively so you'll have to add a checkbits argument.
 
    Code:
 
