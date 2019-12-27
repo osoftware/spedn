@@ -18,3 +18,4 @@ If you want to use Spedn as a command-line tool, use this package instead: [sped
 [Full Docs](http://spedn.rtfd.io)
 
 Donations: 🎺 Pein#7306 || bitcoincash:qrc2jhalczuka8q3dvk0g8mnkqx79wxp9gvvqvg7qt
+[![Sponsors](https://rcimg.net/images/sponsors/svg/pein.svg)](https://read.cash/become-a-sponsor/pein)

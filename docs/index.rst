@@ -50,11 +50,17 @@ Contributing
 
 Every kind of contribution is appreciated, especially:
 
-* Syntax ideas and other features propositions
+* Syntax ideas and other features suggestions
 * Code review
 * Unit tests
 * Bug reports
 * Usage examples and docs improvement
+
+
+Sponsorship
+-----------
+
+Single donation:
 
 .. raw :: html
 
@@ -63,8 +69,15 @@ Every kind of contribution is appreciated, especially:
       class="pay-button"
       amount="0.005"
       amount-type="BCH"
-      address="bitcoincash:qrc2jhalczuka8q3dvk0g8mnkqx79wxp9gvvqvg7qt">
+      address="bitcoincash:qrc2jhalczuka8q3dvk0g8mnkqx79wxp9gvvqvg7qt"
+      button-text="Send Bitcoin Cash">
    </button>
+
+Regular donations:
+
+.. raw :: html
+
+   <object type="image/svg+xml" data="https://rcimg.net/images/sponsors/svg/pein.svg" style="margin: auto;"></object>
 
 Contract
 --------
