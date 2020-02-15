@@ -68,6 +68,7 @@ executable spedn
     , base16-bytestring
     , bytestring
     , containers
+    , deepseq
     , ghcjs-base
     , megaparsec
     , spedn

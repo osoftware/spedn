@@ -4,6 +4,7 @@
 
 module Main where
 
+import           Control.DeepSeq
 import           Data.JSString
 import qualified Data.Map.Lazy                   as Map
 import           JavaScript.JSON.Types
@@ -61,4 +62,4 @@ compileCode code = return . toJSON $ compileModule "<inline>" (unpack code)
 compileFile :: JSString -> IO Value
 compileFile file = do
     code <- readFile $ unpack file
-    return . toJSON $ compileModule (unpack file) code
+    return . toJSON $ compileModule (unpack file) (force code)

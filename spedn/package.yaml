@@ -43,6 +43,7 @@ executables:
     - base16-bytestring
     - optparse-applicative
     - containers
+    - deepseq
     ghc-options:
     - -rtsopts
     - -threaded
