@@ -345,7 +345,16 @@ catArrays _ (Right (List Byte)) (Right (List Byte))    = Right $ List Byte
 
 catArrays _ (Left e) _                                 = Left e
 catArrays _ _ (Left e)                                 = Left e
-catArrays _ _ r                                        = Left $ TypeMismatch (List Byte) r
+catArrays _ (Right l) (Right r)
+    | isByteVector l                                   = Left $ TypeMismatch (List Byte) (Right r)
+    | otherwise                                        = Left $ TypeMismatch (List Byte) (Right l)
+-- catArrays _ _ r                                        = Left $ TypeMismatch (List Byte) r
+
+isByteVector :: Type -> Bool
+isByteVector Byte = True
+isByteVector (List Byte) = True
+isByteVector (Array Byte _) = True
+isByteVector _ = False
 
 typeofCall :: Env -> Name -> [Type] -> Type -> [Check Type] -> Check Type
 typeofCall env fn ins out args = if length ins == length args
