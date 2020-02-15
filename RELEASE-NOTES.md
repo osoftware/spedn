@@ -1,3 +1,8 @@
+# Release 0.2.2
+
+* fixed issues with compiling large source code files in JavaScript version [thanks to Tobias Ruck for reporting]
+* improved accuracy of type error messages in concatenation (`a . b`) expressions [thanks to emergent_reasons for reporting]
+
 # Release 0.2.1
 
 * fix SDK bug in validation of Buffer passed as a ``[byte]`` argument [thanks to read.cash for noticing]
