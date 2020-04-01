@@ -128,6 +128,7 @@ data OP_CODE
     | OP_NOP10
     | OP_CHECKDATASIG
     | OP_CHECKDATASIGVERIFY
+    | OP_REVERSEBYTES
       -- Other
     | OP_PUBKEYHASH
     | OP_PUBKEY
@@ -266,6 +267,7 @@ instance Persist OP_CODE where
         OP_NOP10               -> putByte 0xb9
         OP_CHECKDATASIG        -> putByte 0xba
         OP_CHECKDATASIGVERIFY  -> putByte 0xbb
+        OP_REVERSEBYTES        -> putByte 0xbc
 
         -- Other
         OP_PUBKEY              -> putByte 0xfe
@@ -351,6 +353,7 @@ compileOp (OpCall op) = case op of
                           "fst"           -> [OP_DROP]
                           "snd"           -> [OP_NIP]
                           "toDataSig"     -> [OP_SIZE, OP_1SUB, OP_SPLIT, OP_DROP]
+                          "reverseBytes"  -> [OP_REVERSEBYTES]
                           _               -> fail "Unknown function"
 compileOp OpPick          = [OP_PICK]
 compileOp OpRoll          = [OP_ROLL]

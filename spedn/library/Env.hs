@@ -40,6 +40,8 @@ globals = Map.fromList
     , ("num2bin",        [Num, Num]  :-> List Byte)
     , ("bin2num",        [List Byte] :-> Num)
     , ("size",           [List Byte] :-> Num)
+    , ("reverseBytes",   [Array Byte $ SizeParam "s"] :-> Array Byte (SizeParam "s")
+                     :|: [List Byte]                  :-> List Byte)
 
       -- Type aliases
     , ("type PubKey",    Array Byte $ ConstSize 33)
