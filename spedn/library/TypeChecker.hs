@@ -257,9 +257,8 @@ typeof env (BinaryExpr op l r _)
     | otherwise                   = bothSame env (typeof env l) (typeof env r)
 typeof env (TernaryExpr cond t f _) = expect env Bool (typeof env cond) >> bothSame env (typeof env t) (typeof env f)
 typeof env (Call fn args _)         = let argtypes = typeof env <$> args
-                                      in case Env.lookup env fn of
-                                          Just (ts :-> t) -> typeofCall env fn ts t argtypes
-                                          _               -> throwError $ NotInScope fn
+                                          fntype = Env.lookup env fn
+                                      in matchFn env fn fntype argtypes
 
 expect :: Env -> Type -> Check Type -> Check Type
 expect _ t@(Alias nt) a@(Right (Alias na)) = if nt == na then return t else throwError $ TypeMismatch t a
@@ -348,13 +347,21 @@ catArrays _ _ (Left e)                                 = Left e
 catArrays _ (Right l) (Right r)
     | isByteVector l                                   = Left $ TypeMismatch (List Byte) (Right r)
     | otherwise                                        = Left $ TypeMismatch (List Byte) (Right l)
--- catArrays _ _ r                                        = Left $ TypeMismatch (List Byte) r
 
 isByteVector :: Type -> Bool
 isByteVector Byte = True
 isByteVector (List Byte) = True
 isByteVector (Array Byte _) = True
 isByteVector _ = False
+
+matchFn :: Env -> Name -> Maybe Type -> [Check Type] -> Check Type
+matchFn env fn (Just (ts :-> t)) argtypes       = typeofCall env fn ts t argtypes
+matchFn env fn (Just ft@(t :|: other)) argtypes = case matchFn env fn (Just t) argtypes of
+                                                    Right x -> Right x
+                                                    _       -> case matchFn env fn (Just other) argtypes of
+                                                        Right x -> Right x
+                                                        _       -> throwError $ ArgumentMismatch fn ft argtypes
+matchFn _ fn _ _                                = throwError $ NotInScope fn
 
 typeofCall :: Env -> Name -> [Type] -> Type -> [Check Type] -> Check Type
 typeofCall env fn ins out args = if length ins == length args
@@ -373,10 +380,13 @@ checkCall ins out args = do
     return $ case foldr1 (>>) args' of
         e@(Left _) -> e
         _          -> case out of
-            TypeParam n -> case Env.lookup env n of
+            TypeParam n           -> case Env.lookup env n of
                 Just t  -> Right t
                 Nothing -> Right Any
-            t           -> Right t
+            Array t (SizeParam s) -> case Env.lookup env ('$':s) of
+                Just t'  -> Right t'
+                Nothing -> Right $ List t
+            t                     -> Right t
 
 checkArg :: (Type, Check Type) -> Checker (Check Type)
 checkArg (_, Left e)  = return $ Left e
@@ -408,8 +418,8 @@ expected n a = do
     env <- get
     case Env.lookup env n of
         Just (Array _ (ConstSize s)) -> case a of
-            Array t' _ -> return $ Array t' (ConstSize s)
-            _          -> error "Environment corrupted"
+            Array t _ -> return $ Array t (ConstSize s)
+            _         -> error "Environment corrupted"
         Just t                       -> return t
         Nothing                      -> case add env n a of
             Right e -> put e >> return a

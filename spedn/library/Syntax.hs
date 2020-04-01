@@ -25,7 +25,7 @@ instance Show Size where
     show (SizeParam n) = n
 
 infixr 5 :->
-infixr 5 :|:
+infixr 2 :|:
 data Type
     = Bool
     | Bit
