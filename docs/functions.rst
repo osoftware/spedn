@@ -79,15 +79,25 @@ Array Operations
 
 * ``[byte] num2bin(int num, int size)``
 
-  Converts a number ``num`` into a bytes list. Bytes are reversed and padded with zeros up to ``size``.
+  Converts a number ``num`` into a bytes list. Bytes remain little-endian and are padded with zeros up to ``size``.
 
 * ``[byte] Bytes(int num)``
 
-  Reinterprets a number ``num`` as a bytes list without affecting the byte order.
+  Reinterprets a number ``num`` as a bytes list without affecting the byte order or size.
 
 * ``int bin2num([byte] data)``
 
-  Converts a bytes list ``data`` to an integer. The list is treated as little-endian.
+  Converts a bytes list ``data`` to an integer. The list is treated as little-endian. The result is minimally encoded.
+
+* | ``[byte] reverseBytes([byte] data)``
+  | ``[byte;n] reverseBytes([byte;n] data)``
+
+  Returns an array with bytes in reverse order.
+
+  .. code-block:: c
+
+      [byte;3] rev = reverseBytes(0xabcdef);
+      // rev == 0xefcdab
 
 * ``int size([byte] data)``
 
@@ -103,7 +113,7 @@ Array Operations
 
   .. code-block:: c
 
-      bin left = fst(0xaabbccdd @ 2);
+      [byte] left = fst(0xaabbccdd @ 2);
       // left == 0xaabb
 
 * ``bin snd([bin, bin] data)``
@@ -112,7 +122,7 @@ Array Operations
 
   .. code-block:: c
 
-      bin right = snd(0xaabbccdd @ 2);
+      [byte] right = snd(0xaabbccdd @ 2);
       // right == 0xccdd
 
 * ``DataSig toDataSig(Sig data)``
