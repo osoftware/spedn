@@ -186,7 +186,7 @@ operators = [ [ prefix Minus $ try $ symbol "-" *> notFollowedBy digits
 
 term :: Parser Expr'
 term = tryArrayAccess . choice $
-    [ parens expr
+    [ tuple
     , list
     , val
     , call
@@ -215,6 +215,14 @@ parseParamVal = parseMaybe paramVal
 
 list :: Parser Expr'
 list = annotate . try $ ArrayLiteral <$> brackets (sepBy expr comma)
+
+tuple :: Parser Expr'
+tuple = try $ do
+  pos <- getSourcePos
+  elements <- parens (sepBy expr comma)
+  return $ case elements of
+    [x] -> x
+    xs  -> TupleLiteral xs pos
 
 boolConst :: Parser Expr'
 boolConst = annotate (BoolConst True <$ keyword "true" <|> BoolConst False <$ keyword "false")
