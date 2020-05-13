@@ -24,8 +24,11 @@ checkSourceFile (Module _ defs contracts) = do
 checkDef :: Def a -> TypeChecker Def a
 checkDef (TypeDef n t a) = do
     def <- addM ("type " ++ n) t
-    let rawType = case t of { Array Byte _ -> List Byte; x -> x }
-    ctor <- addM n ([rawType] :-> Alias n)
+    let ctorArgs = case t of
+                   Array Byte _ -> [List Byte]
+                   Tuple ts     -> ts
+                   x            -> [x]
+    ctor <- addM n (ctorArgs :-> Alias n)
     env <- get
     return $ TypeDef n t (def >> ctor >> (Right $ Alias n), env, a)
 checkDef _ = error "not implemented"
