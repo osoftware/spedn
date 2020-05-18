@@ -33,13 +33,15 @@ Basic types reflect types Script operates on.
 Arrays
 ======
 
-Overall syntax of an array is:
+Arrays are series of values with the same type.
+
+Overall syntax of an array type is:
 
     **[** *element_type* **;** *size* **]**
 
 In case of ``bit`` and ``byte`` the array will mean a single byte vector on the stack in Bitcoin Virtual Machine terms.
 In case of other types the array will mean a number of stack elements with element 0 on the bottom.
-You can creaye bit array literals with ``0b`` prefix, byte arrays with ``0x`` prefix or double quotes
+You can create bit array literals with ``0b`` prefix, byte arrays with ``0x`` prefix or double quotes
 and any other arrays with comma-separated lists in brackets.
 
     .. code-block:: c
@@ -59,7 +61,7 @@ It is also possible to define a byte list if the array size is unknown at the co
 A byte array can be implicitly casted to a byte list but not the other way.
 It is recommended though to use explicit sizes as much as possible to leverage the static type checking of the size.
 
-    .. code-block:: quess
+    .. code-block:: guess
 
         ([byte] left, [byte] right) = expr @ 3;   // okay
         ([byte;3] left, [byte] right) = expr @ 3; // better
@@ -73,6 +75,33 @@ With an exception of bit arrays the array elements can be accessed by an index s
         [byte] arr = "abcd"
         byte c = arr[2];
         byte x = arr[(i + 1) % 4];
+
+Tuples
+======
+
+Tuples are similar to arrays but the values can vary in types.
+
+Overall syntax of a tuple type is:
+
+    **(** *type1* **,** *type2* **[, ...])**
+
+You can create tuple literals with a comma separated list of values in parentheses.
+Tuples can be deconstructed into separate variables with a deconstructing assgnment syntax:
+
+    **(** *type1* *name1* **,** *type2* *name2* **[, ...]) =** *expr* **;**
+
+Elements of 2-tuples can be extracted with ``fst`` and ``snd`` functions.
+
+Examples:
+
+    .. code-block:: guess
+
+        ([byte;4], [byte]) tuple1 = x @ 4;
+        ([byte;4] left, [byte] right) = tuple1;
+        [byte;4] first = fst(tuple1);
+        [byte] second = snd(tuple1);
+        (int, [byte], [bit;3]) tuple2 = (a, b, c);
+
 
 
 Domain-Spcecific Types
@@ -150,26 +179,67 @@ They must be explicitly casted from ``[byte]`` with a type constructor.
 
         Sha256 x = hash256(secret);
 
+* **Preimage** - represents a raw transaction preimage. You can break it down to components with ``parse`` function.
 
-Special types
+    .. code-block:: guess
+
+        Preimage preimage = Preimage(0xaabc45......);
+        TxState tx = parse(preimage);
+
+* **TxState** - a 10-tuple containing preimage components. They can be accessed by tuple deconstruction.
+
+    1. **NVersion** - nVersion of the transaction (4-byte little endian)
+
+    2. **Sha256** - hashPrevouts (32-byte hash)
+
+    3. **Sha256** - hashSequence (32-byte hash)
+
+    4. **Outpoint** - outpoint (32-byte hash + 4-byte little endian)
+
+    5. **ScriptCode** - scriptCode of the input (serialized as scripts inside CTxOuts)
+
+    6. **Value** - value of the output spent by this input (8-byte little endian)
+
+    7. **NSequence** - nSequence of the input (4-byte little endian)
+
+    8. **Sha256** - hashOutputs (32-byte hash)
+
+    9. **NLocktime** - nLocktime of the transaction (4-byte little endian)
+
+    10. **Sighash** - sighash type of the signature (4-byte little endian)
+
+    .. code-block:: guess
+
+        (NVersion v, Sha256 hp, Sha256 hs, Outpoint o, 
+         ScriptCode code, Value val,
+         NSequence ns, Sha256 ho, NLocktime l, Sighash sh) = parse(preimage)
+
+    Alternatively you can use functions extrancing a single component.
+
+    .. code-block:: guess
+
+        NVersion v = nVesrion(preimage);
+        Sha256 hp = hashPrevouts(preimage);
+        Sha256 hs = hashSequence(preimage);
+        Outpoint o = outpoint(preimage);
+        ScriptCode code = scriptCode(preimage);
+        Value val = value(preimage);
+        NSequence s = nSequence(preimage);
+        Sha256 ho = hashOutputs(preimage);
+        NLocktime l = nLocktime(preimage);
+        Sighash sh = sighash(preimage);
+
+
+Hidden types
 -------------
 
 These are types that can appear in expressions but you cannot define variables of them.
 
-* **Verification** - almost like ``bool`` but the only thing you can do with it is to pass it to ``verify``.
-    This is a return type of ``checkLockTime`` and ``checkSequence`` functions.:
+* **Verification** - almost like ``bool`` but the only thing you can do with it is to pass it to ``verify``. This is a return type of ``checkLockTime`` and ``checkSequence`` functions:
 
     .. code-block:: c
 
         verify checkSequence(8b);
-
-* **Tuple** - a series of values that can be of different types.
-    Returned by `@` expressions, can be deconstructed or passed to ``fst`` or ``snd`` function.
-
-    .. code-block:: guess
-
-        (byte left; [byte] right) = str @ 1;
-        [byte] right = snd(str @ n);
 
 
 Custom types

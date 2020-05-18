@@ -135,6 +135,53 @@ Array Operations
       verify checkSig(sig, pubKey);
       verify checkDataSig(toDataSig(sig), preimageHash, pubKey);
 
+Covenant Introspection
+======================
+
+* ``TxState parse(Preimage p)``
+
+  Returns a 10-tuple of preimage components.
+
+* ``NVersion nVersion(Preimage p)``
+
+  Returns nVersion of the transaction (4-byte little endian).
+
+* ``Sha256 hashPrevouts(Preimage p)``
+
+  Returns hashPrevouts.
+
+* ``Sha256 hashSequence(Preimage p)``
+
+  Returns hashSequence.
+
+* ``Outpoint outpoint(Preimage p)``
+
+  Returns outpoint (32-byte hash + 4-byte little endian).
+
+* ``ScriptCode scriptCode(Preimage p)``
+
+  Returns scriptCode of the input (serialized as scripts inside CTxOuts).
+
+* ``Value value(Preimage p)``
+
+  Returns value of the output spent by this input (8-byte little endian).
+
+* ``NSequence nSequence(Preimage p)``
+
+  Returns nSequence of the input (4-byte little endian).
+
+* ``Sha256 hashOutputs(Preimage p)``
+
+  Returns hashOutputs.
+
+* ``NLocktime nLocktime(Preimage p)``
+
+  Returns nLocktime of the transaction.
+
+* ``Sighash sighash(Preimage p)``
+
+  Returns sighash type of the signature (4-byte little endian).
+
 
 Type Constructors
 =================
