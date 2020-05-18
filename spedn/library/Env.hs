@@ -52,6 +52,27 @@ globals = Map.fromList
     , ("type DataSig",   Array Byte $ ConstSize 64)
     , ("type TimeSpan",  Num)
     , ("type Time",      Num)
+    
+    , ("type Preimage",   List Byte)
+    , ("type NVersion",   Array Byte $ ConstSize 4)
+    , ("type Outpoint",   Array Byte $ ConstSize 36)
+    , ("type ScriptCode", List Byte)
+    , ("type Value",      Array Byte $ ConstSize 8)
+    , ("type NSequence",  Array Byte $ ConstSize 4)
+    , ("type NLocktime",  Array Byte $ ConstSize 4)
+    , ("type Sighash",    Array Byte $ ConstSize 4)
+    , ("type TxState",    Tuple [ Alias "NVersion"
+                                , Alias "Sha256"
+                                , Alias "Sha256"
+                                , Alias "Outpoint"
+                                , Alias "ScriptCode"
+                                , Alias "Value"
+                                , Alias "NSequence"
+                                , Alias "Sha256"
+                                , Alias "NLocktime"
+                                , Alias "Sighash"
+                                ])
+
 
       -- Type constructors
     , ("PubKey",         [List Byte] :-> Alias "PubKey")
@@ -64,11 +85,46 @@ globals = Map.fromList
     , ("TimeStamp",      [Num]       :-> Alias "Time")
     , ("Bytes",          [Num]       :-> List Byte)
 
+    , ("Preimage",       [List Byte] :-> Alias "Preimage")
+    , ("NVersion",       [List Byte] :-> Alias "NVersion")
+    , ("Sha256",         [List Byte] :-> Alias "Sha256")
+    , ("Sha256",         [List Byte] :-> Alias "Sha256")
+    , ("Outpoint",       [List Byte] :-> Alias "Outpoint")
+    , ("ScriptCode",     [List Byte] :-> Alias "ScriptCode")
+    , ("Value",          [List Byte] :-> Alias "Value")
+    , ("NSequence",      [List Byte] :-> Alias "NSequence")
+    , ("Sha256",         [List Byte] :-> Alias "Sha256")
+    , ("NLocktime",      [List Byte] :-> Alias "NLocktime")
+    , ("Sighash",        [List Byte] :-> Alias "Sighash")
+    , ("TxState",        [Alias "NVersion",
+                          Alias "Sha256",
+                          Alias "Sha256",
+                          Alias "Outpoint",
+                          Alias "ScriptCode",
+                          Alias "Value",
+                          Alias "NSequence",
+                          Alias "Sha256",
+                          Alias "NLocktime",
+                          Alias "Sighash"] :-> Alias "TxState")
+
       -- Macros
     , ("fst",            [Tuple [TypeParam "a", TypeParam "b"]] :-> TypeParam "a")
     , ("snd",            [Tuple [TypeParam "a", TypeParam "b"]] :-> TypeParam "b")
     , ("toDataSig",      [Alias "Sig"]                          :-> Alias "DataSig")
+    , ("parse",          [Alias "Preimage"]                     :-> Alias "TxState")
+    , ("nVersion",       [Alias "Preimage"]                     :-> Alias "NVersion")
+    , ("hashPrevouts",   [Alias "Preimage"]                     :-> Alias "Sha256")
+    , ("hashSequence",   [Alias "Preimage"]                     :-> Alias "Sha256")
+    , ("outpoint",       [Alias "Preimage"]                     :-> Alias "Outpoint")
+    , ("scriptCode",     [Alias "Preimage"]                     :-> Alias "ScriptCode")
+    , ("value",          [Alias "Preimage"]                     :-> Alias "Value")
+    , ("nSequence",      [Alias "Preimage"]                     :-> Alias "NSequence")
+    , ("hashOutputs",    [Alias "Preimage"]                     :-> Alias "Sha256")
+    , ("nLocktime",      [Alias "Preimage"]                     :-> Alias "NLocktime")
+    , ("sighash",        [Alias "Preimage"]                     :-> Alias "Sighash")
     ]
+
+
 
 typeConstructors :: [String]
 typeConstructors = filter (isUpper . head) $ fst <$> Map.toList globals

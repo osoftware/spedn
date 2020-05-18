@@ -296,6 +296,78 @@ exprCompiler (Call "checkSize" [arg] _) = do
     emit [OpCall "size", OpPushNum l, OpCall "NumEq"]
     popM
     pushM "$tmp"
+exprCompiler (Call "parse" [arg] _) = do
+    exprCompiler arg
+    popM
+    emit [OpPushNum 4, OpCall "Split"]
+    pushM "$tmp" -- nVersion
+    emit [OpPushNum 32, OpCall "Split"]
+    pushM "$tmp" -- hashPrevouts
+    emit [OpPushNum 32, OpCall "Split"]
+    pushM "$tmp" -- hashSequence
+    emit [OpPushNum 36, OpCall "Split"]
+    pushM "$tmp" -- outpoint
+    emit [OpCall "Size", OpPushNum 52, OpCall "Sub", OpCall "Split"]
+    pushM "$tmp" -- scriptCode
+    emit [OpPushNum 8, OpCall "Split"]
+    pushM "$tmp" -- value
+    emit [OpPushNum 4, OpCall "Split"]
+    pushM "$tmp" -- nSequence
+    emit [OpPushNum 32, OpCall "Split"]
+    pushM "$tmp" -- hashOutputs
+    emit [OpPushNum 4, OpCall "Split"]
+    pushM "$tmp" -- nLocktime
+    pushM "$tmp" -- sighash
+exprCompiler (Call "nVersion" [arg] _) = do
+    exprCompiler arg
+    emit [OpPushNum 4, OpCall "Split", OpDrop]
+    popM
+    pushM "$tmp"
+exprCompiler (Call "hashPrevouts" [arg] _) = do
+    exprCompiler arg
+    emit [OpPushNum 4, OpCall "Split", OpNip, OpPushNum 32, OpCall "Split", OpDrop]
+    popM
+    pushM "$tmp"
+exprCompiler (Call "hashSequence" [arg] _) = do
+    exprCompiler arg
+    emit [OpPushNum 36, OpCall "Split", OpNip, OpPushNum 32, OpCall "Split", OpDrop]
+    popM
+    pushM "$tmp"
+exprCompiler (Call "outpoint" [arg] _) = do
+    exprCompiler arg
+    emit [OpPushNum 68, OpCall "Split", OpNip, OpPushNum 36, OpCall "Split", OpDrop]
+    popM
+    pushM "$tmp"
+exprCompiler (Call "scriptCode" [arg] _) = do
+    exprCompiler arg
+    emit [OpPushNum 104, OpCall "Split", OpNip, OpCall "Size", OpPushNum 52, OpCall "Sub", OpCall "Split", OpDrop]
+    popM
+    pushM "$tmp"
+exprCompiler (Call "value" [arg] _) = do
+    exprCompiler arg
+    emit [OpCall "Size", OpPushNum 52, OpCall "Sub", OpCall "Split", OpNip, OpPushNum 8, OpCall "Split", OpDrop]
+    popM
+    pushM "$tmp"
+exprCompiler (Call "nSequence" [arg] _) = do
+    exprCompiler arg
+    emit [OpCall "Size", OpPushNum 44, OpCall "Sub", OpCall "Split", OpNip, OpPushNum 4, OpCall "Split", OpDrop]
+    popM
+    pushM "$tmp"
+exprCompiler (Call "hashOutputs" [arg] _) = do
+    exprCompiler arg
+    emit [OpCall "Size", OpPushNum 40, OpCall "Sub", OpCall "Split", OpNip, OpPushNum 32, OpCall "Split", OpDrop]
+    popM
+    pushM "$tmp"
+exprCompiler (Call "nLocktime" [arg] _) = do
+    exprCompiler arg
+    emit [OpCall "Size", OpPushNum 8, OpCall "Sub", OpCall "Split", OpNip, OpPushNum 4, OpCall "Split", OpDrop]
+    popM
+    pushM "$tmp"
+exprCompiler (Call "sighash" [arg] _) = do
+    exprCompiler arg
+    emit [OpCall "Size", OpPushNum 4, OpCall "Sub", OpCall "Split", OpNip]
+    popM
+    pushM "$tmp"
 exprCompiler (Call name args _)
     | name `elem` typeConstructors = exprCompiler $ head args
     | otherwise                    = do
@@ -336,17 +408,19 @@ elemAtM name expr = do
     pushM $ name ++ "$tmp"
 
 height :: Expr Ann -> Int
-height (ArrayLiteral es _)     = sum $ height <$> es
-height (TupleLiteral es _)     = sum $ height <$> es
-height (Var _ (Right t, _, _)) = typeHeight t
-height _                       = 1
+height (ArrayLiteral es _)       = sum $ height <$> es
+height (TupleLiteral es _)       = sum $ height <$> es
+height (Var _ (Right t, env, _)) = typeHeight env t
+height _                         = 1
 
-declHeight :: VarDecl a -> Int
-declHeight (VarDecl t _ _) = typeHeight t
+declHeight :: VarDecl Ann -> Int
+declHeight (VarDecl t _ (_, env, _)) = typeHeight env t
 
-typeHeight :: Type -> Int
-typeHeight (Array Byte _)          = 1
-typeHeight (Array Bit _)           = 1
-typeHeight (Array _ (ConstSize n)) = n
-typeHeight (Tuple ts)              = sum $ typeHeight <$> ts
-typeHeight _                       = 1
+typeHeight :: Env -> Type -> Int
+typeHeight _ (Array Byte _)          = 1
+typeHeight _ (Array Bit _)           = 1
+typeHeight _ (Array _ (ConstSize n)) = n
+typeHeight env (Tuple ts)            = sum $ typeHeight env <$> ts
+typeHeight env t@(Alias _)           = let (Right t') = unAlias env t
+                                       in typeHeight env t'
+typeHeight _ _                       = 1

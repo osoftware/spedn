@@ -183,6 +183,15 @@ exprOf (Alias "Sha256")               = Call "Sha256" <$> GT.vectorOf 1 (exprOf 
 exprOf (Alias "Ripemd160")            = Call "Ripemd160" <$> GT.vectorOf 1 (exprOf $ List Byte) <*> pure sp
 exprOf (Alias "Sig")                  = Call "Sig" <$> GT.vectorOf 1 (exprOf $ List Byte) <*> pure sp
 exprOf (Alias "DataSig")              = Call "DataSig" <$> GT.vectorOf 1 (exprOf $ List Byte) <*> pure sp
+exprOf (Alias "Preimage")             = Call "Preimage" <$> GT.vectorOf 1 (exprOf $ List Byte) <*> pure sp
+exprOf (Alias "NVersion")             = Call "NVersion" <$> GT.vectorOf 1 (exprOf $ List Byte) <*> pure sp
+exprOf (Alias "Outpoint")             = Call "Outpoint" <$> GT.vectorOf 1 (exprOf $ List Byte) <*> pure sp
+exprOf (Alias "ScriptCode")           = Call "ScriptCode" <$> GT.vectorOf 1 (exprOf $ List Byte) <*> pure sp
+exprOf (Alias "Value")                = Call "Value" <$> GT.vectorOf 1 (exprOf $ List Byte) <*> pure sp
+exprOf (Alias "NSequence")            = Call "NSequence" <$> GT.vectorOf 1 (exprOf $ List Byte) <*> pure sp
+exprOf (Alias "NLocktime")            = Call "NLocktime" <$> GT.vectorOf 1 (exprOf $ List Byte) <*> pure sp
+exprOf (Alias "Sighash")              = Call "Sighash" <$> GT.vectorOf 1 (exprOf $ List Byte) <*> pure sp
+exprOf (Alias "TxState")              = Call "parse" <$> GT.vectorOf 1 (exprOf $ Alias "Preimage") <*> pure sp
 exprOf (Alias "Time")                 = liftGen timeConst
 exprOf (Alias "TimeSpan")             = liftGen timeSpanConst
 exprOf (Tuple [List Byte, List Byte]) = downscale $ BinaryExpr Split
@@ -285,6 +294,15 @@ instance Arbitrary Type where
         , Alias "DataSig"
         , Alias "Time"
         , Alias "TimeSpan"
+        , Alias "Preimage"
+        , Alias "NVersion"
+        , Alias "Outpoint"
+        , Alias "ScriptCode"
+        , Alias "Value"
+        , Alias "NSequence"
+        , Alias "NLocktime"
+        , Alias "Sighash"
+        , Alias "TxState"
         ]
 
 arbitraryParam :: GenT Context VarDecl'

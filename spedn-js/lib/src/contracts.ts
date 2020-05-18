@@ -130,6 +130,29 @@ export const stdlib: PortableModule = {
     Sha1: { tag: "Array", contents: ["byte", 16] },
     Sha256: { tag: "Array", contents: ["byte", 32] },
     Sig: { tag: "Array", contents: ["byte", 65] },
+    Preimage: { tag: "List", contents: "byte" },
+    NVersion: { tag: "Array", contents: ["byte", 4] },
+    Outpoint: { tag: "Array", contents: ["byte", 36] },
+    ScriptCode: { tag: "List", contents: "byte" },
+    Value: { tag: "Array", contents: ["byte", 8] },
+    NSequence: { tag: "Array", contents: ["byte", 4] },
+    NLocktime: { tag: "Array", contents: ["byte", 4] },
+    Sighash: { tag: "Array", contents: ["byte", 4] },
+    TxState: {
+      tag: "Tuple",
+      contents: [
+        "NVersion",
+        "Sha256",
+        "Sha256",
+        "Outpoint",
+        "ScriptCode",
+        "Value",
+        "NSequence",
+        "Sha256",
+        "NLocktime",
+        "Sighash"
+      ]
+    },
     Time: "int",
     TimeSpan: "int"
   }
