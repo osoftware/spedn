@@ -1,3 +1,13 @@
+# Release 0.3.0
+
+This is 15th May 2020 hard-fork compatibility update with some new features
+
+* Introducing `reverseBytes` support.
+* Introducing tuple literals, for example `(1, "abc")`, and ability to create type aliases for tuple types.
+* One such alias is `TxState` which is a 10-tuple containing transaction preimage components.
+* You can get a `TxState` by calling `parse` on a variable of `Preimage` type.
+* Introducing functions extracting a single component of the preimage.
+
 # Release 0.2.2
 
 * fixed issues with compiling large source code files in JavaScript version [thanks to Tobias Ruck for reporting]
