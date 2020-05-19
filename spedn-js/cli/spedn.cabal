@@ -7,7 +7,7 @@ cabal-version: 1.12
 -- hash: 787c2e773af182cffd3e873076670af89fbb21b733050a549efd5aeb89e2f476
 
 name:           spedn
-version:        0.2.2
+version:        0.3.0
 synopsis:       Bitcoin Cash smart contracts compiler.
 description:    Spedn is a high-level, strongly typed smart contract language compiled to Bitcoin Script.
 category:       Bitcoin
