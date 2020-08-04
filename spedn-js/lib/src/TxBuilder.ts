@@ -1,8 +1,8 @@
-import { Crypto, TransactionBuilder } from "bitbox-sdk";
+import { TransactionBuilder } from "@chris.troutner/bch-js";
 import { ECPair } from "bitcoincashjs-lib";
 import { castArray, last } from "lodash/fp";
 import * as varuint from "varuint-bitcoin";
-import { bitbox, Challenges, Coin, script, ScriptSig } from "./contracts";
+import { bchjs, Challenges, Coin, script, ScriptSig } from "./contracts";
 
 export interface SigningContext {
   vin: number;
@@ -21,7 +21,7 @@ export enum SigHash {
 
 const SCHNORR = 1;
 
-const crypto = new Crypto();
+const crypto = bchjs.mainnet.Crypto;
 const ZERO = Buffer.from("0000000000000000000000000000000000000000000000000000000000000000", "hex");
 
 const varSliceSize = (someScript: Buffer) => {
@@ -179,7 +179,7 @@ export class TxBuilder {
   private balance = 0;
 
   constructor(private network = "mainnet") {
-    this.builder = new TransactionBuilder(network);
+    this.builder = new bchjs[network].TransactionBuilder(network);
   }
 
   from(utxos: Coin | Coin[], onSigning: SigningCallback, sequence?: number) {
@@ -235,7 +235,7 @@ export class TxBuilder {
 
   async broadcast(forceHighFee = false): Promise<string> {
     const tx = this.build(forceHighFee);
-    const txid = await bitbox[this.network].RawTransactions.sendRawTransaction(tx.toHex());
+    const txid = await bchjs[this.network].RawTransactions.sendRawTransaction(tx.toHex());
     return txid;
   }
 }

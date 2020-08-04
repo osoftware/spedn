@@ -18,7 +18,7 @@ export class P2PKH implements Instance {
   static fromPubKey = (pubKey: Buffer) => new P2PKH(crypto.hash160(pubKey));
   static fromKeyPair = (keyPair: ECPair) => P2PKH.fromPubKey(keyPair.getPublicKeyBuffer());
   static fromAddress = (address: string, network = "mainnet") =>
-    new P2PKH(Buffer.from(addr[network].cashToHash160(address), "hex")); // tslint:disable-line: semicolon
+    new P2PKH(Buffer.from(addr[network].toHash160(address), "hex")); // tslint:disable-line: semicolon
 
   paramValues: ParamValues = {};
   challengeSpecs: ChallengeSpecs = { spend: { sig: "Sig", pubKey: "PubKey" } };
@@ -26,7 +26,7 @@ export class P2PKH implements Instance {
 
   constructor(pubKeyHash: Buffer) {
     this.paramValues.pubKeyHash = pubKeyHash;
-    this.redeemScript = script.encodeP2PKHOutput(pubKeyHash);
+    this.redeemScript = script.pubKeyHash.output.encode(pubKeyHash);
   }
 
   getAddress(network = "mainnet"): string {
@@ -44,7 +44,7 @@ export class P2PKHCoin implements Coin {
     spend: ({ sig, pubKey }: ParamValues) => {
       const std = new ModuleFactory(stdlib);
       std.validateParamValues({ sig, pubKey }, { sig: "Sig", pubKey: "PubKey" });
-      return script.encodeP2PKHInput(std.encodeParam(sig), std.encodeParam(pubKey));
+      return script.pubKeyHash.input.encode(std.encodeParam(sig), std.encodeParam(pubKey));
     }
   };
 

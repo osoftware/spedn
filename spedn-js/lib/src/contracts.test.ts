@@ -1,4 +1,4 @@
-import { BITBOX } from "bitbox-sdk";
+import BCHJS from "@chris.troutner/bch-js";
 import { Spedn } from "./compiler";
 import {  Module } from "./contracts";
 import { using } from "./disposable";
@@ -42,9 +42,9 @@ describe("ExpiringTip contract", () => {
 
 describe("P2PKH", () => {
   describe("factory methods", () => {
-    it("should be equivalent", () => {
-      const b = new BITBOX();
-      const node = b.HDNode.fromSeed(b.Mnemonic.toSeed(b.Mnemonic.generate(128)));
+    it("should be equivalent", async () => {
+      const b = new BCHJS();
+      const node = b.HDNode.fromSeed(await b.Mnemonic.toSeed(b.Mnemonic.generate(128)));
       const addr = b.Address.toCashAddress(node.keyPair.getAddress());
       expect(addr).toEqual(P2PKH.fromKeyPair(node.keyPair).getAddress("mainnet"));
       expect(addr).toEqual(P2PKH.fromAddress(node.getAddress()).getAddress("mainnet"));

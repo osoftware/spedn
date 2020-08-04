@@ -1,85 +1,94 @@
-import { BITBOX } from "bitbox-sdk";
+import BCHJS from "@chris.troutner/bch-js";
 import { Spedn, using } from ".";
 import { ContractCoin, Module } from "./contracts";
 import { P2PKH, P2PKHCoin, signWith } from "./P2PKH";
 import { SigHash, TxBuilder } from "./TxBuilder";
 
-const bitbox = new BITBOX({ restURL: "https://trest.bitcoin.com/v2/" });
+const bchjs = new BCHJS({ restURL: "https://tapi.fullstack.cash/v3/" });
 const mnemonic = "draw parade crater busy book swim soldier tragic exit feel top civil";
-const hdNode = bitbox.HDNode.fromSeed(bitbox.Mnemonic.toSeed(mnemonic), "testnet");
-const wallet = bitbox.HDNode.derivePath(hdNode, "m/44'/145'/0'");
-const key0 = bitbox.HDNode.derivePath(wallet, "0/0").keyPair;
-const addr0 = P2PKH.fromKeyPair(key0);
-const key1 = bitbox.HDNode.derivePath(wallet, "0/1").keyPair;
-const addr1 = P2PKH.fromKeyPair(key1);
-const key2 = bitbox.HDNode.derivePath(wallet, "1/0").keyPair;
-const change2 = P2PKH.fromKeyPair(key2);
-
-const coins = [
-  new P2PKHCoin(
-    {
-      txid: "ad70c931d742d6903271d1d3047701fb25b6859c440aeacf774d242f74f10738",
-      vout: 0,
-      amount: 100000,
-      satoshis: 100000,
-      height: 12345,
-      confirmations: 30
-    },
-    addr0.redeemScript
-  ),
-  new P2PKHCoin(
-    {
-      txid: "ad70c931d742d6903271d1d3047701fb25b6859c440aeacf774d242f74f10738",
-      vout: 1,
-      amount: 100000,
-      satoshis: 100000,
-      height: 12345,
-      confirmations: 30
-    },
-    addr1.redeemScript
-  ),
-  new P2PKHCoin(
-    {
-      txid: "ad70c931d742d6903271d1d3047701fb25b6859c440aeacf774d242f74f10738",
-      vout: 2,
-      amount: 100000,
-      satoshis: 100000,
-      height: 12345,
-      confirmations: 30
-    },
-    change2.redeemScript
-  )
-];
 
 describe("TxBuilder", () => {
+  let key0: any;
+  let addr0: any;
+  let key1: any;
+  let addr1: any;
+  let key2: any;
+  let change2: any;
+  let coins: any;
+  beforeAll(async () => {
+    const hdNode = bchjs.HDNode.fromSeed(await bchjs.Mnemonic.toSeed(mnemonic), "testnet");
+    const wallet = bchjs.HDNode.derivePath(hdNode, "m/44'/145'/0'");
+    key0 = bchjs.HDNode.derivePath(wallet, "0/0").keyPair;
+    addr0 = P2PKH.fromKeyPair(key0);
+    key1 = bchjs.HDNode.derivePath(wallet, "0/1").keyPair;
+    addr1 = P2PKH.fromKeyPair(key1);
+    key2 = bchjs.HDNode.derivePath(wallet, "1/0").keyPair;
+    change2 = P2PKH.fromKeyPair(key2);
+
+    coins = [
+      new P2PKHCoin(
+        {
+          txid: "ad70c931d742d6903271d1d3047701fb25b6859c440aeacf774d242f74f10738",
+          vout: 0,
+          amount: 100000,
+          satoshis: 100000,
+          height: 12345,
+          confirmations: 30
+        },
+        addr0.redeemScript
+      ),
+      new P2PKHCoin(
+        {
+          txid: "ad70c931d742d6903271d1d3047701fb25b6859c440aeacf774d242f74f10738",
+          vout: 1,
+          amount: 100000,
+          satoshis: 100000,
+          height: 12345,
+          confirmations: 30
+        },
+        addr1.redeemScript
+      ),
+      new P2PKHCoin(
+        {
+          txid: "ad70c931d742d6903271d1d3047701fb25b6859c440aeacf774d242f74f10738",
+          vout: 2,
+          amount: 100000,
+          satoshis: 100000,
+          height: 12345,
+          confirmations: 30
+        },
+        change2.redeemScript
+      )
+    ];
+  });
   describe("type validation", () => {
     let mod: Module;
     let utxo: ContractCoin;
-    beforeAll(
-      async () =>
-        await using(new Spedn(), async compiler => {
-          mod = await compiler.compileCode(`
+
+    beforeAll(async () => {
+      await using(new Spedn(), async compiler => {
+        mod = await compiler.compileCode(`
             contract X() {
               challenge spend(Ripemd160 hash, [byte;4] bytes4, [byte] bytes, int integer) {
                 fail;
               }
             }
           `);
-          const address = new mod.X({});
-          utxo = new ContractCoin(
-            {
-              txid: "6b5c8d90e8ac791d00c1d70bcc7a52fb4fd9077bf07387b0db9240a919cdabdf",
-              vout: 0,
-              amount: 5000000,
-              satoshis: 5000000,
-              confirmations: 10,
-              height: 100
-            },
-            (address as any).challenges,
-            address.redeemScript
-          );
-        })
-    );
+        const address = new mod.X({});
+        utxo = new ContractCoin(
+          {
+            txid: "6b5c8d90e8ac791d00c1d70bcc7a52fb4fd9077bf07387b0db9240a919cdabdf",
+            vout: 0,
+            amount: 5000000,
+            satoshis: 5000000,
+            confirmations: 10,
+            height: 100
+          },
+          (address as any).challenges,
+          address.redeemScript
+        );
+      });
+    });
 
     it("should accept correct types", () => {
       expect(
@@ -132,7 +141,7 @@ describe("TxBuilder", () => {
       const tx = new TxBuilder("testnet")
         .from(coins[0], (i, c) => {
           sig = c.sign(key0);
-          datasig = c.signData(key0, bitbox.Crypto.sha256(c.preimage(SigHash.SIGHASH_ALL)));
+          datasig = c.signData(key0, bchjs.Crypto.sha256(c.preimage(SigHash.SIGHASH_ALL)));
 
           return i.spend({ pubKey: key0.getPublicKeyBuffer(), sig });
         })
@@ -154,7 +163,7 @@ describe("TxBuilder", () => {
     );
 
     it("should generate valid signature", () => {
-      const address = new mod.PayToPublicKeyHash({ pubKeyHash: bitbox.Crypto.sha256(key1.getPublicKeyBuffer()) });
+      const address = new mod.PayToPublicKeyHash({ pubKeyHash: bchjs.Crypto.sha256(key1.getPublicKeyBuffer()) });
       const utxo0 = new ContractCoin(
         {
           txid: "6b5c8d90e8ac791d00c1d70bcc7a52fb4fd9077bf07387b0db9240a919cdabdf",

@@ -1,5 +1,7 @@
-import { Address, BITBOX, TREST_URL, TWS_URL } from "bitbox-sdk";
+import BCHJS from "@chris.troutner/bch-js";
+import { Address } from "@chris.troutner/bch-js";
 import { AddressUtxoResult } from "bitcoin-com-rest";
+import Bitcoin from "bitcoincashjs-lib";
 import { dropRight, flatten, fromPairs, mapValues, reverse, toPairs, zipWith } from "lodash/fp";
 
 export interface PortableModule {
@@ -110,16 +112,16 @@ export interface Module {
   [name: string]: Contract;
 }
 
-export const bitbox: { [net: string]: BITBOX } = {
-  mainnet: new BITBOX(),
-  testnet: new BITBOX({ restURL: TREST_URL, wsURL: TWS_URL })
+export const bchjs: { [net: string]: BCHJS } = {
+  mainnet: new BCHJS(),
+  testnet: new BCHJS({ restURL: "https://tapi.fullstack.cash/v3/" })
 };
 export const addr = {
-  mainnet: bitbox.mainnet.Address,
-  testnet: bitbox.testnet.Address
+  mainnet: bchjs.mainnet.Address,
+  testnet: bchjs.testnet.Address
 } as { [net: string]: Address };
-export const crypto = bitbox.mainnet.Crypto;
-export const script = bitbox.mainnet.Script;
+export const crypto = bchjs.mainnet.Crypto;
+export const script = bchjs.mainnet.Script;
 
 export const stdlib: PortableModule = {
   templates: {},
@@ -211,7 +213,7 @@ export class ModuleFactory {
     const chunks = asm.map(op => {
       switch (op.tag) {
         case "OP_N":
-          return script.encodeNumber(op.contents);
+          return Bitcoin.script.number.encode(op.contents);
         case "OP_PUSHDATA0":
         case "OP_PUSHDATA1":
         case "OP_PUSHDATA2":
@@ -232,8 +234,8 @@ export class ModuleFactory {
   }
 
   encodeParam(value: ParamValue): Buffer {
-    if (typeof value === "boolean") return script.encodeNumber(value ? 1 : 0);
-    if (typeof value === "number") return script.encodeNumber(value);
+    if (typeof value === "boolean") return Bitcoin.script.number.encode(value ? 1 : 0);
+    if (typeof value === "number") return Bitcoin.script.number.encode(value);
     if (typeof value === "string") return Buffer.from(value, "utf8");
     if (value instanceof Buffer) return value;
 
@@ -297,12 +299,15 @@ export class ModuleFactory {
       }
 
       getAddress(network: string) {
-        return addr[network].fromOutputScript(script.encodeP2SHOutput(crypto.hash160(this.redeemScript)), network);
+        return addr[network].fromOutputScript(
+          script.scriptHash.output.encode(crypto.hash160(this.redeemScript)),
+          network
+        );
       }
 
       async findCoins(network: string): Promise<Coin[]> {
         const results = (await addr[network].utxo(this.getAddress(network))) as AddressUtxoResult;
-        return results.utxos.map(utxo => new ContractCoin(utxo, this.challenges, this.redeemScript));
+        return results.utxos.map((utxo: any) => new ContractCoin(utxo, this.challenges, this.redeemScript));
       }
     };
     Object.defineProperty(Class, "name", { value: ast.contractName });
