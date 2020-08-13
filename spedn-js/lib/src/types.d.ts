@@ -61,7 +61,7 @@ declare module "bitcoincashjs-lib" {
 
   export interface ECPair {
     toWIF(): string;
-    sign(buffer: Buffer, signatureAlgorithm?: number): Boolean | ECSignature;
+    sign(buffer: Buffer, signatureAlgorithm?: number): boolean | ECSignature;
     verify(buffer: Buffer, signature: ECSignature): boolean;
     getPublicKeyBuffer(): Buffer;
     getAddress(): string;

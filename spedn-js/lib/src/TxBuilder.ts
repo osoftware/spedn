@@ -2,7 +2,8 @@ import { TransactionBuilder } from "@chris.troutner/bch-js";
 import { ECPair } from "bitcoincashjs-lib";
 import { castArray, last } from "lodash/fp";
 import * as varuint from "varuint-bitcoin";
-import { bchjs, Challenges, Coin, script, ScriptSig } from "./contracts";
+import { Challenges, Coin, ScriptSig } from "./contracts";
+import { Rts } from "./rts";
 
 export interface SigningContext {
   vin: number;
@@ -21,7 +22,6 @@ export enum SigHash {
 
 const SCHNORR = 1;
 
-const crypto = bchjs.mainnet.Crypto;
 const ZERO = Buffer.from("0000000000000000000000000000000000000000000000000000000000000000", "hex");
 
 const varSliceSize = (someScript: Buffer) => {
@@ -33,6 +33,7 @@ class SchnorrContext implements SigningContext {
   private tx: { ins: any[]; outs: any; version: number; locktime: number };
 
   constructor(
+    private rts: Rts,
     private builder: TransactionBuilder,
     public vin: number,
     public satoshis: number,
@@ -43,11 +44,13 @@ class SchnorrContext implements SigningContext {
 
   sign(key: ECPair, hashType: SigHash = SigHash.SIGHASH_ALL, fromSeparator: number = 0): Buffer {
     hashType = hashType | SigHash.SIGHASH_FORKID;
-    return key.sign(crypto.hash256(this.preimage(hashType, fromSeparator)), 1).toScriptSignature(hashType, SCHNORR);
+    return key
+      .sign(this.rts.crypto.hash256(this.preimage(hashType, fromSeparator)), 1)
+      .toScriptSignature(hashType, SCHNORR);
   }
 
   signData(key: ECPair, data: Buffer): Buffer {
-    return key.sign(crypto.sha256(data), SCHNORR).toRSBuffer();
+    return key.sign(this.rts.crypto.sha256(data), SCHNORR).toRSBuffer();
   }
 
   preimage(hashType: SigHash = SigHash.SIGHASH_ALL, fromSeparator: number = 0) {
@@ -84,7 +87,7 @@ class SchnorrContext implements SigningContext {
         writeUInt32(txIn.index);
       });
 
-      hashPrevouts = crypto.hash256(tbuffer);
+      hashPrevouts = this.rts.crypto.hash256(tbuffer);
     }
 
     if (
@@ -99,7 +102,7 @@ class SchnorrContext implements SigningContext {
         writeUInt32(txIn.sequence);
       });
 
-      hashSequence = crypto.hash256(tbuffer);
+      hashSequence = this.rts.crypto.hash256(tbuffer);
     }
 
     if ((hashType & 0x1f) !== SigHash.SIGHASH_SINGLE && (hashType & 0x1f) !== SigHash.SIGHASH_NONE) {
@@ -115,7 +118,7 @@ class SchnorrContext implements SigningContext {
         writeVarSlice(out.script);
       });
 
-      hashOutputs = crypto.hash256(tbuffer);
+      hashOutputs = this.rts.crypto.hash256(tbuffer);
     } else if ((hashType & 0x1f) === SigHash.SIGHASH_SINGLE && this.vin < this.tx.outs.length) {
       const output = this.tx.outs[this.vin];
 
@@ -124,14 +127,14 @@ class SchnorrContext implements SigningContext {
       writeUInt64(output.value);
       writeVarSlice(output.script);
 
-      hashOutputs = crypto.hash256(tbuffer);
+      hashOutputs = this.rts.crypto.hash256(tbuffer);
     }
 
     const input = this.tx.ins[this.vin];
 
     let codeOffset = 0;
     while (fromSeparator > 0) {
-      codeOffset = this.redeemScript.indexOf(script.opcodes.OP_CODESEPARATOR, codeOffset);
+      codeOffset = this.redeemScript.indexOf(this.rts.script.opcodes.OP_CODESEPARATOR, codeOffset);
       if (codeOffset < 0) throw Error("Not enough OP_CODESEPARATORs in redeemScript");
       codeOffset++;
       fromSeparator--;
@@ -178,8 +181,8 @@ export class TxBuilder {
   private change: any;
   private balance = 0;
 
-  constructor(private network = "mainnet") {
-    this.builder = new bchjs[network].TransactionBuilder(network);
+  constructor(private rts: Rts) {
+    this.builder = rts.transactionBuilder();
   }
 
   from(utxos: Coin | Coin[], onSigning: SigningCallback, sequence?: number) {
@@ -224,7 +227,7 @@ export class TxBuilder {
 
     const scripts = this.inputs.map(({ challenges, utxo, redeemScript }, i) => ({
       vout: i,
-      script: this.callbacks[i](challenges, new SchnorrContext(this.builder, i, utxo.satoshis, redeemScript))
+      script: this.callbacks[i](challenges, new SchnorrContext(this.rts, this.builder, i, utxo.satoshis, redeemScript))
     }));
 
     this.builder.addInputScripts(scripts);
@@ -235,7 +238,7 @@ export class TxBuilder {
 
   async broadcast(forceHighFee = false): Promise<string> {
     const tx = this.build(forceHighFee);
-    const txid = await bchjs[this.network].RawTransactions.sendRawTransaction(tx.toHex());
+    const txid = await this.rts.sendTx(tx);
     return txid;
   }
 }

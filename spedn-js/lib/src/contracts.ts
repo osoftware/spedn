@@ -1,11 +1,8 @@
-import BCHJS from "@chris.troutner/bch-js";
-import { Address } from "@chris.troutner/bch-js";
-import { AddressUtxoResult } from "bitcoin-com-rest";
-import Bitcoin from "bitcoincashjs-lib";
+import { Rts } from "./rts";
 import { dropRight, flatten, fromPairs, mapValues, reverse, toPairs, zipWith } from "lodash/fp";
 
 export interface PortableModule {
-  types: { [name: string]: ParamType };
+  types: ParamTypes;
   templates: { [name: string]: Template };
 }
 
@@ -112,17 +109,6 @@ export interface Module {
   [name: string]: Contract;
 }
 
-export const bchjs: { [net: string]: BCHJS } = {
-  mainnet: new BCHJS(),
-  testnet: new BCHJS({ restURL: "https://tapi.fullstack.cash/v3/" })
-};
-export const addr = {
-  mainnet: bchjs.mainnet.Address,
-  testnet: bchjs.testnet.Address
-} as { [net: string]: Address };
-export const crypto = bchjs.mainnet.Crypto;
-export const script = bchjs.mainnet.Script;
-
 export const stdlib: PortableModule = {
   templates: {},
   types: {
@@ -160,10 +146,8 @@ export const stdlib: PortableModule = {
   }
 };
 
-export class ModuleFactory {
-  constructor(private mod: PortableModule) {}
-
-  makeParams = (astParams: string[][]) => fromPairs(astParams.map(dropRight(1)).map(reverse)) as ParamTypes;
+export class SpednTypeChecker {
+  constructor(private types: ParamTypes) {}
 
   typeMatches(spednType: ParamType, arg: ParamValue): boolean {
     if (spednType === "bool") return typeof arg === "boolean";
@@ -197,7 +181,7 @@ export class ModuleFactory {
       );
     }
 
-    const alias = this.mod.types[spednType];
+    const alias = this.types[spednType];
     return alias ? this.typeMatches(alias, arg) : false;
   }
 
@@ -207,13 +191,19 @@ export class ModuleFactory {
       if (!this.typeMatches(t, values[n])) throw TypeError(`Incorrect value for ${t} ${n}`);
     });
   }
+}
+
+export class ModuleFactory {
+  constructor(private rts: Rts) {}
+
+  makeParams = (astParams: string[][]) => fromPairs(astParams.map(dropRight(1)).map(reverse)) as ParamTypes;
 
   asmToScript(asm: Op[], paramValues: ParamValues): RedeemScript {
-    const ops = script.opcodes as any;
+    const ops = this.rts.script.opcodes as any;
     const chunks = asm.map(op => {
       switch (op.tag) {
         case "OP_N":
-          return Bitcoin.script.number.encode(op.contents);
+          return this.rts.script.encodeNumber(op.contents);
         case "OP_PUSHDATA0":
         case "OP_PUSHDATA1":
         case "OP_PUSHDATA2":
@@ -230,12 +220,12 @@ export class ModuleFactory {
           return ops[op.tag];
       }
     });
-    return script.encode(chunks);
+    return this.rts.script.encode(chunks);
   }
 
   encodeParam(value: ParamValue): Buffer {
-    if (typeof value === "boolean") return Bitcoin.script.number.encode(value ? 1 : 0);
-    if (typeof value === "number") return Bitcoin.script.number.encode(value);
+    if (typeof value === "boolean") return this.rts.script.encodeNumber(value ? 1 : 0);
+    if (typeof value === "number") return this.rts.script.encodeNumber(value);
     if (typeof value === "string") return Buffer.from(value, "utf8");
     if (value instanceof Buffer) return value;
 
@@ -246,9 +236,9 @@ export class ModuleFactory {
     return value.map(this.encodeParam);
   }
 
-  makeChallengeFunc(types: ParamTypes, redeemScript: Buffer, i: number): Challenge {
+  makeChallengeFunc(checker: SpednTypeChecker, types: ParamTypes, redeemScript: Buffer, i: number): Challenge {
     return (params: ParamValues) => {
-      this.validateParamValues(params, types);
+      checker.validateParamValues(params, types);
       const argStack = flatten(
         Object.keys(types).map((n: string) => {
           const p = params[n];
@@ -259,11 +249,11 @@ export class ModuleFactory {
       if (i > 0) argStack.push(this.encodeParam(i));
       argStack.push(this.encodeParam(redeemScript));
 
-      return script.encode(argStack);
+      return this.rts.script.encode(argStack);
     };
   }
 
-  makeChallenges(astChallenges: any[], redeemScript: Buffer) {
+  makeChallenges(checker: SpednTypeChecker, astChallenges: any[], redeemScript: Buffer) {
     const multiChallenge = astChallenges.length !== 1;
 
     const challengeSpecs: ChallengeSpecs = {};
@@ -272,14 +262,14 @@ export class ModuleFactory {
     let i = multiChallenge ? 1 : 0;
     for (const [name, args] of astChallenges) {
       challengeSpecs[name] = this.makeParams(args);
-      challenges[name] = this.makeChallengeFunc(challengeSpecs[name], redeemScript, i);
+      challenges[name] = this.makeChallengeFunc(checker, challengeSpecs[name], redeemScript, i);
       i++;
     }
 
     return { challengeSpecs, challenges };
   }
 
-  makeContractClass(template: Template): Contract {
+  makeContractClass(template: Template, checker: SpednTypeChecker): Contract {
     const ast = template.ast;
     const that = this;
 
@@ -291,22 +281,22 @@ export class ModuleFactory {
       challenges: Challenges;
 
       constructor(public paramValues: ParamValues) {
-        that.validateParamValues(paramValues, Class.params);
+        checker.validateParamValues(paramValues, Class.params);
         this.redeemScript = that.asmToScript(template.asm, paramValues);
-        const defs = that.makeChallenges(ast.contractChallenges, this.redeemScript);
+        const defs = that.makeChallenges(checker, ast.contractChallenges, this.redeemScript);
         this.challengeSpecs = defs.challengeSpecs;
         this.challenges = defs.challenges;
       }
 
       getAddress(network: string) {
-        return addr[network].fromOutputScript(
-          script.scriptHash.output.encode(crypto.hash160(this.redeemScript)),
+        return that.rts.addresses.fromOutputScript(
+          that.rts.script.encodeScriptHashOutput(that.rts.crypto.hash160(this.redeemScript)),
           network
         );
       }
 
       async findCoins(network: string): Promise<Coin[]> {
-        const results = (await addr[network].utxo(this.getAddress(network))) as AddressUtxoResult;
+        const results = await that.rts.utxo(this.getAddress(network));
         return results.utxos.map((utxo: any) => new ContractCoin(utxo, this.challenges, this.redeemScript));
       }
     };
@@ -315,7 +305,8 @@ export class ModuleFactory {
     return Class;
   }
 
-  make(): Module {
-    return mapValues(this.makeContractClass.bind(this), this.mod.templates);
+  make(mod: PortableModule): Module {
+    const checker = new SpednTypeChecker(mod.types);
+    return mapValues(template => this.makeContractClass(template, checker), mod.templates);
   }
 }

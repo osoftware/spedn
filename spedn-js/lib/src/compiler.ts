@@ -5,6 +5,7 @@ import { Worker } from "worker_threads";
 import { Bridge } from "./Bridge";
 import { Module, ModuleFactory, PortableModule } from "./contracts";
 import { Disposable } from "./disposable";
+import { Rts } from "./rts";
 
 interface CompilerOutput {
   Left: any[];
@@ -16,10 +17,12 @@ const fileExists = promisify(fs.exists);
 export class Spedn implements Disposable {
   private bridge = new Bridge(new Worker(__dirname + "/compiler_service.js"));
 
+  constructor(private readonly rts: Rts) {}
+
   async compileCode(code: string): Promise<Module> {
     const output: CompilerOutput = await this.bridge.request("compileCode", code);
     if (output.Left) throw output.Left;
-    return new ModuleFactory(output.Right).make();
+    return new ModuleFactory(this.rts).make(output.Right);
   }
 
   async compileFile(file: string): Promise<Module> {
@@ -28,7 +31,7 @@ export class Spedn implements Disposable {
 
     const output: CompilerOutput = await this.bridge.request("compileFile", absolute);
     if (output.Left) throw output.Left;
-    return new ModuleFactory(output.Right).make();
+    return new ModuleFactory(this.rts).make(output.Right);
   }
 
   dispose() {

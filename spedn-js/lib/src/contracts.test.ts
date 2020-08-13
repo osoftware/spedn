@@ -1,14 +1,16 @@
 import BCHJS from "@chris.troutner/bch-js";
 import { Spedn } from "./compiler";
-import {  Module } from "./contracts";
+import { Module } from "./contracts";
 import { using } from "./disposable";
 import { P2PKH } from "./P2PKH";
+import { BchJsRts } from "./rts-bchjs";
+import { P2PKHFactory } from ".";
 
 describe("ExpiringTip contract", () => {
   let mod: Module;
   beforeAll(
     async () =>
-      await using(new Spedn(), async compiler => {
+      await using(new Spedn(new BchJsRts("mainnet")), async compiler => {
         mod = await compiler.compileFile("../../examples/ExpiringTip.spedn");
       })
   );
@@ -46,9 +48,10 @@ describe("P2PKH", () => {
       const b = new BCHJS();
       const node = b.HDNode.fromSeed(await b.Mnemonic.toSeed(b.Mnemonic.generate(128)));
       const addr = b.Address.toCashAddress(node.keyPair.getAddress());
-      expect(addr).toEqual(P2PKH.fromKeyPair(node.keyPair).getAddress("mainnet"));
-      expect(addr).toEqual(P2PKH.fromAddress(node.getAddress()).getAddress("mainnet"));
-      expect(addr).toEqual(P2PKH.fromPubKey(node.keyPair.getPublicKeyBuffer()).getAddress("mainnet"));
+      const factory = new P2PKHFactory(new BchJsRts("mainnet"));
+      expect(addr).toEqual(factory.fromKeyPair(node.keyPair).getAddress());
+      expect(addr).toEqual(factory.fromAddress(node.getAddress()).getAddress());
+      expect(addr).toEqual(factory.fromPubKey(node.keyPair.getPublicKeyBuffer()).getAddress());
     });
   });
 });

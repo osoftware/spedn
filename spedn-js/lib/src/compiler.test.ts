@@ -1,9 +1,10 @@
 import { Spedn } from "./compiler";
 import { Module } from "./contracts";
+import { BchJsRts } from "./rts-bchjs";
 
 describe("compiler", () => {
   let compiler: Spedn;
-  beforeAll(() => (compiler = new Spedn()));
+  beforeAll(() => (compiler = new Spedn(new BchJsRts("mainnet"))));
   afterAll(() => compiler.dispose());
 
   describe("for code file", () => {
