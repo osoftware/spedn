@@ -1,9 +1,7 @@
 import BCHJS from "@chris.troutner/bch-js";
-import { Spedn, using, P2PKHFactory } from ".";
-import { ContractCoin, Module } from "./contracts";
-import { P2PKH, P2PKHCoin, signWith } from "./P2PKH";
-import { SigHash, TxBuilder } from "./TxBuilder";
-import { BchJsRts } from "./rts-bchjs";
+import { ContractCoin, Module, P2PKHCoin, P2PKHFactory, SigHash, signWith, TxBuilder, using } from "@spedn/rts";
+import { BchJsRts } from "@spedn/rts-bchjs";
+import { Spedn } from "@spedn/sdk";
 
 const bchjs = new BCHJS({ restURL: "https://tapi.fullstack.cash/v3/" });
 const rts = new BchJsRts("testnet", bchjs);

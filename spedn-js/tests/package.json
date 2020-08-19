@@ -1,0 +1,35 @@
+{
+  "name": "@spedn/tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Test suite",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://bitbucket.org/o-studio/spedn.git"
+  },
+  "keywords": [
+    "Bitcoin"
+  ],
+  "author": "{o} Software",
+  "license": "MIT",
+  "homepage": "https://spedn.pl",
+  "dependencies": {
+    "@spedn/rts-bchjs": "../rts-bchjs",
+    "@spedn/sdk": "../sdk"
+  },
+  "devDependencies": {
+    "@types/node": "^14.6.0",
+    "jest": "^26.4.0",
+    "ts-jest": "^26.2.0",
+    "typescript": "^3.9.7",
+    "typescript-tslint-plugin": "^0.5.5"
+  },
+  "resolutions": {
+    "bitcoincashjs-lib": "bitcoin-com/bitcoincashjs-lib#master",
+    "bitcoincash-ops": "christroutner/bitcoincash-ops#master"
+  }
+}

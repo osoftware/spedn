@@ -1,15 +1,13 @@
-import { TransactionBuilder } from "@chris.troutner/bch-js";
-import { ECPair } from "bitcoincashjs-lib";
 import { castArray, last } from "lodash/fp";
 import * as varuint from "varuint-bitcoin";
 import { Challenges, Coin, ScriptSig } from "./contracts";
-import { Rts } from "./rts";
+import { Rts, RtsECPair, RtsTransactionBuilder } from "./rts";
 
 export interface SigningContext {
   vin: number;
   preimage(sighashFlag: number): Buffer;
-  sign(key: ECPair, hashType?: SigHash): Buffer;
-  signData(key: ECPair, data: Buffer): Buffer;
+  sign(key: RtsECPair, hashType?: SigHash): Buffer;
+  signData(key: RtsECPair, data: Buffer): Buffer;
 }
 
 export enum SigHash {
@@ -34,7 +32,7 @@ class SchnorrContext implements SigningContext {
 
   constructor(
     private rts: Rts,
-    private builder: TransactionBuilder,
+    private builder: RtsTransactionBuilder,
     public vin: number,
     public satoshis: number,
     public redeemScript: Buffer
@@ -42,14 +40,14 @@ class SchnorrContext implements SigningContext {
     this.tx = this.builder.transaction.buildIncomplete();
   }
 
-  sign(key: ECPair, hashType: SigHash = SigHash.SIGHASH_ALL, fromSeparator: number = 0): Buffer {
+  sign(key: RtsECPair, hashType: SigHash = SigHash.SIGHASH_ALL, fromSeparator: number = 0): Buffer {
     hashType = hashType | SigHash.SIGHASH_FORKID;
     return key
       .sign(this.rts.crypto.hash256(this.preimage(hashType, fromSeparator)), 1)
       .toScriptSignature(hashType, SCHNORR);
   }
 
-  signData(key: ECPair, data: Buffer): Buffer {
+  signData(key: RtsECPair, data: Buffer): Buffer {
     return key.sign(this.rts.crypto.sha256(data), SCHNORR).toRSBuffer();
   }
 
@@ -165,8 +163,8 @@ class SizeCalculationContext implements SigningContext {
   constructor(public redeemScript: Buffer) {}
 
   preimage = (sighashFlag: number) => Buffer.allocUnsafe(156 + varSliceSize(this.redeemScript));
-  sign = (key: ECPair, hashType?: SigHash) => Buffer.alloc(65, SigHash.SIGHASH_ALL);
-  signData = (key: ECPair, data: Buffer) => Buffer.allocUnsafe(64);
+  sign = (key: RtsECPair, hashType?: SigHash) => Buffer.alloc(65, SigHash.SIGHASH_ALL);
+  signData = (key: RtsECPair, data: Buffer) => Buffer.allocUnsafe(64);
 }
 
 const FEE_RATE = 1;
@@ -175,7 +173,7 @@ const DUST_LIMIT = 546;
 export type SigningCallback = (input: Challenges, context: SigningContext) => ScriptSig;
 
 export class TxBuilder {
-  private builder: TransactionBuilder;
+  private builder: RtsTransactionBuilder;
   private inputs: Coin[] = [];
   private callbacks: SigningCallback[] = [];
   private change: any;

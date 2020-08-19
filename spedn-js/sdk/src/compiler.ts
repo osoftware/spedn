@@ -1,11 +1,9 @@
+import { Disposable, Module, ModuleFactory, PortableModule, Rts } from "@spedn/rts";
 import * as fs from "fs";
 import * as path from "path";
 import { promisify } from "util";
 import { Worker } from "worker_threads";
 import { Bridge } from "./Bridge";
-import { Module, ModuleFactory, PortableModule } from "./contracts";
-import { Disposable } from "./disposable";
-import { Rts } from "./rts";
 
 interface CompilerOutput {
   Left: any[];

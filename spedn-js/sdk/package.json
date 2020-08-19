@@ -1,0 +1,35 @@
+{
+  "name": "@spedn/sdk",
+  "version": "1.0.0",
+  "description": "Spedn compiler SDK",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "./bundle.sh && tsc",
+    "lint": "tslint -p ."
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "keywords": [
+    "Bitcoin",
+    "Bitcoin Cash",
+    "Smart Contract"
+  ],
+  "homepage": "https://spedn.pl",
+  "repository": {
+    "type": "git",
+    "url": "git+https://bitbucket.org/o-studio/spedn.git"
+  },
+  "author": "{o} Software",
+  "license": "MIT",
+  "dependencies": {
+    "@spedn/rts": "../rts"
+  },
+  "devDependencies": {
+    "@types/node": "^14.0.27",
+    "google-closure-compiler": "^20200719.0.0",
+    "typescript": "^3.9.7",
+    "typescript-tslint-plugin": "^0.5.5"
+  }
+}

@@ -1,5 +1,5 @@
-import { Rts } from "./rts";
 import { dropRight, flatten, fromPairs, mapValues, reverse, toPairs, zipWith } from "lodash/fp";
+import { Rts } from "./rts";
 
 export interface PortableModule {
   types: ParamTypes;

@@ -1,4 +1,3 @@
-
 export abstract class Rts {
   constructor(public readonly network: string = "mainnet") {}
   abstract utxo(addr: any): any;
@@ -31,20 +30,20 @@ export interface Crypto {
 }
 
 export interface Script {
+  opcodes: any;
   encode(argStack: Buffer[]): Buffer;
   encodeNumber(integer: number): Buffer;
   decodeNumber(buffer: Buffer, maxLength?: number, minimal?: boolean): number;
   encodeScriptHashOutput(buffer: Buffer): Buffer;
   encodePubKeyHashOutput(buffer: Buffer): Buffer;
   encodePubKeyHashInput(sig: Buffer, pubKey: Buffer): Buffer;
-  opcodes: any;
 }
 
 export interface RtsTransactionBuilder {
+  transaction: any;
   addInputScripts(scripts: any): RtsTransactionBuilder;
   addInput(txid: any, vout: number, sequence?: number): RtsTransactionBuilder;
   addOutput(scriptPubKey: any, amount: number): RtsTransactionBuilder;
   setLockTime(locktime: any): RtsTransactionBuilder;
   build(): any;
-  transaction: any;
 }

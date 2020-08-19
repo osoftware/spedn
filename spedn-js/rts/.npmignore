@@ -1,0 +1,18 @@
+# TypeScript
+tsconfig.json
+
+# Linting
+tslint.json
+
+# Testing
+jest.config.js
+testEnv.js
+*.test.*
+
+# Source
+src/
+
+# Dev Tools
+.vscode/
+.idea/
+yarn-error.log

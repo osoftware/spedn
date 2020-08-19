@@ -1,5 +1,5 @@
+import { Disposable } from "@spedn/rts";
 import { Worker } from "worker_threads";
-import { Disposable } from "./disposable";
 
 interface Response {
   id: number;

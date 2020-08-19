@@ -1,9 +1,8 @@
-import BCHJS, { Address, TransactionBuilder } from "@chris.troutner/bch-js";
+import BCHJS from "@chris.troutner/bch-js";
+import { Addresses, Crypto, Rts, RtsECPair, RtsTransactionBuilder, Script } from "@spedn/rts";
 import Bitcoin from "bitcoincashjs-lib";
-import { Rts, RtsECPair, Addresses, Crypto, Script, RtsTransactionBuilder } from "./rts";
-import { Dictionary, isString } from "lodash";
 
-const defaultConfigs: Dictionary<any> = {
+const defaultConfigs: { [network: string]: any } = {
   mainnet: undefined,
   testnet: { restURL: "https://tapi.fullstack.cash/v3/" }
 };
@@ -11,7 +10,7 @@ const defaultConfigs: Dictionary<any> = {
 export class BchJsRts extends Rts {
   private readonly bchjs: BCHJS;
 
-  constructor(network: string, bchjs?: BCHJS) {
+  constructor(public readonly network: string, bchjs?: BCHJS) {
     super(network);
     this.bchjs = bchjs || new BCHJS(defaultConfigs[network]);
   }
@@ -46,6 +45,8 @@ export class BchJsRts extends Rts {
 }
 
 class BchJsScript implements Script {
+  opcodes: Map<string, number> = this.bchjs.Script.opcodes;
+
   constructor(private readonly bchjs: BCHJS, private readonly script: Bitcoin.Script) {}
 
   encode(argStack: Buffer[]): Buffer {
@@ -71,6 +72,4 @@ class BchJsScript implements Script {
   encodePubKeyHashInput(sig: Buffer, pubKey: Buffer): Buffer {
     return this.script.pubKeyHash.input.encode(sig, pubKey);
   }
-
-  opcodes: Map<string, number> = this.bchjs.Script.opcodes;
 }

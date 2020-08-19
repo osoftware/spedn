@@ -1,6 +1,6 @@
-import { Spedn } from "./compiler";
-import { Module } from "./contracts";
-import { BchJsRts } from "./rts-bchjs";
+import { Module } from "@spedn/rts";
+import { BchJsRts } from "@spedn/rts-bchjs";
+import { Spedn } from "@spedn/sdk";
 
 describe("compiler", () => {
   let compiler: Spedn;

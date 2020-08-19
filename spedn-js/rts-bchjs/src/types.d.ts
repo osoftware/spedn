@@ -1,13 +1,3 @@
-declare module "varuint-bitcoin" {
-  interface IEncode {
-    (_number: number, buffer: Buffer, offset: number): Buffer;
-    bytes: number;
-  }
-  const encode: IEncode;
-  function decode(buffer: Buffer, offset: number): number;
-  function encodingLength(_number: number): number;
-}
-
 declare module "@chris.troutner/bch-js" {
   export class BCHJS {
     constructor();
@@ -82,13 +72,4 @@ declare module "bitcoincashjs-lib" {
   }
 
   export const script: Script;
-}
-
-declare module "bitcoin-com-rest" {
-  export interface AddressUtxoResult {
-    legacyAddress: string;
-    cashAddress: string;
-    scriptPubKey: string;
-    utxos: utxo[];
-  }
 }

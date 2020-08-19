@@ -1,10 +1,7 @@
 import BCHJS from "@chris.troutner/bch-js";
-import { Spedn } from "./compiler";
-import { Module } from "./contracts";
-import { using } from "./disposable";
-import { P2PKH } from "./P2PKH";
-import { BchJsRts } from "./rts-bchjs";
-import { P2PKHFactory } from ".";
+import { Module, P2PKHFactory, using } from "@spedn/rts";
+import { BchJsRts } from "@spedn/rts-bchjs";
+import { Spedn } from "@spedn/sdk";
 
 describe("ExpiringTip contract", () => {
   let mod: Module;
