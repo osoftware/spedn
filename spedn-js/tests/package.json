@@ -19,6 +19,7 @@
   "homepage": "https://spedn.pl",
   "dependencies": {
     "@spedn/rts-bchjs": "../rts-bchjs",
+    "@spedn/rts-bitbox": "../rts-bitbox",
     "@spedn/sdk": "../sdk"
   },
   "devDependencies": {

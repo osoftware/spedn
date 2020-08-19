@@ -1,7 +1,7 @@
 {
   "name": "@spedn/rts-bitbox",
   "version": "1.0.0",
-  "description": "Runtime System for Spedn Contracts with BCH-JS adapter",
+  "description": "Runtime System for Spedn Contracts with BITBOX adapter",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

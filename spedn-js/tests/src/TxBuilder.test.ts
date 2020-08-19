@@ -1,14 +1,16 @@
 import BCHJS from "@chris.troutner/bch-js";
 import { ContractCoin, Module, P2PKHCoin, P2PKHFactory, SigHash, signWith, TxBuilder, using } from "@spedn/rts";
 import { BchJsRts } from "@spedn/rts-bchjs";
+import { BitboxRts } from "@spedn/rts-bitbox";
 import { Spedn } from "@spedn/sdk";
+import { BITBOX } from "bitbox-sdk";
 
 const bchjs = new BCHJS({ restURL: "https://tapi.fullstack.cash/v3/" });
-const rts = new BchJsRts("testnet", bchjs);
-const addr = new P2PKHFactory(rts);
+const bitbox = new BITBOX({ restURL: "https://tapi.fullstack.cash/v3/" });
 const mnemonic = "draw parade crater busy book swim soldier tragic exit feel top civil";
 
-describe("TxBuilder", () => {
+describe.each([new BchJsRts("testnet", bchjs), new BitboxRts("testnet", bitbox)])("%s TxBuilder", rts => {
+  const addr = new P2PKHFactory(rts);
   let key0: any;
   let addr0: any;
   let key1: any;
