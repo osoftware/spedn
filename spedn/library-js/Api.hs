@@ -22,6 +22,9 @@ import           Syntax
 instance ToJSON SourcePos where
     toJSON = toJSON . sourcePosPretty
 
+instance {-# OVERLAPS #-} ToJSON Ann where
+    toJSON (_,_,pos) = toJSON pos
+
 instance ToJSON a => ToJSON (Map.Map Name a) where
     toJSON x = objectValue . object $ (\ (k, v) -> pack k .= v) <$> Map.toList x
 
