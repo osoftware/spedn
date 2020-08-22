@@ -36,6 +36,7 @@ It is designed for explicitness and safety:
    :maxdepth: 2
    :caption: Integrations:
 
+   bchjs
    bitbox
 
 .. toctree::

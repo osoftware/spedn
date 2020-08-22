@@ -1,9 +1,9 @@
 ==================
-BITBOX Integration
+BCH-JS Integration
 ==================
 
 Spedn is available for NodeJS_ developers as set of libraries extending capabilities of
-`BITBOX SDK`_ or other libraries. TypeScript_ type definitions are provided out of the box.
+`BCH-JS`_ or other libraries. TypeScript_ type definitions are provided out of the box.
 
 Spedn provides 3 components installed separately:
 
@@ -18,9 +18,9 @@ To install Spedn RTS with BITBOX integration in your JS project, type:
 
 .. code-block:: bash
 
-   npm i @spedn/rts-bitbox
+   npm i @spedn/rts-bchjs
    # or
-   yarn add @spedn/rts-bitbox
+   yarn add @spedn/rts-bchjs
 
 To install Spedn SDK in your JS project, type:
 
@@ -72,17 +72,17 @@ Runtime
 =======
 
 Spedn RTS provides a way to interact with compiled smart contracts and with the blockchain
-via an adapter of an external library, in this case - BITBOX-SDK.
+via an adapter of an external library, in this case - BCH-JS.
 
-You can use the default BITBOX instance for mainnet or provide a customized one.
+You can use the default BCHJS instance for mainnet or provide a customized one.
 
 .. code-block:: TypeScript
 
-   import { BitboxRts } from "@spedn/rts-bitbox";
-   import { BITBOX } from "bitbox-sdk"; 
+   import { BchjsRts } from "@spedn/rts-bchjs";
+   import BCHJS from "@chris.troutner/bch-js";
 
-   const rts = new BitboxRts("mainnet");
-   const testRts = new BitboxRts("testnet", new BITBOX({ restURL: "https://tapi.fullstack.cash/v3/" }));
+   const rts = new BchjsRts("mainnet");
+   const testRts = new BchjsRts("testnet", new BCHJS({ restURL: "https://tapi.fullstack.cash/v3/" }));
 
 Compiling modules
 =================
@@ -138,21 +138,21 @@ Parameters are passed as an object literal explicitly assigning values by names.
 (see BIP65_ and BIP112_ for value interpretation details).
 All the other types should be passed as *JS* ``Buffer``.
 
-In case of ``ExpiringTip`` you'll need 2 public keys which you can generate with BITBOX.
+In case of ``ExpiringTip`` you'll need 2 public keys which you can generate with BCH-JS.
 
 .. code-block:: TypeScript
 
-   import { BITBOX } from "bitbox-sdk";
+   import BCHJS from "@chris.troutner/bch-js";
 
-   const bitbox = new BITBOX();
+   const bchjs = new BCHJS({ restURL: "https://tapi.fullstack.cash/v3/" });
    const mnemonic = "draw parade crater busy book swim soldier tragic exit feel top civil";
-   const wallet = bitbox.HDNode.fromSeed(bitbox.Mnemonic.toSeed(mnemonic));
-   const alice = bitbox.HDNode.derivePath(wallet, "m/44'/145'/0'/0/0");
-   const bob = bitbox.HDNode.derivePath(wallet, "m/44'/145'/1'/0/0");
+   const wallet = bchjs.HDNode.fromSeed(await bchjs.Mnemonic.toSeed(mnemonic), "testnet");
+   const alice = bchjs.HDNode.derivePath(wallet, "m/44'/145'/0'/0/0");
+   const bob = bchjs.HDNode.derivePath(wallet, "m/44'/145'/1'/0/0");
 
    const tip = new ExpiringTip({
-      alice: alice.getIdentifier(), // Ripemd160 hash of Alice's public key
-      bob:   bob.getIdentifier()    // Ripemd160 hash of Bob's public key
+      alice: alice.toIdentifier(), // Ripemd160 hash of Alice's public key
+      bob:   bob.toIdentifier()    // Ripemd160 hash of Bob's public key
    });
 
 Once created, you can read the contract funding address and lookup for UTXOs (coins) that are locked in it.
@@ -210,7 +210,7 @@ Bob's new address and the rest goes back to Alice.
       .from(coins, (input, context) =>
          input.receive({
             sig: context.sign(bob.keyPair, SigHash.SIGHASH_ALL),
-            pubKey: bob.getPublicKeyBuffer()
+            pubKey: bob.toPublicKey()
          })
       )
       .to("bitcoincash:qrc2jhalczuka8q3dvk0g8mnkqx79wxp9gvvqvg7qt", 500000)
@@ -231,8 +231,8 @@ You can instantiate it with a public key hash buffer or several factory methods:
 
    let addr = new P2PKH(bob.getIdentifier());
    addr = P2PKH.fromKeyPair(bob.keyPair);
-   addr = P2PKH.fromPubKey(bob.getPublicKeyBuffer());
-   addr = P2PKH.fromAddress(bob.getAddress());
+   addr = P2PKH.fromPubKey(bob.toPublicKey());
+   addr = P2PKH.fromAddress(bob.toCashAddress());
    // all the above are equivalent
 
 P2PKH contracts can be spent just like any other contract - they have ``spend({sig, pubKey})`` challenge,
@@ -249,12 +249,12 @@ Let's modify the previous example to spend additional input.
       .from(coins, (input, context) =>
          input.receive({
             sig: context.sign(bob.keyPair, SigHash.SIGHASH_ALL),
-            pubKey: bob.getPublicKeyBuffer()
+            pubKey: bob.tpPublicKey()
          })
       )
       .from(bobsCoins[14], signWith(bob.keyPair))
       .to("bitcoincash:qrc2jhalczuka8q3dvk0g8mnkqx79wxp9gvvqvg7qt", 500000)
-      .to(alice.getAddress())
+      .to(alice.toCashAddress())
       .withTimelock(567654)
       .broadcast();
 
@@ -275,7 +275,7 @@ requirements as specified in the constructor.
 
 
 .. _NodeJS: https://nodejs.org/
-.. _BITBOX SDK: https://developer.bitcoin.com/bitbox
+.. _BCH-JS: https://bchjs.fullstack.cash/
 .. _TypeScript: https://www.typescriptlang.org/
 .. _Worker Threads: https://nodejs.org/docs/latest-v12.x/api/worker_threads.html
 .. _BIP65: https://github.com/bitcoin/bips/blob/master/bip-0065.mediawiki
