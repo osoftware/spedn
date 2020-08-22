@@ -3,12 +3,14 @@ import { Module, P2PKHFactory, using } from "@spedn/rts";
 import { BchJsRts } from "@spedn/rts-bchjs";
 import { Spedn } from "@spedn/sdk";
 
+const rts = new BchJsRts("mainnet");
+
 describe("ExpiringTip contract", () => {
   let mod: Module;
   beforeAll(
     async () =>
-      await using(new Spedn(new BchJsRts("mainnet")), async compiler => {
-        mod = await compiler.compileFile("../../examples/ExpiringTip.spedn");
+      await using(new Spedn(), async compiler => {
+        mod = await compiler.compileFile("../../examples/ExpiringTip.spedn", rts);
       })
   );
 

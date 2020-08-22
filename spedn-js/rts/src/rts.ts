@@ -1,5 +1,10 @@
+import { Module, ModuleFactory, PortableModule } from "./contracts";
+
 export abstract class Rts {
-  constructor(public readonly network: string = "mainnet") {}
+  private moduleFactory: ModuleFactory;
+  constructor(public readonly network: string = "mainnet") {
+    this.moduleFactory = new ModuleFactory(this);
+  }
   abstract utxo(addr: any): any;
   abstract ecPair(ecPair: any): RtsECPair;
   abstract get addresses(): Addresses;
@@ -7,6 +12,10 @@ export abstract class Rts {
   abstract get script(): Script;
   abstract transactionBuilder(): RtsTransactionBuilder;
   abstract sendTx(tx: any): Promise<string>;
+  load(mod: PortableModule | string): Module {
+    const module = typeof mod === "string" ? JSON.parse(mod) : mod;
+    return this.moduleFactory.make(module);
+  }
 }
 
 export interface Addresses {

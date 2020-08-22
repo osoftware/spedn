@@ -72,14 +72,17 @@ describe.each([new BchJsRts("testnet", bchjs), new BitboxRts("testnet", bitbox)]
     let utxo: ContractCoin;
 
     beforeAll(async () => {
-      await using(new Spedn(new BchJsRts("testnet", bchjs)), async compiler => {
-        mod = await compiler.compileCode(`
+      await using(new Spedn(), async compiler => {
+        mod = await compiler.compileCode(
+          `
             contract X() {
               challenge spend(Ripemd160 hash, [byte;4] bytes4, [byte] bytes, int integer) {
                 fail;
               }
             }
-          `);
+          `,
+          new BchJsRts("testnet", bchjs)
+        );
         const address = new mod.X({});
         utxo = new ContractCoin(
           {
@@ -164,8 +167,8 @@ describe.each([new BchJsRts("testnet", bchjs), new BitboxRts("testnet", bitbox)]
     let mod: Module;
     beforeAll(
       async () =>
-        await using(new Spedn(new BchJsRts("testnet", bchjs)), async compiler => {
-          mod = await compiler.compileFile("../../examples/PayToPublicKeyHash.spedn");
+        await using(new Spedn(), async compiler => {
+          mod = await compiler.compileFile("../../examples/PayToPublicKeyHash.spedn", rts);
         })
     );
 

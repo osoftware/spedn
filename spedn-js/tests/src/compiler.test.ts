@@ -2,9 +2,11 @@ import { Module } from "@spedn/rts";
 import { BchJsRts } from "@spedn/rts-bchjs";
 import { Spedn } from "@spedn/sdk";
 
+const rts = new BchJsRts("mainnet");
+
 describe("compiler", () => {
   let compiler: Spedn;
-  beforeAll(() => (compiler = new Spedn(new BchJsRts("mainnet"))));
+  beforeAll(() => (compiler = new Spedn()));
   afterAll(() => compiler.dispose());
 
   describe("for code file", () => {
@@ -16,7 +18,7 @@ describe("compiler", () => {
 
     describe("with valid code", () => {
       let mod: Module;
-      beforeAll(async () => (mod = await compiler.compileFile("../../examples/ExpiringTip.spedn")));
+      beforeAll(async () => (mod = await compiler.compileFile("../../examples/ExpiringTip.spedn", rts)));
       it("should create a contract", () => expect(mod.ExpiringTip).toBeDefined());
       it("should recognize parameters types", () => {
         expect(mod.ExpiringTip.params).toEqual({
