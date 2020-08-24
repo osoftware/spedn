@@ -28,7 +28,7 @@ Alternatively, you can install a JavaScript version from npmjs repository:
 
     .. code-block:: bash
 
-        $ npm i -g spedn-cli
+        $ npm i -g @spedn/cli
 
 
 Your first contract
