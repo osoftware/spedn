@@ -4,7 +4,7 @@ Spedn
 ![logo](/images/spedn-logo-cashwave-144.png "Spedn")
 
 Spedn is a high level smart contracts language for Bitcoin Cash.
-It is designed for explicity and safety:
+It is designed for explicitness and safety:
 
 * It is statically typed - detects many errors at compile time
 * It is explicitly typed - no guessing what the expression is supposed to return

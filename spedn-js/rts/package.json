@@ -20,6 +20,10 @@
   "author": "{o} Software",
   "license": "MIT",
   "homepage": "https://spedn.pl",
+  "funding": [
+    "https://spedn.pl/#support",
+    "bitcoincash:qrc2jhalczuka8q3dvk0g8mnkqx79wxp9gvvqvg7qt"
+  ],
   "dependencies": {
     "lodash": "^4.17.20",
     "varuint-bitcoin": "1.1.2"

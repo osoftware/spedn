@@ -19,13 +19,16 @@
     "Bitcoin Cash",
     "Smart Contract"
   ],
-  "homepage": "https://spedn.rtfd.io",
+  "homepage": "https://spedn.pl",
   "repository": {
     "type": "git",
     "url": "https://bitbucket.org/o-studio/spedn.git"
   },
-  "preview": true,
   "license": "MIT",
+  "funding": [
+    "https://spedn.pl/#support",
+    "bitcoincash:qrc2jhalczuka8q3dvk0g8mnkqx79wxp9gvvqvg7qt"
+  ],
   "devDependencies": {
     "google-closure-compiler": "^20200719.0.0"
   }

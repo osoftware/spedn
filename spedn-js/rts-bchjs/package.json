@@ -20,6 +20,10 @@
   "author": "{o} Software",
   "license": "MIT",
   "homepage": "https://spedn.pl",
+  "funding": [
+    "https://spedn.pl/#support",
+    "bitcoincash:qrc2jhalczuka8q3dvk0g8mnkqx79wxp9gvvqvg7qt"
+  ],
   "dependencies": {
     "@chris.troutner/bch-js": "^3.4.1",
     "@spedn/rts": "^3.1.0"

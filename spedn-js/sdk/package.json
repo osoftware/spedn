@@ -17,6 +17,10 @@
     "Smart Contract"
   ],
   "homepage": "https://spedn.pl",
+  "funding": [
+    "https://spedn.pl/#support",
+    "bitcoincash:qrc2jhalczuka8q3dvk0g8mnkqx79wxp9gvvqvg7qt"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://bitbucket.org/o-studio/spedn.git"
