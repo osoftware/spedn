@@ -576,7 +576,7 @@
     bitbox-sdk "^8.11.2"
 
 "@spedn/rts@../rts":
-  version "1.0.0"
+  version "3.1.0"
   dependencies:
     lodash "^4.17.20"
     varuint-bitcoin "1.1.2"

@@ -1,4 +1,4 @@
-VERSION="0.3.1"
+VERSION="0.3.1.0"
 
 cabal new-build --ghcjs
 

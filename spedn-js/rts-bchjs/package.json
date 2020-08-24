@@ -1,6 +1,6 @@
 {
   "name": "@spedn/rts-bchjs",
-  "version": "1.0.0",
+  "version": "3.1.0",
   "description": "Runtime System for Spedn Contracts with BCH-JS adapter",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -22,7 +22,7 @@
   "homepage": "https://spedn.pl",
   "dependencies": {
     "@chris.troutner/bch-js": "^3.4.1",
-    "@spedn/rts": "../rts"
+    "@spedn/rts": "^3.1.0"
   },
   "devDependencies": {
     "@types/node": "^14.0.27",

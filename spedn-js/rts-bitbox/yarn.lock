@@ -214,7 +214,7 @@
   integrity sha512-tsAQNx32a8CoFhjhijUIhI4kccIAgmGhy8LZMZgGfmXcpMbPRUqn5LWmgRttILi6yeGmBJd2xsPkFMs0PzgPCw==
 
 "@spedn/rts@../rts":
-  version "1.0.0"
+  version "3.1.0"
   dependencies:
     lodash "^4.17.20"
     varuint-bitcoin "1.1.2"

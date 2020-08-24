@@ -1,6 +1,6 @@
 {
   "name": "@spedn/rts",
-  "version": "1.0.0",
+  "version": "3.1.0",
   "description": "Runtime System for Spedn contracts.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

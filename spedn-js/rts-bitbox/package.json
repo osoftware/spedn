@@ -1,6 +1,6 @@
 {
   "name": "@spedn/rts-bitbox",
-  "version": "1.0.0",
+  "version": "3.1.0",
   "description": "Runtime System for Spedn Contracts with BITBOX adapter",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -21,7 +21,7 @@
   "license": "MIT",
   "homepage": "https://spedn.pl",
   "dependencies": {
-    "@spedn/rts": "../rts",
+    "@spedn/rts": "^3.1.0",
     "bitbox-sdk": "^8.11.2"
   },
   "devDependencies": {
