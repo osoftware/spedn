@@ -1,3 +1,14 @@
+# Release 0.3.1.0
+
+This is a minor feature release focusing on SDK improvements. See migration guide in docs for details.
+
+* Decoupling compiler from runtime. While the compiler stays in SDK package, the components for working with compiled contracts moved to RTS.
+* Decoupling RTS from BITBOX, which is now just one of available backends for RTS.
+* Introducing BCH-JS support as another (and recommended) backend for RTS.
+* Introducing Portable format - compilation output that can be loaded by RTS without the need for compiler.
+* All JS packages are moved to `@spedn` scope on npmjs: `@spedn/cli`, `@spedn/rts`, `@spedn/rts-bitbox`, `@spedn/rts-bchjs`, `@spedn/sdk`.
+* For better npm tooling support, JS packages use SemVer, while the project as a whole stays with Haskell PVP. So for `MAJOR.major.minor.patch` release, the JS package will be `MAJORmajor.minor.patch`.
+
 # Release 0.3.0
 
 This is 15th May 2020 hard-fork compatibility update with some new features

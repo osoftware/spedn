@@ -227,12 +227,14 @@ You can instantiate it with a public key hash buffer or several factory methods:
 
 .. code-block:: TypeScript
 
-   import { P2PKH } from "@spedn/rts";
+   import { P2PKH, P2PKHFactory } from "@spedn/rts";
 
-   let addr = new P2PKH(bob.getIdentifier());
-   addr = P2PKH.fromKeyPair(bob.keyPair);
-   addr = P2PKH.fromPubKey(bob.getPublicKeyBuffer());
-   addr = P2PKH.fromAddress(bob.getAddress());
+   const factory = new P2PKHFactory(rts);
+
+   let addr = new P2PKH(rts, bob.getIdentifier());
+   addr = factory.fromKeyPair(bob.keyPair);
+   addr = factory.fromPubKey(bob.toPublicKey());
+   addr = factory.fromAddress(bob.toCashAddress());
    // all the above are equivalent
 
 P2PKH contracts can be spent just like any other contract - they have ``spend({sig, pubKey})`` challenge,
