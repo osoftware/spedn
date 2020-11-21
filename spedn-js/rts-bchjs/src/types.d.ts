@@ -4,6 +4,7 @@ declare module "@chris.troutner/bch-js" {
     constructor(conf: any);
     Address: any;
     Crypto: any;
+    Electrumx: any;
     Script: any;
     Mnemonic: any;
     HDNode: any;

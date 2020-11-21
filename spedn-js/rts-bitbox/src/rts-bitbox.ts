@@ -1,5 +1,6 @@
-import { Addresses, Crypto, Rts, RtsECPair, RtsTransactionBuilder, Script } from "@spedn/rts";
+import { Addresses, Crypto, Rts, RtsECPair, RtsTransactionBuilder, Script, UtxoResult } from "@spedn/rts";
 import { BITBOX, TREST_URL, TWS_URL } from "bitbox-sdk";
+import { AddressUtxoResult } from "bitcoin-com-rest";
 import Bitcoin from "bitcoincashjs-lib";
 
 const defaultConfigs: { [network: string]: any } = {
@@ -15,8 +16,8 @@ export class BitboxRts extends Rts {
     this.bitbox = bitbox || new BITBOX(defaultConfigs[network]);
   }
 
-  utxo(addr: any) {
-    return this.bitbox.Address.utxo(addr);
+  utxo(addr: string): Promise<UtxoResult> {
+    return this.bitbox.Address.utxo(addr) as any;
   }
 
   ecPair(ecPair: Bitcoin.ECPair): RtsECPair {

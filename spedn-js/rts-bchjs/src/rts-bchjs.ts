@@ -1,5 +1,5 @@
 import BCHJS from "@chris.troutner/bch-js";
-import { Addresses, Crypto, Rts, RtsECPair, RtsTransactionBuilder, Script } from "@spedn/rts";
+import { Addresses, Crypto, Rts, RtsECPair, RtsTransactionBuilder, Script, UtxoResult } from "@spedn/rts";
 import Bitcoin from "bitcoincashjs-lib";
 
 const defaultConfigs: { [network: string]: any } = {
@@ -15,8 +15,17 @@ export class BchJsRts extends Rts {
     this.bchjs = bchjs || new BCHJS(defaultConfigs[network]);
   }
 
-  utxo(addr: any) {
-    return this.bchjs.Address.utxo(addr);
+  async utxo(addr: string): Promise<UtxoResult> {
+    const result = await this.bchjs.Electrumx.utxo(addr);
+    return {
+      ...result,
+      utxos: result.utxos.map((o: any) => ({
+        ...o,
+        txid: o.tx_hash,
+        vout: o.tx_pos,
+        satoshis: o.value
+      }))
+    };
   }
 
   ecPair(ecPair: Bitcoin.ECPair): RtsECPair {

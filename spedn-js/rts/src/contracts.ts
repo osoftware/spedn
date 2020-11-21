@@ -79,7 +79,6 @@ export interface Utxo {
   amount: number;
   satoshis: number;
   height: number;
-  confirmations: number;
 }
 
 export interface Coin {

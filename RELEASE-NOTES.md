@@ -1,3 +1,7 @@
+# Release 0.3.1.1
+
+* fix `Rts.utxo(addr)` implementaion in BCH-JS backen that was using old BITBOX REST endpoint.
+
 # Release 0.3.1.0
 
 This is a minor feature release focusing on SDK improvements. See migration guide in docs for details.

@@ -1,11 +1,11 @@
-import { Module, ModuleFactory, PortableModule } from "./contracts";
+import { Module, ModuleFactory, PortableModule, Utxo } from "./contracts";
 
 export abstract class Rts {
   private moduleFactory: ModuleFactory;
   constructor(public readonly network: string = "mainnet") {
     this.moduleFactory = new ModuleFactory(this);
   }
-  abstract utxo(addr: any): any;
+  abstract utxo(addr: string): Promise<UtxoResult>;
   abstract ecPair(ecPair: any): RtsECPair;
   abstract get addresses(): Addresses;
   abstract get crypto(): Crypto;
@@ -16,6 +16,11 @@ export abstract class Rts {
     const module = typeof mod === "string" ? JSON.parse(mod) : mod;
     return this.moduleFactory.make(module);
   }
+}
+
+export interface UtxoResult {
+  success: boolean;
+  utxos: Utxo[];
 }
 
 export interface Addresses {

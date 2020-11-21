@@ -252,10 +252,10 @@
   resolved "https://registry.yarnpkg.com/@istanbuljs/schema/-/schema-0.1.2.tgz#26520bf09abe4a5644cd5414e37125a8954241dd"
   integrity sha512-tsAQNx32a8CoFhjhijUIhI4kccIAgmGhy8LZMZgGfmXcpMbPRUqn5LWmgRttILi6yeGmBJd2xsPkFMs0PzgPCw==
 
-"@spedn/rts@^3.1.0":
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/@spedn/rts/-/rts-3.1.0.tgz#090118f57964a7e2c2ac6d9d61a47637ea10af5a"
-  integrity sha512-fYAGRiMKPE/UZjNTkwLYv3Nvry740H15yeC5+oNIYAT85SP3E3mY9VFyxjK6EUWFtTB+Px+/N73t0HgqBLs37w==
+"@spedn/rts@^3.1.1":
+  version "3.1.1"
+  resolved "https://registry.yarnpkg.com/@spedn/rts/-/rts-3.1.1.tgz#b45b2cb49df994f448aca5c490696f942544699d"
+  integrity sha512-r3YjixGB/zLXq/kcnypx6oKSVm2fri+LW+PrExB3u/5Tu0gorUieHd33KWaKaSWYam3VKTBeyzPADoAq96EAtw==
   dependencies:
     lodash "^4.17.20"
     varuint-bitcoin "1.1.2"

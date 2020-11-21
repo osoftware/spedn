@@ -1,6 +1,6 @@
 {
   "name": "@spedn/rts-bitbox",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": "Runtime System for Spedn Contracts with BITBOX adapter",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -25,7 +25,7 @@
     "bitcoincash:qrc2jhalczuka8q3dvk0g8mnkqx79wxp9gvvqvg7qt"
   ],
   "dependencies": {
-    "@spedn/rts": "^3.1.0",
+    "@spedn/rts": "^3.1.1",
     "bitbox-sdk": "^8.11.2"
   },
   "devDependencies": {
