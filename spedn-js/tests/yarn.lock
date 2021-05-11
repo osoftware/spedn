@@ -564,27 +564,29 @@
     "@sinonjs/commons" "^1.7.0"
 
 "@spedn/rts-bchjs@../rts-bchjs":
-  version "1.0.0"
+  version "3.1.0"
   dependencies:
     "@chris.troutner/bch-js" "^3.4.1"
-    "@spedn/rts" "../rts"
+    "@spedn/rts" "^3.1.0"
 
 "@spedn/rts-bitbox@../rts-bitbox":
-  version "1.0.0"
+  version "3.1.0"
   dependencies:
-    "@spedn/rts" "../rts"
+    "@spedn/rts" "^3.1.0"
     bitbox-sdk "^8.11.2"
 
-"@spedn/rts@../rts":
-  version "3.1.0"
+"@spedn/rts@^3.1.0":
+  version "3.1.1"
+  resolved "https://registry.yarnpkg.com/@spedn/rts/-/rts-3.1.1.tgz#b45b2cb49df994f448aca5c490696f942544699d"
+  integrity sha512-r3YjixGB/zLXq/kcnypx6oKSVm2fri+LW+PrExB3u/5Tu0gorUieHd33KWaKaSWYam3VKTBeyzPADoAq96EAtw==
   dependencies:
     lodash "^4.17.20"
     varuint-bitcoin "1.1.2"
 
 "@spedn/sdk@../sdk":
-  version "1.0.0"
+  version "3.1.0"
   dependencies:
-    "@spedn/rts" "../rts"
+    "@spedn/rts" "^3.1.0"
 
 "@transloadit/prettier-bytes@0.0.7":
   version "0.0.7"
@@ -4379,9 +4381,9 @@ lodash.uniqby@4.5.0:
     lodash._baseuniq "~4.6.0"
 
 lodash@^4.17.10, lodash@^4.17.19, lodash@^4.17.20, lodash@^4.17.4, lodash@^4.3.0, lodash@~4.17.4:
-  version "4.17.20"
-  resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.20.tgz#b44a9b6297bcb698f1c51a3545a2b3b368d59c52"
-  integrity sha512-PlhdFcillOINfeV7Ni6oF1TAEayyZBoZ8bcshTHqOYJYlrqzRK5hagpagky5o4HfCzzd1TRkXPMFq6cKk9rGmA==
+  version "4.17.21"
+  resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.21.tgz#679591c564c3bffaae8454cf0b3df370c3d6911c"
+  integrity sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==
 
 logform@^2.2.0:
   version "2.2.0"
