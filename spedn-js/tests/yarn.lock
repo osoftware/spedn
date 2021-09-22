@@ -564,27 +564,29 @@
     "@sinonjs/commons" "^1.7.0"
 
 "@spedn/rts-bchjs@../rts-bchjs":
-  version "1.0.0"
+  version "3.1.0"
   dependencies:
     "@chris.troutner/bch-js" "^3.4.1"
-    "@spedn/rts" "../rts"
+    "@spedn/rts" "^3.1.0"
 
 "@spedn/rts-bitbox@../rts-bitbox":
-  version "1.0.0"
+  version "3.1.0"
   dependencies:
-    "@spedn/rts" "../rts"
+    "@spedn/rts" "^3.1.0"
     bitbox-sdk "^8.11.2"
 
-"@spedn/rts@../rts":
-  version "3.1.0"
+"@spedn/rts@^3.1.0":
+  version "3.1.1"
+  resolved "https://registry.yarnpkg.com/@spedn/rts/-/rts-3.1.1.tgz#b45b2cb49df994f448aca5c490696f942544699d"
+  integrity sha512-r3YjixGB/zLXq/kcnypx6oKSVm2fri+LW+PrExB3u/5Tu0gorUieHd33KWaKaSWYam3VKTBeyzPADoAq96EAtw==
   dependencies:
     lodash "^4.17.20"
     varuint-bitcoin "1.1.2"
 
 "@spedn/sdk@../sdk":
-  version "1.0.0"
+  version "3.1.0"
   dependencies:
-    "@spedn/rts" "../rts"
+    "@spedn/rts" "^3.1.0"
 
 "@transloadit/prettier-bytes@0.0.7":
   version "0.0.7"
@@ -6229,9 +6231,9 @@ tmp@^0.0.33:
     os-tmpdir "~1.0.2"
 
 tmpl@1.0.x:
-  version "1.0.4"
-  resolved "https://registry.yarnpkg.com/tmpl/-/tmpl-1.0.4.tgz#23640dd7b42d00433911140820e5cf440e521dd1"
-  integrity sha1-I2QN17QtAEM5ERQIIOXPRA5SHdE=
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/tmpl/-/tmpl-1.0.5.tgz#8683e0b902bb9c20c4f726e3c0b69f36518c07cc"
+  integrity sha512-3f0uOEAQwIqGuWW2MVzYg8fV/QNnc/IpuJNG837rLuczAaLVHslWHZQj4IGiEl5Hs3kkbhwL9Ab7Hrsmuj+Smw==
 
 to-array@0.1.4:
   version "0.1.4"
