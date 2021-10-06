@@ -564,27 +564,29 @@
     "@sinonjs/commons" "^1.7.0"
 
 "@spedn/rts-bchjs@../rts-bchjs":
-  version "1.0.0"
+  version "3.1.0"
   dependencies:
     "@chris.troutner/bch-js" "^3.4.1"
-    "@spedn/rts" "../rts"
+    "@spedn/rts" "^3.1.0"
 
 "@spedn/rts-bitbox@../rts-bitbox":
-  version "1.0.0"
+  version "3.1.0"
   dependencies:
-    "@spedn/rts" "../rts"
+    "@spedn/rts" "^3.1.0"
     bitbox-sdk "^8.11.2"
 
-"@spedn/rts@../rts":
-  version "3.1.0"
+"@spedn/rts@^3.1.0":
+  version "3.1.1"
+  resolved "https://registry.yarnpkg.com/@spedn/rts/-/rts-3.1.1.tgz#b45b2cb49df994f448aca5c490696f942544699d"
+  integrity sha512-r3YjixGB/zLXq/kcnypx6oKSVm2fri+LW+PrExB3u/5Tu0gorUieHd33KWaKaSWYam3VKTBeyzPADoAq96EAtw==
   dependencies:
     lodash "^4.17.20"
     varuint-bitcoin "1.1.2"
 
 "@spedn/sdk@../sdk":
-  version "1.0.0"
+  version "3.1.0"
   dependencies:
-    "@spedn/rts" "../rts"
+    "@spedn/rts" "^3.1.0"
 
 "@transloadit/prettier-bytes@0.0.7":
   version "0.0.7"
@@ -6461,9 +6463,9 @@ urix@^0.1.0:
   integrity sha1-2pN/emLiH+wf0Y1Js1wpNQZ6bHI=
 
 url-parse@^1.4.3:
-  version "1.4.7"
-  resolved "https://registry.yarnpkg.com/url-parse/-/url-parse-1.4.7.tgz#a8a83535e8c00a316e403a5db4ac1b9b853ae278"
-  integrity sha512-d3uaVyzDB9tQoSXFvuSUNFibTd9zxd2bkVrDRvF5TmvWWQwqE4lgYJ5m+x1DbecWkw+LK4RNl2CU1hHuOKPVlg==
+  version "1.5.3"
+  resolved "https://registry.yarnpkg.com/url-parse/-/url-parse-1.5.3.tgz#71c1303d38fb6639ade183c2992c8cc0686df862"
+  integrity sha512-IIORyIQD9rvj0A4CLWsHkBBJuNqWpFQe224b6j9t/ABmquIS0qDU2pY6kl6AuOrL5OkCXHMCFNe1jBcuAggjvQ==
   dependencies:
     querystringify "^2.1.1"
     requires-port "^1.0.0"
