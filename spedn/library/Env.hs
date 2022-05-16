@@ -1,4 +1,4 @@
-module Env where
+module Env (Symbol(..), Env, globals, enter, leave, Env.lookup, inScope, add, unAlias, ctors) where
 
 import           Control.Applicative
 import           Control.Monad.Except
@@ -7,61 +7,100 @@ import qualified Data.Map.Lazy        as Map
 import           Data.Maybe
 
 import           Errors
-import           Syntax
+import Syntax
+    ( Name,
+      Size(ConstSize, SizeParam),
+      Type(Generic, TypeParam, Tuple, (:|:), Verification, Bit, Array,
+           Alias, Byte, List, Bool, (:->), Num) )
 
-type SymbolTable = Map.Map Name Type
+data Symbol
+    = VarBinding Name
+    | Fun Name
+    | Operator Name
+    | Type Name
+    deriving (Eq, Show, Ord)
+
+type SymbolTable = Map.Map Symbol Type
+
+fixedSizeByteOp = [Array Byte $ SizeParam "s", Array Byte $ SizeParam "s"] :-> Array Byte (SizeParam "s") :|: [List Byte] :-> List Byte
+
 
 globals :: SymbolTable
 globals = Map.fromList
+    [ (Operator "Not",     [Bool]      :-> Bool)
+    , (Operator "Minus",   [Num]       :-> Num)
+    , (Operator "Add",     [Num, Num]  :-> Num)
+    , (Operator "Sub",     [Num, Num]  :-> Num)
+    , (Operator "Mul",     [Num, Num]  :-> Num)
+    , (Operator "Div",     [Num, Num]  :-> Num)
+    , (Operator "Mod",     [Num, Num]  :-> Num)
+    , (Operator "And",     fixedSizeByteOp)
+    , (Operator "Or",      fixedSizeByteOp)
+    , (Operator "Xor",     fixedSizeByteOp)
+    , (Operator "BoolAnd", [Bool, Bool] :-> Bool)
+    , (Operator "BoolOr",  [Bool, Bool] :-> Bool)
+    , (Operator "Eq",      [TypeParam "a", TypeParam "b"] :-> Bool)
+    , (Operator "Neq",     [TypeParam "a", TypeParam "b"] :-> Bool)
+    , (Operator "NumEq",   [Num, Num] :-> Bool)
+    , (Operator "NumNeq",  [Num, Num] :-> Bool)
+    , (Operator "Lt",      [Num, Num] :-> Bool)
+    , (Operator "Lte",     [Num, Num] :-> Bool)
+    , (Operator "Gt",      [Num, Num] :-> Bool)
+    , (Operator "Gte",     [Num, Num] :-> Bool)
+    , (Operator "Cat",     [List Byte, List Byte] :-> List Byte)  -- TODO: a way to express SizeParams relationships / dependent types
+    , (Operator "Split",   [List Byte, Num]       :-> Tuple [List Byte, List Byte])
+    , (Operator "LShift",  [List Byte, Num]       :-> List Byte)
+    , (Operator "RShift",  [List Byte, Num]       :-> List Byte)
+
       -- Simple math
-    [ ("abs",            [Num]           :-> Num)
-    , ("min",            [Num, Num]      :-> Num)
-    , ("max",            [Num, Num]      :-> Num)
-    , ("within",         [Num, Num, Num] :-> Bool)
+    , (Fun "abs",            [Num]           :-> Num)
+    , (Fun "min",            [Num, Num]      :-> Num)
+    , (Fun "max",            [Num, Num]      :-> Num)
+    , (Fun "within",         [Num, Num, Num] :-> Bool)
 
       -- Hashing
-    , ("ripemd160",      [List Byte] :-> Alias "Ripemd160")
-    , ("sha1",           [List Byte] :-> Alias "Sha1")
-    , ("sha256",         [List Byte] :-> Alias "Sha256")
-    , ("hash160",        [List Byte] :-> Alias "Ripemd160")
-    , ("hash256",        [List Byte] :-> Alias "Sha256")
+    , (Fun "ripemd160",      [List Byte] :-> Alias "Ripemd160")
+    , (Fun "sha1",           [List Byte] :-> Alias "Sha1")
+    , (Fun "sha256",         [List Byte] :-> Alias "Sha256")
+    , (Fun "hash160",        [List Byte] :-> Alias "Ripemd160")
+    , (Fun "hash256",        [List Byte] :-> Alias "Sha256")
 
       -- Checking
-    , ("checkSig",       [Alias "Sig", Alias "PubKey"]                :-> Bool)
-    , ("checkMultiSig",  [Array Bit $ SizeParam "k",
-                          Array (Alias "Sig") $ SizeParam "s", 
-                          Array (Alias "PubKey") $ SizeParam "k"]     :-> Bool)
-    , ("checkDataSig",   [Alias "DataSig", List Byte, Alias "PubKey"] :-> Bool)
-    , ("checkLockTime",  [Alias "Time"]                               :-> Verification)
-    , ("checkSequence",  [Alias "TimeSpan"]                           :-> Verification)
-    , ("checkSize",      [Array Byte $ SizeParam "s"]                 :-> Bool)
+    , (Fun "checkSig",       [Alias "Sig", Alias "PubKey"]                :-> Bool)
+    , (Fun "checkMultiSig",  [Array Bit $ SizeParam "k",
+                              Array (Alias "Sig") $ SizeParam "s", 
+                              Array (Alias "PubKey") $ SizeParam "k"]     :-> Bool)
+    , (Fun "checkDataSig",   [Alias "DataSig", List Byte, Alias "PubKey"] :-> Bool)
+    , (Fun "checkLockTime",  [Alias "Time"]                               :-> Verification)
+    , (Fun "checkSequence",  [Alias "TimeSpan"]                           :-> Verification)
+    , (Fun "checkSize",      [Array Byte $ SizeParam "s"]                 :-> Bool)
 
       -- Array manipulation
-    , ("num2bin",        [Num, Num]  :-> List Byte)
-    , ("bin2num",        [List Byte] :-> Num)
-    , ("size",           [List Byte] :-> Num)
-    , ("reverseBytes",   [Array Byte $ SizeParam "s"] :-> Array Byte (SizeParam "s")
-                     :|: [List Byte]                  :-> List Byte)
+    , (Fun "num2bin",        [Num, Num]  :-> List Byte)
+    , (Fun "bin2num",        [List Byte] :-> Num)
+    , (Fun "size",           [List Byte] :-> Num)
+    , (Fun "reverseBytes",   [Array Byte $ SizeParam "s"] :-> Array Byte (SizeParam "s")
+                         :|: [List Byte]                  :-> List Byte)
 
       -- Type aliases
-    , ("type PubKey",    Array Byte $ ConstSize 33)
-    , ("type Ripemd160", Array Byte $ ConstSize 20)
-    , ("type Sha1",      Array Byte $ ConstSize 16)
-    , ("type Sha256",    Array Byte $ ConstSize 32)
-    , ("type Sig",       Array Byte $ ConstSize 65)
-    , ("type DataSig",   Array Byte $ ConstSize 64)
-    , ("type TimeSpan",  Num)
-    , ("type Time",      Num)
+    , (Type "PubKey",    Array Byte $ ConstSize 33)
+    , (Type "Ripemd160", Array Byte $ ConstSize 20)
+    , (Type "Sha1",      Array Byte $ ConstSize 16)
+    , (Type "Sha256",    Array Byte $ ConstSize 32)
+    , (Type "Sig",       Array Byte $ ConstSize 65)
+    , (Type "DataSig",   Array Byte $ ConstSize 64)
+    , (Type "TimeSpan",  Num)
+    , (Type "Time",      Num)
     
-    , ("type Preimage",   List Byte)
-    , ("type NVersion",   Array Byte $ ConstSize 4)
-    , ("type Outpoint",   Array Byte $ ConstSize 36)
-    , ("type ScriptCode", List Byte)
-    , ("type Value",      Array Byte $ ConstSize 8)
-    , ("type NSequence",  Array Byte $ ConstSize 4)
-    , ("type NLocktime",  Array Byte $ ConstSize 4)
-    , ("type Sighash",    Array Byte $ ConstSize 4)
-    , ("type TxState",    Tuple [ Alias "NVersion"
+    , (Type "Preimage",   List Byte)
+    , (Type "NVersion",   Array Byte $ ConstSize 4)
+    , (Type "Outpoint",   Array Byte $ ConstSize 36)
+    , (Type "ScriptCode", List Byte)
+    , (Type "Value",      Array Byte $ ConstSize 8)
+    , (Type "NSequence",  Array Byte $ ConstSize 4)
+    , (Type "NLocktime",  Array Byte $ ConstSize 4)
+    , (Type "Sighash",    Array Byte $ ConstSize 4)
+    , (Type "TxState",    Tuple [ Alias "NVersion"
                                 , Alias "Sha256"
                                 , Alias "Sha256"
                                 , Alias "Outpoint"
@@ -75,59 +114,62 @@ globals = Map.fromList
 
 
       -- Type constructors
-    , ("PubKey",         [List Byte] :-> Alias "PubKey")
-    , ("Ripemd160",      [List Byte] :-> Alias "Ripemd160")
-    , ("Sha1",           [List Byte] :-> Alias "Sha1")
-    , ("Sha256",         [List Byte] :-> Alias "Sha256")
-    , ("Sig",            [List Byte] :-> Alias "Sig")
-    , ("DataSig",        [List Byte] :-> Alias "DataSig")
-    , ("Blocks",         [Num]       :-> Alias "TimeSpan")
-    , ("TimeStamp",      [Num]       :-> Alias "Time")
-    , ("Bytes",          [Num]       :-> List Byte)
+    , (Fun "PubKey",         [List Byte] :-> Alias "PubKey")
+    , (Fun "Ripemd160",      [List Byte] :-> Alias "Ripemd160")
+    , (Fun "Sha1",           [List Byte] :-> Alias "Sha1")
+    , (Fun "Sha256",         [List Byte] :-> Alias "Sha256")
+    , (Fun "Sig",            [List Byte] :-> Alias "Sig")
+    , (Fun "DataSig",        [List Byte] :-> Alias "DataSig")
+    , (Fun "Blocks",         [Num]       :-> Alias "TimeSpan")
+    , (Fun "TimeStamp",      [Num]       :-> Alias "Time")
+    , (Fun "Bytes",          [Num]       :-> List Byte)
 
-    , ("Preimage",       [List Byte] :-> Alias "Preimage")
-    , ("NVersion",       [List Byte] :-> Alias "NVersion")
-    , ("Sha256",         [List Byte] :-> Alias "Sha256")
-    , ("Sha256",         [List Byte] :-> Alias "Sha256")
-    , ("Outpoint",       [List Byte] :-> Alias "Outpoint")
-    , ("ScriptCode",     [List Byte] :-> Alias "ScriptCode")
-    , ("Value",          [List Byte] :-> Alias "Value")
-    , ("NSequence",      [List Byte] :-> Alias "NSequence")
-    , ("Sha256",         [List Byte] :-> Alias "Sha256")
-    , ("NLocktime",      [List Byte] :-> Alias "NLocktime")
-    , ("Sighash",        [List Byte] :-> Alias "Sighash")
-    , ("TxState",        [Alias "NVersion",
-                          Alias "Sha256",
-                          Alias "Sha256",
-                          Alias "Outpoint",
-                          Alias "ScriptCode",
-                          Alias "Value",
-                          Alias "NSequence",
-                          Alias "Sha256",
-                          Alias "NLocktime",
-                          Alias "Sighash"] :-> Alias "TxState")
+    , (Fun "Preimage",       [List Byte] :-> Alias "Preimage")
+    , (Fun "NVersion",       [List Byte] :-> Alias "NVersion")
+    , (Fun "Sha256",         [List Byte] :-> Alias "Sha256")
+    , (Fun "Sha256",         [List Byte] :-> Alias "Sha256")
+    , (Fun "Outpoint",       [List Byte] :-> Alias "Outpoint")
+    , (Fun "ScriptCode",     [List Byte] :-> Alias "ScriptCode")
+    , (Fun "Value",          [List Byte] :-> Alias "Value")
+    , (Fun "NSequence",      [List Byte] :-> Alias "NSequence")
+    , (Fun "Sha256",         [List Byte] :-> Alias "Sha256")
+    , (Fun "NLocktime",      [List Byte] :-> Alias "NLocktime")
+    , (Fun "Sighash",        [List Byte] :-> Alias "Sighash")
+    , (Fun "TxState",        [Alias "NVersion",
+                              Alias "Sha256",
+                              Alias "Sha256",
+                              Alias "Outpoint",
+                              Alias "ScriptCode",
+                              Alias "Value",
+                              Alias "NSequence",
+                              Alias "Sha256",
+                              Alias "NLocktime",
+                              Alias "Sighash"] :-> Alias "TxState")
 
       -- Macros
-    , ("fst",            [Tuple [TypeParam "a", TypeParam "b"]] :-> TypeParam "a")
-    , ("snd",            [Tuple [TypeParam "a", TypeParam "b"]] :-> TypeParam "b")
-    , ("toDataSig",      [Alias "Sig"]                          :-> Alias "DataSig")
-    , ("parse",          [Alias "Preimage"]                     :-> Alias "TxState")
-    , ("nVersion",       [Alias "Preimage"]                     :-> Alias "NVersion")
-    , ("hashPrevouts",   [Alias "Preimage"]                     :-> Alias "Sha256")
-    , ("hashSequence",   [Alias "Preimage"]                     :-> Alias "Sha256")
-    , ("outpoint",       [Alias "Preimage"]                     :-> Alias "Outpoint")
-    , ("scriptCode",     [Alias "Preimage"]                     :-> Alias "ScriptCode")
-    , ("value",          [Alias "Preimage"]                     :-> Alias "Value")
-    , ("nSequence",      [Alias "Preimage"]                     :-> Alias "NSequence")
-    , ("hashOutputs",    [Alias "Preimage"]                     :-> Alias "Sha256")
-    , ("nLocktime",      [Alias "Preimage"]                     :-> Alias "NLocktime")
-    , ("sighash",        [Alias "Preimage"]                     :-> Alias "Sighash")
+    , (Fun "fst",            [Tuple [TypeParam "a", TypeParam "b"]] :-> TypeParam "a")
+    , (Fun "snd",            [Tuple [TypeParam "a", TypeParam "b"]] :-> TypeParam "b")
+    , (Fun "toDataSig",      [Alias "Sig"]                          :-> Alias "DataSig")
+    , (Fun "parse",          [Alias "Preimage"]                     :-> Alias "TxState")
+    , (Fun "nVersion",       [Alias "Preimage"]                     :-> Alias "NVersion")
+    , (Fun "hashPrevouts",   [Alias "Preimage"]                     :-> Alias "Sha256")
+    , (Fun "hashSequence",   [Alias "Preimage"]                     :-> Alias "Sha256")
+    , (Fun "outpoint",       [Alias "Preimage"]                     :-> Alias "Outpoint")
+    , (Fun "scriptCode",     [Alias "Preimage"]                     :-> Alias "ScriptCode")
+    , (Fun "value",          [Alias "Preimage"]                     :-> Alias "Value")
+    , (Fun "nSequence",      [Alias "Preimage"]                     :-> Alias "NSequence")
+    , (Fun "hashOutputs",    [Alias "Preimage"]                     :-> Alias "Sha256")
+    , (Fun "nLocktime",      [Alias "Preimage"]                     :-> Alias "NLocktime")
+    , (Fun "sighash",        [Alias "Preimage"]                     :-> Alias "Sighash")
     ]
 
 
 
-typeConstructors :: [String]
-typeConstructors = filter (isUpper . head) $ fst <$> Map.toList globals
+ctors :: [Symbol]
+ctors = filter isCtor $ Map.keys globals
+  where
+    isCtor (Fun f) = isUpper . head $ f
+    isCtor _       = False
 
 type Env = [SymbolTable]
 
@@ -137,20 +179,20 @@ enter scopes = Map.empty : scopes
 leave :: Env -> Env
 leave = tail
 
-lookup :: Env -> Name -> Maybe Type
+lookup :: Env -> Symbol -> Maybe Type
 lookup [] _             = Nothing
 lookup (scope:scopes) n = Map.lookup n scope <|> Env.lookup scopes n
 
-inScope :: Env -> Name -> Bool
+inScope :: Env -> Symbol -> Bool
 inScope e n = isJust $ Env.lookup e n
 
-add :: Env -> Name -> Type -> Either Error Env
+add :: Env -> Symbol -> Type -> Either Error Env
 add [] n t                                     = add [Map.empty] n t
-add env@(s:ss) n t | isJust (Env.lookup env n) = throwError $ NameConflict n
+add env@(s:ss) n t | isJust (Env.lookup env n) = throwError $ NameConflict $ show n
                    | otherwise                 = return $ Map.insert n t s : ss
 
 unAlias :: Env -> Type -> Either Error Type
-unAlias env (Alias n)    = case Env.lookup env ("type " ++ n) of
+unAlias env (Alias n)    = case Env.lookup env (Type n) of
                                 Just  t -> Right t
                                 Nothing -> Left $ NotInScope n
 unAlias env (Array t n)    = Array <$> unAlias env t <*> pure n
