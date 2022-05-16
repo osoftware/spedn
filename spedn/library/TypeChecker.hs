@@ -30,7 +30,7 @@ checkDef (TypeDef n t a) = do
                    x            -> [x]
     ctor <- addM n (ctorArgs :-> Alias n)
     env <- get
-    return $ TypeDef n t (def >> ctor >> (Right $ Alias n), env, a)
+    return $ TypeDef n t (def >> ctor >> Right (Alias n), env, a)
 checkDef _ = error "not implemented"
 
 checkContract :: Contract a -> TypeChecker Contract a
@@ -209,7 +209,7 @@ addM :: Name -> Type -> Checker (Check Type)
 addM n t = do
     env <- get
     case unAlias env t of
-        Right _ -> case add env n t of
+        Right _ -> case add env (VarBinding n) t of
             Right e  -> put e >> return (Right t)
             Left err -> return $ Left err
         l       -> return l
@@ -219,6 +219,9 @@ typeofM expr = do
     env <- get
     return $ typeof env expr
 
+maxElementSize :: Int
+maxElementSize = 520
+
 typeof :: Env -> Expr a -> Check Type
 typeof _ (BoolConst _ _)            = return Bool
 typeof _ (BinConst bits _)
@@ -226,16 +229,16 @@ typeof _ (BinConst bits _)
     | otherwise                     = throwError $ Overflow 20 $ length bits
 typeof _ (NumConst _ _)             = return Num
 typeof _ (HexConst bs _)
-    | length bs <= 520              = return $ Array Byte $ ConstSize $ length bs
-    | otherwise                     = throwError $ Overflow 520 $ length bs
+    | length bs <= maxElementSize   = return $ Array Byte $ ConstSize $ length bs
+    | otherwise                     = throwError $ Overflow maxElementSize $ length bs
 typeof _ (StrConst cs _)
-    | strlen cs <= 520              = return $ Array Byte $ ConstSize $ strlen cs
-    | otherwise                     = throwError $ Overflow 520 $ strlen cs
+    | strlen cs <= maxElementSize   = return $ Array Byte $ ConstSize $ strlen cs
+    | otherwise                     = throwError $ Overflow maxElementSize $ strlen cs
 typeof _ (MagicConst str _)         = case parseTimeM True defaultTimeLocale "%Y-%-m-%-d %T" str :: Maybe UTCTime of
                                         Just _  -> return $ Alias "Time"
                                         _       -> throwError $ SyntaxError "Cannot parse as Time - expected YYYY-MM-DD hh:mm:ss"
 typeof _ (TimeSpanConst _ _)        = return $ Alias "TimeSpan"
-typeof env (Var varName _)          = case Env.lookup env varName of
+typeof env (Var varName _)          = case Env.lookup env (VarBinding varName) of
                                         Just t -> return t
                                         _      -> throwError $ NotInScope varName
 typeof env (TupleLiteral es _)      = Tuple <$> sequence (typeof env <$> es)
@@ -246,22 +249,28 @@ typeof env (UnaryExpr Minus expr _) = expect env Num $ typeof env expr
 typeof env (BinaryExpr op l r _)
     | op == Split                 = let pos = typeof env r
                                         arr = typeof env l
-                                    in case pos of
+                                    in opSupported env op >> case pos of
                                         Right Num   -> toSplitTuple env arr r
                                         Right other -> throwError $ TypeMismatch Num (Right other)
                                         err         -> err
-    | op == Cat                   = catArrays env (typeof env l) (typeof env r)
+    | op `elem` [LShift, RShift]  = opSupported env op >> shift env (typeof env l) r op
+    | op == Cat                   = opSupported env op >> catArrays env (typeof env l) (typeof env r)
     | op `elem` [Add, Sub, Div, Mod]
-                                  = both env Num (typeof env l) (typeof env r)
+                                  = opSupported env op >> both env Num (typeof env l) (typeof env r)
     | op `elem` [NumEq, NumNeq, Gt, Gte, Lt, Lte]
-                                  = both env Num (typeof env l) (typeof env r) >> return Bool
-    | op `elem` [Eq, Neq]         = bothSame env (typeof env l) (typeof env r) >> return Bool
-    | op `elem` [BoolAnd, BoolOr] = both env Bool (typeof env l) (typeof env r)
-    | otherwise                   = bothSame env (typeof env l) (typeof env r)
+                                  = opSupported env op >> both env Num (typeof env l) (typeof env r) >> return Bool
+    | op `elem` [Eq, Neq]         = opSupported env op >> bothSame env (typeof env l) (typeof env r) >> return Bool
+    | op `elem` [BoolAnd, BoolOr] = opSupported env op >> both env Bool (typeof env l) (typeof env r)
+    | otherwise                   = opSupported env op >> bothSame env (typeof env l) (typeof env r)
 typeof env (TernaryExpr cond t f _) = expect env Bool (typeof env cond) >> bothSame env (typeof env t) (typeof env f)
 typeof env (Call fn args _)         = let argtypes = typeof env <$> args
-                                          fntype = Env.lookup env fn
+                                          fntype = Env.lookup env (Fun fn)
                                       in matchFn env fn fntype argtypes
+
+opSupported :: Env -> BinaryOp -> Check Type
+opSupported env op = case Env.lookup env (Operator $ show op) of
+                        Just t -> return t
+                        _      -> throwError $ SyntaxError $ "Unsupported operator: " ++ show op
 
 expect :: Env -> Type -> Check Type -> Check Type
 expect _ t@(Alias nt) a@(Right (Alias na)) = if nt == na then return t else throwError $ TypeMismatch t a
@@ -311,14 +320,14 @@ typeofTuple ps = Tuple $ partToType <$> ps
 
 typeofElem :: Check Type -> Expr a -> Check Type
 typeofElem (Right (Array t (ConstSize l))) (NumConst i _)
-    | l > i && i >= 0   = Right t
-    | otherwise         = Left $ OutOfRange l i
+    | l > i && i >= 0              = Right t
+    | otherwise                    = Left $ OutOfRange l i
 typeofElem (Right (List t)) (NumConst i _)
-    | i < 520 && i >= 0 = Right t
-    | otherwise         = Left $ OutOfRange 520 i
-typeofElem (Right (Array t _)) _ = Right t
-typeofElem (Right (List t)) _    = Right t
-typeofElem t _          = Left $ TypeMismatch (List Byte :|: (List $ List Byte)) t
+    | i < maxElementSize && i >= 0 = Right t
+    | otherwise                    = Left $ OutOfRange maxElementSize i
+typeofElem (Right (Array t _)) _   = Right t
+typeofElem (Right (List t)) _      = Right t
+typeofElem t _                     = Left $ TypeMismatch (List Byte :|: List (List Byte)) t
 
 toSplitTuple :: Env -> Check Type -> Expr a -> Check Type
 toSplitTuple env (Right l@(Alias _)) r  = toSplitTuple env (unAlias env l) r
@@ -326,12 +335,43 @@ toSplitTuple _ (Right (Array Byte (ConstSize l))) (NumConst pos _)
     | l >= pos && pos >= 0              = Right $ Tuple [Array Byte (ConstSize pos), Array Byte (ConstSize $ l - pos)]
     | otherwise                         = Left $ OutOfRange l pos
 toSplitTuple _ (Right (List Byte)) (NumConst pos _)
-    | pos <= 520 && pos >= 0            = Right $ Tuple [Array Byte (ConstSize pos), List Byte]
-    | otherwise                         = Left $ OutOfRange 520 pos
+    | pos <= maxElementSize && pos >= 0 = Right $ Tuple [Array Byte (ConstSize pos), List Byte]
+    | otherwise                         = Left $ OutOfRange maxElementSize pos
 toSplitTuple _ (Right (Array Byte _)) _ = Right $ Tuple [List Byte, List Byte]
 toSplitTuple _ (Right (List Byte)) _    = Right $ Tuple [List Byte, List Byte]
 toSplitTuple _ l@(Right _) _            = Left $ TypeMismatch (List Byte) l
 toSplitTuple _ l _                      = l
+
+shift :: Env -> Check Type -> Expr a -> BinaryOp -> Check Type
+shift env (Right l@(Alias _)) r op = shift env (unAlias env l) r op
+shift _ (Right (Array Byte (ConstSize l))) (NumConst n _) LShift
+    | l * 8 + n <= maxElementSize * 8 = Right $ List Byte
+    | otherwise                       = Left $ OutOfRange (maxElementSize * 8) (l * 8 + n)
+shift _ (Right (Array Byte (ConstSize l))) (NumConst n _) RShift
+    | l * 8 >= n                      = Right $ List Byte
+    | otherwise                       = Left $ OutOfRange (l * 8) n
+shift _ (Right (List Byte)) (NumConst n _) LShift
+    | n <= maxElementSize * 8         = Right $ List Byte
+    | otherwise                       = Left $ OutOfRange maxElementSize n
+shift _ (Right (List Byte)) (NumConst n _) RShift
+    | n <= maxElementSize * 8         = Right $ List Byte
+    | otherwise                       = Left $ OutOfRange maxElementSize n
+shift _ (Right (Array Bit (ConstSize l))) (NumConst n _) LShift
+    | l + n <= 20 = Right $ Array Byte (ConstSize (l + n))
+    | otherwise                       = Left $ OutOfRange 20 (l + n)
+shift _ (Right (Array Bit (ConstSize l))) (NumConst n _) RShift
+    | l >= n                          = Right $ Array Bit (ConstSize (l - n))
+    | otherwise                       = Left $ OutOfRange l n
+shift _ (Right (List Bit)) (NumConst n _) LShift
+    | n <= 20                         = Right $ List Byte
+    | otherwise                       = Left $ OutOfRange maxElementSize n
+shift _ (Right (List Bit)) (NumConst n _) RShift
+    | n <= 20                         = Right $ List Byte
+    | otherwise                       = Left $ OutOfRange maxElementSize n
+shift env (Right _) expr _            = case typeof env expr of
+    Right Num -> return $ List Byte
+    _         -> Left $ TypeMismatch Num (typeof env expr)
+shift _ (Left e) _ _ = Left e
 
 catArrays :: Env -> Check Type -> Check Type -> Check Type
 catArrays env (Right l@(Alias _)) r                    = catArrays env (unAlias env l) r
@@ -339,8 +379,8 @@ catArrays env l (Right r@(Alias _))                    = catArrays env l (unAlia
 catArrays env (Right Byte) r                           = catArrays env (Right (Array Byte (ConstSize 1))) r
 catArrays env l (Right Byte)                           = catArrays env l (Right (Array Byte (ConstSize 1)))
 catArrays _ (Right (Array Byte (ConstSize l))) (Right (Array Byte (ConstSize r)))
-    | l + r <= 520                                     = Right $ Array Byte (ConstSize $ l + r)
-    | otherwise                                        = Left $ Overflow 520 (l + r)
+    | l + r <= maxElementSize                                     = Right $ Array Byte (ConstSize $ l + r)
+    | otherwise                                        = Left $ Overflow maxElementSize (l + r)
 catArrays _ (Right (List Byte)) (Right (Array Byte _)) = Right $ List Byte
 catArrays _ (Right (Array Byte _)) (Right (List Byte)) = Right $ List Byte
 catArrays _ (Right (List Byte)) (Right (List Byte))    = Right $ List Byte
@@ -383,10 +423,10 @@ checkCall ins out args = do
     return $ case foldr1 (>>) args' of
         e@(Left _) -> e
         _          -> case out of
-            TypeParam n           -> case Env.lookup env n of
+            TypeParam n           -> case Env.lookup env (VarBinding n) of
                 Just t  -> Right t
                 Nothing -> Right Any
-            Array t (SizeParam s) -> case Env.lookup env ('$':s) of
+            Array t (SizeParam s) -> case Env.lookup env (VarBinding $ '$':s) of
                 Just t'  -> Right t'
                 Nothing -> Right $ List t
             t                     -> Right t
@@ -419,12 +459,12 @@ checkArg (t, a) = do
 expected :: Name -> Type -> Checker Type
 expected n a = do
     env <- get
-    case Env.lookup env n of
+    case Env.lookup env (VarBinding n) of
         Just (Array _ (ConstSize s)) -> case a of
             Array t _ -> return $ Array t (ConstSize s)
             _         -> error "Environment corrupted"
         Just t                       -> return t
-        Nothing                      -> case add env n a of
+        Nothing                      -> case add env (VarBinding n) a of
             Right e -> put e >> return a
             _       -> error "Environment corrupted"
 
