@@ -142,6 +142,9 @@ operators = [ [ prefix Minus $ try $ symbol "-" *> notFollowedBy digits
               ]
             , [ infixL Cat $ symbol "."
               ]
+            , [ infixL LShift $ symbol "<<"
+              , infixL RShift $ symbol ">>"
+              ]
             , [ infixL Lt  $ operator "<"
               , infixL Lte $ symbol "<="
               , infixL Gt  $ operator ">"

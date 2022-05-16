@@ -90,6 +90,8 @@ data BinaryOp
     | Gte
     | Cat
     | Split
+    | LShift
+    | RShift
     deriving (Eq, Show, Data, Typeable, Generic)
 
 class Annotated a b where
