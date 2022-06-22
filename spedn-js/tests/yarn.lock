@@ -564,27 +564,29 @@
     "@sinonjs/commons" "^1.7.0"
 
 "@spedn/rts-bchjs@../rts-bchjs":
-  version "1.0.0"
+  version "3.1.0"
   dependencies:
     "@chris.troutner/bch-js" "^3.4.1"
-    "@spedn/rts" "../rts"
+    "@spedn/rts" "^3.1.0"
 
 "@spedn/rts-bitbox@../rts-bitbox":
-  version "1.0.0"
+  version "3.1.0"
   dependencies:
-    "@spedn/rts" "../rts"
+    "@spedn/rts" "^3.1.0"
     bitbox-sdk "^8.11.2"
 
-"@spedn/rts@../rts":
-  version "3.1.0"
+"@spedn/rts@^3.1.0":
+  version "3.1.1"
+  resolved "https://registry.yarnpkg.com/@spedn/rts/-/rts-3.1.1.tgz#b45b2cb49df994f448aca5c490696f942544699d"
+  integrity sha512-r3YjixGB/zLXq/kcnypx6oKSVm2fri+LW+PrExB3u/5Tu0gorUieHd33KWaKaSWYam3VKTBeyzPADoAq96EAtw==
   dependencies:
     lodash "^4.17.20"
     varuint-bitcoin "1.1.2"
 
 "@spedn/sdk@../sdk":
-  version "1.0.0"
+  version "3.1.0"
   dependencies:
-    "@spedn/rts" "../rts"
+    "@spedn/rts" "^3.1.0"
 
 "@transloadit/prettier-bytes@0.0.7":
   version "0.0.7"
@@ -1085,9 +1087,9 @@ async-limiter@~1.0.0:
   integrity sha512-csOlWGAcRFJaI6m+F2WKdnMKr4HhdhFVBk0H/QbJFMCr+uO2kwohwXQPxw/9OCxp05r5ghVBFSyioixx3gfkNQ==
 
 async@^3.1.0:
-  version "3.2.0"
-  resolved "https://registry.yarnpkg.com/async/-/async-3.2.0.tgz#b3a2685c5ebb641d3de02d161002c60fc9f85720"
-  integrity sha512-TR2mEZFVOj2pLStYxLht7TyfuRzaydfpxr3k9RpHIzMgw7A64dzsdqCxH1WJyQdoe8T10nDXd9wnEigmiuHIZw==
+  version "3.2.4"
+  resolved "https://registry.yarnpkg.com/async/-/async-3.2.4.tgz#2d22e00f8cddeb5fde5dd33522b56d1cf569a81c"
+  integrity sha512-iAB+JbDEGXhyIUavoDl9WP/Jj106Kz9DEn1DPgYw5ruDn0e3Wgi3sKFm55sASdGBNOQB8F59d9qQ7deqrHA8wQ==
 
 asynckit@^0.4.0:
   version "0.4.0"
