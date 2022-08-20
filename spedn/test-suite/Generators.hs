@@ -15,18 +15,19 @@ import           Test.QuickCheck.Instances.Time ()
 import           Text.Megaparsec                (SourcePos, initialPos)
 
 import           Env
+import qualified Env                            as Env
 import           Parser                         (Challenge', Contract', Expr',
                                                  Module', Statement', VarDecl')
 import           Syntax
 
 
 
-type Context = State [[(Name, Type)]]
+type Context = State [[(Symbol, Type)]]
 
 sp :: SourcePos
 sp = initialPos ""
 
-runContext ::GenT Context a -> Gen a
+runContext :: GenT Context a -> Gen a
 runContext gen = evalState <$> runGenT gen <*> pure [Map.toList globals]
 
 scale' :: GT.MonadGen m => (Int -> Int) -> m a -> m a
@@ -55,23 +56,24 @@ scoped gen = do
     lift leaveM
     return result
 
-newName :: Type -> GenT Context Name
-newName t = do
+newSymbol :: Type -> GenT Context Symbol
+newSymbol t = do
     ~ctx@(scope:scopes) <- lift get
-    name <- liftGen arbitraryName `GT.suchThat` (not . (`elem` (fst <$> concat ctx)))
+    name <- liftGen (VarBinding <$> arbitraryName) `GT.suchThat` (not . (`elem` (fst <$> concat ctx)))
     lift . put $ ((name,t):scope):scopes
     return name
 
 available :: Type -> Context Bool
 available t = any (isVar t) <$> gets concat
 
-existingName :: Type -> GenT Context Name
-existingName t = do
+existingSymbol :: Type -> GenT Context Symbol
+existingSymbol t = do
     ctx <- lift get
     GT.elements $ fst <$> filter (isVar t) (concat ctx)
 
-isVar :: Type -> (Name, Type) -> Bool
-isVar t (n, t') = t == t' && take 5 n /= "type "
+isVar :: Type -> (Symbol, Type) -> Bool
+isVar t ((VarBinding n), t') = t == t'
+isVar _ _                    = False
 
 arbitraryConst :: Arbitrary a => (a -> SourcePos -> b) -> Gen b
 arbitraryConst a = a <$> arbitrary <*> pure sp
@@ -118,7 +120,7 @@ varOf :: Type -> GenT Context Expr'
 varOf t = do
     exists <- lift $ available t
     if exists
-        then Var <$> existingName t <*> pure sp
+        then Var <$> (name <$> existingSymbol t) <*> pure sp
         else liftGen $ constOf t
 
 
@@ -126,12 +128,13 @@ callReturning :: Type -> GenT Context Expr'
 callReturning t = do
     fs <- lift get
     let matching = filter (returning t) (concat fs)
-    ~(name, input :-> _) <- GT.elements matching
+    ~(Env.Fun name, input :-> _) <- GT.elements matching
     Call name <$> sequence (exprOf <$> input) <*> pure sp
   where
-    returning expected (_, x) = case x of
+    returning expected (Env.Fun _, x) = case x of
         _ :-> actual -> expected == actual
         _            -> False
+    returning _ _                 = False
 
 boolExpr :: GenT Context Expr'
 boolExpr = GT.frequency
@@ -168,9 +171,11 @@ binExpr = GT.sized $ \n -> GT.oneof
     , callReturning $ List Byte
     , liftGen $ BinaryExpr <$> GT.elements [And, Or, Xor] <*> hexConst n <*> hexConst n <*> pure sp
     , liftGen $ BinaryExpr Cat <$> hexConst (n `div` 2) <*> hexConst (n - n `div` 2) <*> pure sp
+    , liftGen $ BinaryExpr LShift <$> hexConst n <*> indexConst ((520 - n) * 8) <*> pure sp
+    , liftGen $ BinaryExpr RShift <$> hexConst n <*> indexConst (n * 8) <*> pure sp 
     , TernaryExpr <$> boolExpr <*> liftGen (hexConst n) <*> liftGen (hexConst n) <*> pure sp
     ]
-
+    
 exprOf :: Type -> GenT Context Expr'
 exprOf Bool                           = boolExpr
 exprOf Num                            = numExpr
@@ -222,17 +227,17 @@ arbitraryAssignment :: GenT Context Statement'
 arbitraryAssignment = do
     t <- liftGen arbitrary
     expr <- exprOf t
-    name <- newName t
-    return $ Assign (VarDecl t name sp) expr sp
+    symbol <- newSymbol t
+    return $ Assign (VarDecl t (name symbol) sp) expr sp
 
 arbitrarySplit :: GenT Context Statement'
 arbitrarySplit = GT.sized $ \n -> do
     expr <- exprOf $ Array Byte (ConstSize $ n * 2)
     pos <- liftGen $ indexConst $ n * 2
-    left <- newName $ List Byte
-    right <- newName $ List Byte
+    left <- newSymbol $ List Byte
+    right <- newSymbol $ List Byte
     return $ SplitAssign
-        [TupleVarDecl (List Byte) left sp, TupleVarDecl (List Byte) right sp]
+        [TupleVarDecl (List Byte) (name left) sp, TupleVarDecl (List Byte) (name right) sp]
         (BinaryExpr Split expr pos sp)
         sp
 
@@ -308,7 +313,7 @@ instance Arbitrary Type where
 arbitraryParam :: GenT Context VarDecl'
 arbitraryParam = do
     t <- liftGen arbitrary
-    VarDecl t <$> newName t <*> pure sp
+    VarDecl t <$> (name <$> newSymbol t) <*> pure sp
 
 arbitraryChallenge :: GenT Context Challenge'
 arbitraryChallenge = GT.resize 2 $ scoped $ do
