@@ -5,6 +5,7 @@ import           Test.Tasty.Hspec
 
 import           ContractProps
 import           EncodingProps
+import           IntCases
 
 main :: IO ()
 main = do
@@ -17,5 +18,6 @@ spec = parallel $ modifyMaxSuccess (*10) $ do
         it "typechecks" $ property prop_typechecks
         it "leaves a clean stack" $ property prop_clean_stack
         it "does not emit invalid opcodes" $ property prop_no_invalid_opcodes
-    describe "Minimal encoding" $
+    describe "Minimal encoding" $ do
+        it "encodes int minimally" intCases
         it "uses most significant bit as sign" $ property prop_sign_bit
