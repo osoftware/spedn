@@ -222,6 +222,9 @@ typeofM expr = do
 maxElementSize :: Int
 maxElementSize = 520
 
+maxBitfieldSize :: Int
+maxBitfieldSize = 20
+
 typeof :: Env -> Expr a -> Check Type
 typeof _ (BoolConst _ _)            = return Bool
 typeof _ (BinConst bits _)
@@ -255,7 +258,7 @@ typeof env (BinaryExpr op l r _)
                                         err         -> err
     | op `elem` [LShift, RShift]  = opSupported env op >> shift env (typeof env l) r op
     | op == Cat                   = opSupported env op >> catArrays env (typeof env l) (typeof env r)
-    | op `elem` [Add, Sub, Div, Mod]
+    | op `elem` [Add, Sub, Div, Mod, Mul]
                                   = opSupported env op >> both env Num (typeof env l) (typeof env r)
     | op `elem` [NumEq, NumNeq, Gt, Gte, Lt, Lte]
                                   = opSupported env op >> both env Num (typeof env l) (typeof env r) >> return Bool
@@ -346,28 +349,28 @@ shift :: Env -> Check Type -> Expr a -> BinaryOp -> Check Type
 shift env (Right l@(Alias _)) r op = shift env (unAlias env l) r op
 shift _ (Right (Array Byte (ConstSize l))) (NumConst n _) LShift
     | l * 8 + n <= maxElementSize * 8 = Right $ List Byte
-    | otherwise                       = Left $ OutOfRange (maxElementSize * 8) (l * 8 + n)
+    | otherwise                       = Left $ Overflow (maxElementSize * 8) (l * 8 + n)
 shift _ (Right (Array Byte (ConstSize l))) (NumConst n _) RShift
     | l * 8 >= n                      = Right $ List Byte
-    | otherwise                       = Left $ OutOfRange (l * 8) n
+    | otherwise                       = Left $ Overflow (l * 8) (l * 8 - n)
 shift _ (Right (List Byte)) (NumConst n _) LShift
     | n <= maxElementSize * 8         = Right $ List Byte
-    | otherwise                       = Left $ OutOfRange maxElementSize n
+    | otherwise                       = Left $ Overflow maxElementSize n
 shift _ (Right (List Byte)) (NumConst n _) RShift
     | n <= maxElementSize * 8         = Right $ List Byte
-    | otherwise                       = Left $ OutOfRange maxElementSize n
+    | otherwise                       = Left $ Overflow maxElementSize n
 shift _ (Right (Array Bit (ConstSize l))) (NumConst n _) LShift
-    | l + n <= 20 = Right $ Array Byte (ConstSize (l + n))
-    | otherwise                       = Left $ OutOfRange 20 (l + n)
+    | l + n <= maxBitfieldSize        = Right $ Array Bit (ConstSize (l + n))
+    | otherwise                       = Left $ Overflow maxBitfieldSize (l + n)
 shift _ (Right (Array Bit (ConstSize l))) (NumConst n _) RShift
     | l >= n                          = Right $ Array Bit (ConstSize (l - n))
-    | otherwise                       = Left $ OutOfRange l n
+    | otherwise                       = Left $ Overflow maxBitfieldSize (l - n)
 shift _ (Right (List Bit)) (NumConst n _) LShift
-    | n <= 20                         = Right $ List Byte
-    | otherwise                       = Left $ OutOfRange maxElementSize n
+    | n <= maxBitfieldSize            = Right $ List Byte
+    | otherwise                       = Left $ Overflow maxBitfieldSize n
 shift _ (Right (List Bit)) (NumConst n _) RShift
-    | n <= 20                         = Right $ List Byte
-    | otherwise                       = Left $ OutOfRange maxElementSize n
+    | n <= maxBitfieldSize            = Right $ List Byte
+    | otherwise                       = Left $ Overflow maxBitfieldSize (-1)
 shift env (Right _) expr _            = case typeof env expr of
     Right Num -> return $ List Byte
     _         -> Left $ TypeMismatch Num (typeof env expr)
