@@ -7,6 +7,12 @@ import           Options.Applicative
 
 import           Parser
 import           Syntax
+import           Vm
+import           Vm.Bch
+import           Vm.Btc
+import           Vm.Xec
+import           Vm.Xpi
+import Data.Char
 
 data Format
     = Asm
@@ -15,7 +21,7 @@ data Format
     deriving(Show)
 
 data CliOptions
-    = Compile { cSource :: FilePath, cFormat :: Format, cParams :: [(Name, Expr')] }
+    = Compile { cSource :: FilePath, cFormat :: Format, cTarget :: Vm, cParams :: [(Name, Expr')] }
     | MakeAddr { maSource :: FilePath , maMainnet :: Bool, maParams :: [(Name, Expr')] }
     | Version
     deriving (Show)
@@ -42,10 +48,21 @@ mainnetParser = switch $ long "mainnet" <> help "Produce MainNet address"
 paramsParser :: Parser [(Name, Expr')]
 paramsParser = many $ argument (maybeReader parseParamVal) $ metavar "CONTRACT_PARAMS..."
 
+readTarget :: ReadM Vm
+readTarget = eitherReader $ \s -> case toLower <$> s of
+    "xec"      -> Right xec
+    "xpi"      -> Right xpi
+    "bch"      -> Right bch
+    "btc"      -> Right btc
+    _          -> Left "Unknown target"
+
+targetParser :: Parser Vm
+targetParser = option readTarget $ long "target" <> short 't' <> metavar "TARGET" <> value xec <> help "Target virtual machine. Can be xec, xpi, bch, btc."
+
 commandsParser :: Parser CliOptions
 commandsParser = hsubparser
     (  command "compile" (info
-        (Compile <$> sourceParser <*> formatParser <*> paramsParser)
+        (Compile <$> sourceParser <*> formatParser <*> targetParser <*> paramsParser)
         (progDesc "Compiles SOURCE to Script"))
     -- <> command "makeaddr" (info
     --     (MakeAddr <$> sourceParser <*> mainnetParser <*> paramsParser)

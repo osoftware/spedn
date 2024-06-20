@@ -97,8 +97,8 @@ getTypes (Vm.Vm _ env) = Map.filterWithKey isAlias (head env)
     isAlias (Type _) _ = True
     isAlias _ _        = False
 
-compile :: FilePath -> String -> Vm.Vm -> Params -> Either Errors CompiledModule
-compile source code vm ps = CompiledModule <$> typeDefs <*> templates
+compile :: Vm.Vm -> FilePath -> String -> Params -> Either Errors CompiledModule
+compile vm source code ps = CompiledModule <$> typeDefs <*> templates
   where
     ast  = makeAst source code
     ast' = fst <$> evalAst vm ast

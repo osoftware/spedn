@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 
 import           Control.DeepSeq
 import           Data.Aeson
@@ -24,9 +23,9 @@ main :: IO ()
 main = run =<< execParser cli
 
 run :: CliOptions -> IO ()
-run (Compile src format ps) = do
+run (Compile src format target ps) = do
     code <- readFile src
-    mapM_ putStrLn $ case compile src (force code) ps of
+    mapM_ putStrLn $ case compile target src (force code) ps of
         Left errors                   -> (\(e, l) -> "Error: " ++ l ++ "\n" ++ show e ++ "\n") <$> errors
         Right m@(CompiledModule _ ts) -> (\(k, v) -> case format of
                                                         Asm -> "contract " ++ k ++ ":\n" ++ toAsm (asm v) ++ "\n"
