@@ -1,7 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 {-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 
 module Generators where
 
@@ -19,6 +18,8 @@ import qualified Env                            as Env
 import           Parser                         (Challenge', Contract', Expr',
                                                  Module', Statement', VarDecl')
 import           Syntax
+import           Vm
+import           Vm.Bch
 
 
 
@@ -28,7 +29,7 @@ sp :: SourcePos
 sp = initialPos ""
 
 runContext :: GenT Context a -> Gen a
-runContext gen = evalState <$> runGenT gen <*> pure [Map.toList globals]
+runContext gen = evalState <$> runGenT gen <*> pure [Map.toList $ head $ env bch]
 
 scale' :: GT.MonadGen m => (Int -> Int) -> m a -> m a
 scale' f g = GT.sized (\n -> GT.resize (f n) g)
@@ -160,7 +161,7 @@ numExpr = GT.frequency
     [ (2, liftGen numConst)
     , (2, varOf Num)
     , (2, callReturning Num)
-    , (1, BinaryExpr <$> GT.elements [Add, Sub, Div, Mod] <*> downscale numExpr <*> downscale numExpr <*> pure sp)
+    , (1, BinaryExpr <$> GT.elements [Add, Sub, Div, Mod, Mul] <*> downscale numExpr <*> downscale numExpr <*> pure sp)
     , (1, TernaryExpr <$> downscale boolExpr <*> downscale numExpr <*> downscale numExpr <*> pure sp)
     ]
 
