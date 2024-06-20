@@ -22,7 +22,9 @@ import           Optimizer
 import           Parser
 import           Script
 import           Syntax
+import           Transformer
 import           TypeChecker
+import qualified Vm
 
 type Errors = [(Error, String)]
 type Params = [(Name, Expr')]
@@ -46,13 +48,14 @@ instance Show CompiledModule where
 makeAst :: FilePath -> String -> Either (ParseErrorBundle String Void) (Module SourcePos)
 makeAst = parse sourceFile
 
-evalAst :: Either (ParseErrorBundle String Void) (Module SourcePos) -> Either Errors (Module Ann, Env)
-evalAst tree = case tree of
+evalAst :: Vm.Vm -> Either (ParseErrorBundle String Void) (Module SourcePos) -> Either Errors (Module Ann, Vm.Vm)
+evalAst vm tree = case tree of
     Left err  -> Left [(SyntaxError $ errorBundlePretty err, "")]
-    Right ast -> let (ast', env)      = runState (checkSourceFile ast) [globals]
+    Right ast -> let (ast', vm')     = runState (checkSourceFile ast) vm
                      errors           = lefts $ anns <$> toList ast'
                      anns (a, _, pos) = a `extend` sourcePosPretty pos
-                 in if null errors then Right (ast', env) else Left errors
+                     ast''            = transformModule ast'
+                 in if null errors then Right (ast'', vm') else Left errors
 
 extend :: Either a b -> c -> Either (a, c) (b, c)
 extend (Left a) c  = Left (a, c)
@@ -61,13 +64,13 @@ extend (Right b) c = Right (b, c)
 compileToIR :: Contract Ann -> IR
 compileToIR c = execWriter $ evalStateT (contractCompiler c) []
 
-instantiateContract :: Contract Ann -> Env -> Params -> IR -> IR
-instantiateContract c env ps = fillParams (evalParams c env ps)
+instantiateContract :: Contract Ann -> Vm.Vm -> Params -> IR -> IR
+instantiateContract c vm ps = fillParams (evalParams c vm ps)
 
-evalParams :: Contract Ann -> Env -> Params -> Map.Map Name OpCode
-evalParams (Contract _ pds _ _) env ps = Map.fromList $ eval . check <$> ps
+evalParams :: Contract Ann -> Vm.Vm -> Params -> Map.Map Name OpCode
+evalParams (Contract _ pds _ _) vm ps = Map.fromList $ eval . check <$> ps
   where
-    check (n, e) = (n, evalState (checkExpr (findType pds n) e) env)
+    check (n, e) = (n, evalState (checkExpr (findType pds n) e) vm)
     eval (n, e)  = (n, head . execWriter $ evalStateT (exprCompiler e) [])
 
 findType :: [VarDecl a] -> Name -> Type
@@ -88,17 +91,18 @@ findContract [] _                           = Left []
 findContract (c:cs) name | nameof c == name = Right c
                          | otherwise        = findContract cs name
 
-getTypes :: Env -> Map.Map Name Type
-getTypes env = Map.filterWithKey isAlias (head env)
+getTypes :: Vm.Vm -> Map.Map Symbol Type
+getTypes (Vm.Vm _ env) = Map.filterWithKey isAlias (head env)
   where
-    isAlias k _ = take 5 k == "type "
+    isAlias (Type _) _ = True
+    isAlias _ _        = False
 
-compile :: FilePath -> String -> Params -> Either Errors CompiledModule
-compile source code ps = CompiledModule <$> typeDefs <*> templates
+compile :: FilePath -> String -> Vm.Vm -> Params -> Either Errors CompiledModule
+compile source code vm ps = CompiledModule <$> typeDefs <*> templates
   where
     ast  = makeAst source code
-    ast' = fst <$> evalAst ast
-    env  = snd <$> evalAst ast
+    ast' = fst <$> evalAst vm ast
+    env  = snd <$> evalAst vm ast
     cs   = moduleContracts <$> ast'
     ns   = do
       cs' <- cs
@@ -118,4 +122,4 @@ compile source code ps = CompiledModule <$> typeDefs <*> templates
     compiled  = Map.map compileIR <$> instantiated
     optimized = Map.map optimize <$> compiled
     templates = Map.intersectionWith Template <$> cs' <*> optimized
-    typeDefs  = Map.mapKeys (drop 5) <$> (getTypes <$> env)
+    typeDefs  = Map.mapKeys name <$> (getTypes <$> env)

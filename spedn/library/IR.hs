@@ -11,6 +11,7 @@ import           Bytes
 import           Env
 import           Syntax
 import           TypeChecker
+import           Vm (Vm (Vm))
 
 {-# ANN module "HLint: ignore" #-}
 
@@ -36,7 +37,7 @@ data OpCode
 type IR = [OpCode]
 type Stack = [Name]
 type Compiler = StateT Stack (Writer IR) ()
-type Ann = (Check Type, Env, SourcePos)
+type Ann = (Check Type, Vm, SourcePos)
 
 emit :: [OpCode] -> Compiler
 emit = tell
@@ -86,11 +87,13 @@ emitNipM = do
     emit [OpNip]
 
 pushParamM :: VarDecl Ann -> Compiler
-pushParamM (VarDecl t name (_, env, _)) =
+pushParamM (VarDecl t name (_, Vm _ env, _)) =
     case unAlias env t of
         Right (Array Byte _) -> do
             pushM name
         Right (List Byte) -> do
+            pushM name
+        Right (Array Bit _) -> do
             pushM name
         Right (Array _ (ConstSize l)) -> do
             mapM_ (\i -> pushM $ name ++ "$" ++ show i) [0..(l - 1)]
@@ -100,7 +103,7 @@ pushParamM (VarDecl t name (_, env, _)) =
             pushM name
 
 emitPushParamM :: VarDecl Ann -> Compiler
-emitPushParamM (VarDecl t name (_, env, _)) =
+emitPushParamM (VarDecl t name (_, Vm _ env, _)) =
     case unAlias env t of
         Right (Array Byte _) -> do
             emit [OpPush name]
@@ -152,7 +155,7 @@ nthChallengeCompiler ps (Challenge _ args s _, num) = do
 
 stmtCompiler :: Statement Ann -> Bool -> Compiler
 stmtCompiler (Assign (VarDecl (Array _ (SizeParam _)) _ _) _ _) _ = error "AST corrupted"
-stmtCompiler (Assign (VarDecl t name _) expr (_, env, _)) _ = do
+stmtCompiler (Assign (VarDecl t name _) expr (_, Vm _ env, _)) _ = do
     exprCompiler expr
     case unAlias env t of
         Right (Array Bit _) -> do
@@ -231,7 +234,7 @@ exprCompiler (NumConst val _)      = emit [OpPushNum val]  >> pushM "$const"
 exprCompiler (HexConst val _)      = emit [OpPushBytes val]  >> pushM "$const"
 exprCompiler (StrConst val _)      = emit [OpPushBytes $ serializeStr val] >> pushM "$const"
 exprCompiler (TimeSpanConst val _) = emit [OpPushNum val]  >> pushM "$const"
-exprCompiler (Var name (Right t, env, _)) =
+exprCompiler (Var name (Right t, Vm _ env, _)) =
     case unAlias env t of
         Right (Array Byte _)          -> emitPickM name
         Right (Array Bit _)           -> emitPickM name
@@ -243,12 +246,12 @@ exprCompiler (Var name (Right t, env, _)) =
         _                             -> emitPickM name
 exprCompiler (TupleLiteral es _)   = mapM_ exprCompiler es
 exprCompiler (ArrayLiteral es _)   = mapM_ exprCompiler es
-exprCompiler (ArrayAccess (Var name (Right t, env, _)) (NumConst i _) _) =
+exprCompiler (ArrayAccess (Var name (Right t, Vm _ env, _)) (NumConst i _) _) =
     case unAlias env t of
         Right (Array Byte _) -> byteAtM name i
         Right (List Byte)    -> byteAtM name i
         _                    -> emitPickM $ name ++ "$" ++ show i
-exprCompiler (ArrayAccess expr@(Var name (Right t, env, _)) i _) =
+exprCompiler (ArrayAccess expr@(Var name (Right t, Vm _ env, _)) i _) =
     case unAlias env t of
         Right (Array Byte _) -> byteAtExprM expr i
         Right (List Byte)    -> byteAtExprM expr i
@@ -291,7 +294,7 @@ exprCompiler (Call "checkMultiSig" [checkbits, sigs, keys] _) = do
     pushM "$tmp"
 exprCompiler (Call "checkSize" [arg] _) = do
     exprCompiler arg
-    let (Right t, env, _) = ann arg
+    let (Right t, Vm _ env, _) = ann arg
     let Right (Array Byte (ConstSize l)) = unAlias env t
     emit [OpCall "size", OpPushNum l, OpCall "NumEq"]
     popM
@@ -368,8 +371,8 @@ exprCompiler (Call "sighash" [arg] _) = do
     emit [OpCall "Size", OpPushNum 4, OpCall "Sub", OpCall "Split", OpNip]
     popM
     pushM "$tmp"
-exprCompiler (Call name args _)
-    | name `elem` typeConstructors = exprCompiler $ head args
+exprCompiler (Call name args (_, Vm _ env, _))
+    | (Fun name) `elem` ctors env = exprCompiler $ head args
     | otherwise                    = do
         mapM_ exprCompiler args
         emit [OpCall name]
@@ -408,13 +411,13 @@ elemAtM name expr = do
     pushM $ name ++ "$tmp"
 
 height :: Expr Ann -> Int
-height (ArrayLiteral es _)       = sum $ height <$> es
-height (TupleLiteral es _)       = sum $ height <$> es
-height (Var _ (Right t, env, _)) = typeHeight env t
-height _                         = 1
+height (ArrayLiteral es _)            = sum $ height <$> es
+height (TupleLiteral es _)            = sum $ height <$> es
+height (Var _ (Right t, Vm _ env, _)) = typeHeight env t
+height _                              = 1
 
 declHeight :: VarDecl Ann -> Int
-declHeight (VarDecl t _ (_, env, _)) = typeHeight env t
+declHeight (VarDecl t _ (_, Vm _ env, _)) = typeHeight env t
 
 typeHeight :: Env -> Type -> Int
 typeHeight _ (Array Byte _)          = 1
