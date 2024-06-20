@@ -136,6 +136,7 @@ operators = [ [ prefix Minus $ try $ symbol "-" *> notFollowedBy digits
               ]
             , [ infixL Div $ symbol "/"
               , infixL Mod $ symbol "%"
+              , infixL Mul $ symbol "*"
               ]
             , [ infixL Add $ symbol "+"
               , infixL Sub $ symbol "-"

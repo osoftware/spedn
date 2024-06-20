@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable   #-}
 {-# LANGUAGE DeriveGeneric        #-}
 {-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 
 
 module Script where
@@ -89,7 +88,9 @@ data OP_CODE
     | OP_DIV
     | OP_MOD
     | OP_LSHIFT
+    | OP_RAWLEFTBITSHIFT
     | OP_RSHIFT
+    | OP_MULPOW2
     | OP_BOOLAND
     | OP_BOOLOR
     | OP_NUMEQUAL
@@ -228,7 +229,9 @@ instance Persist OP_CODE where
         OP_DIV                 -> putByte 0x96
         OP_MOD                 -> putByte 0x97
         OP_LSHIFT              -> putByte 0x98
+        OP_RAWLEFTBITSHIFT     -> putByte 0x98
         OP_RSHIFT              -> putByte 0x99
+        OP_MULPOW2             -> putByte 0x99
         OP_BOOLAND             -> putByte 0x9a
         OP_BOOLOR              -> putByte 0x9b
         OP_NUMEQUAL            -> putByte 0x9c
@@ -332,6 +335,7 @@ compileOp (OpCall op) = case op of
                           "Gte"           -> [OP_GREATERTHANOREQUAL]
                           "Cat"           -> [OP_CAT]
                           "Split"         -> [OP_SPLIT]
+                          "LShift"        -> [OP_RAWLEFTBITSHIFT]
                           -- Functions
                           "abs"           -> [OP_ABS]
                           "min"           -> [OP_MIN]
