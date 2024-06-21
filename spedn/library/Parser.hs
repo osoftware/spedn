@@ -2,7 +2,7 @@ module Parser where
 
 import           Control.Monad()
 import           Control.Monad.Combinators.Expr
-import           Data.Bits
+import           Data.Bits (shiftL, (.|.))
 import           Text.Megaparsec
 
 import           Lexer

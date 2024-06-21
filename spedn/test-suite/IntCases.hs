@@ -1,9 +1,9 @@
 module IntCases where
 
-import           Test.Tasty.Hspec
+import           Test.Hspec
 
 import           Bytes
-import Data.Foldable
+import           Data.Foldable
 
 intCases :: Expectation
 intCases = let assertion (int, arr) = serializeInt int `shouldBe` arr

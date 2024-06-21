@@ -7,7 +7,7 @@ module Script where
 
 import           Data.ByteString (ByteString)
 import           Data.Data
-import           Data.Persist
+import           Data.Serialize
 import           Data.Word
 import           GHC.Generics
 
@@ -145,13 +145,13 @@ instance Show OP_CODE where
     show (OP_N n)                   = show n
     show op                         = drop 3 $ show $ toConstr op
 
-putByte :: Word8 -> Put ()
+putByte :: Word8 -> Put
 putByte = put
 
-putBytes :: [Word8] -> Put ()
+putBytes :: [Word8] -> Put
 putBytes = mapM_ put
 
-instance Persist OP_CODE where
+instance Serialize OP_CODE where
     put op = case op of
         -- Push values
         OP_PUSHDATA0 len bytes -> putByte len >> putBytes bytes
@@ -280,7 +280,7 @@ instance Persist OP_CODE where
 
 type Script = [OP_CODE]
 
-instance {-# Overlaps #-} Persist Script where
+instance {-# Overlaps #-} Serialize Script where
     put = mapM_ put
 
 toByteString :: Script -> ByteString

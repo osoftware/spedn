@@ -109,7 +109,7 @@ constOf (Alias "Sig")       = Call "Sig" <$> vectorOf 1 (hexConst 65) <*> pure s
 constOf (Alias "DataSig")   = Call "DataSig" <$> vectorOf 1 (hexConst 64) <*> pure sp
 constOf (Alias "Time")      = timeConst
 constOf (Alias "TimeSpan")  = timeSpanConst
-constOf _                   = fail "impossible constant"
+constOf _                   = error "impossible constant"
 
 instance Arbitrary UnaryOp where
     arbitrary = elements
@@ -208,7 +208,7 @@ exprOf (Array Bit (SizeParam "k"))    = BinConst <$> liftGen (vectorOf 3 arbitra
 exprOf (Array a (SizeParam "k"))      = ArrayLiteral <$> GT.vectorOf 3 (exprOf a) <*> pure sp
 exprOf (Array a (SizeParam "s"))      = ArrayLiteral <$> GT.vectorOf 2 (exprOf a) <*> pure sp
 exprOf (List (Alias t))               = ArrayLiteral <$> GT.listOf1 (exprOf $ Alias t) <*> pure sp
-exprOf e                              = fail $ "impossible expr: " ++ show e
+exprOf e                              = error $ "impossible expr: " ++ show e
 
 instance Arbitrary Expr' where
     arbitrary = runContext $ do

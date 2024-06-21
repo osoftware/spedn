@@ -1,5 +1,6 @@
 module IR where
 
+import           Control.Monad
 import           Control.Monad.State
 import           Control.Monad.Writer
 import           Data.List
@@ -83,7 +84,7 @@ emitNipM :: Compiler
 emitNipM = do
     stack <- get
     case stack of (a:_:rest) -> put $ a:rest
-                  _          -> fail "Invalid stack"
+                  _          -> error "Invalid stack"
     emit [OpNip]
 
 pushParamM :: VarDecl Ann -> Compiler

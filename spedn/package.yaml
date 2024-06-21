@@ -2,7 +2,7 @@
 # Cabal file when you run `stack build`. See the hpack website for help with
 # this file: <https://github.com/sol/hpack>.
 name: spedn
-version: '0.3.1.0'
+version: '0.4.0.0'
 git: "https://bitbucket.org/o-studio/spedn.git"
 license: MIT
 author: (o) Software
@@ -28,7 +28,7 @@ library:
   - mtl
   - containers
   - time
-  - persist
+  - cereal
   - bytestring
   source-dirs: library
 
