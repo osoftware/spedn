@@ -4,10 +4,8 @@ import           Control.Monad.State
 import           Control.Monad.Writer
 import           Data.Either
 import           Data.Foldable
-import qualified Data.Map.Lazy        as Map
 
 import           Compiler
-import           Env
 import           Generators           ()
 import           IR
 import           Optimizer
@@ -16,7 +14,6 @@ import           Script
 import           Syntax
 import           TypeChecker
 import           Util
-import           Vm
 import           Vm.Bch
 
 prop_typechecks :: Module' -> Bool

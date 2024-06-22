@@ -6,6 +6,7 @@ module Errors where
 import           Data.Data
 import           Data.List
 import           GHC.Generics
+import           Prelude      hiding (max, min)
 import           Syntax
 
 data Error

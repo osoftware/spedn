@@ -8,9 +8,10 @@ import           Data.Time.Clock.POSIX
 import           Bytes
 import           Env
 import           Errors
+import           Prelude               hiding (max, min)
 import           Syntax
 import           Util
-import           Vm
+import           Vm                    hiding (env)
 
 type Check = Either Error
 type Checker = State Vm
@@ -55,7 +56,7 @@ checkChallenge (Challenge n ps s a) = do
 
 checkVarDecl :: VarDecl a -> TypeChecker VarDecl a
 checkVarDecl (VarDecl t n a) = do
-    Vm r env <- get
+    Vm _ env <- get
     t' <- case unAlias env t of
         Right (List Byte) -> addM n t
         Right (List e)    -> return $ Left $ TypeMismatch (Array e (SizeParam "length")) (unAlias env t)
@@ -248,7 +249,7 @@ typeof _ (TimeSpanConst _ _)        = return $ Alias "TimeSpan"
 typeof (Vm _ env) (Var varName _)   = case Env.lookup env (VarBinding varName) of
                                         Just t -> return t
                                         _      -> throwError $ NotInScope varName
-typeof vm (TupleLiteral es _)       = Tuple <$> sequence (typeof vm <$> es)
+typeof vm (TupleLiteral es _)       = Tuple <$> mapM (typeof vm) es
 typeof vm@(Vm _ env) (ArrayLiteral es _)      = Array <$> allSame env (typeof vm <$> es) <*> pure (ConstSize $ length es)
 typeof vm@(Vm _ env) (ArrayAccess e i _)      = expect env Num (typeof vm i) >> typeofElem (typeof vm e) i
 typeof vm@(Vm _ env) (UnaryExpr Not expr _)   = expect env Bool $ typeof vm expr

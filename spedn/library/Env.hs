@@ -1,5 +1,5 @@
-{-# LANGUAGE DeriveDataTypeable    #-}
-{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric      #-}
 
 module Env (Symbol(..), SymbolTable, Env, enter, leave, Env.lookup, inScope, add, unAlias, ctors) where
 
@@ -10,13 +10,11 @@ import           Data.Data
 import qualified Data.Map.Lazy        as Map
 import           Data.Maybe
 
+import           Data.Foldable        (Foldable (fold))
 import           Errors
 import           GHC.Generics
-import Syntax
-    ( Name,
-      Type(Generic, Tuple, Array,
-           Alias, List) )
-import Data.Foldable (Foldable(fold))
+import           Syntax               (Name,
+                                       Type (Alias, Array, Generic, List, Tuple))
 
 
 data Symbol
@@ -60,6 +58,6 @@ unAlias env (Alias n)    = case Env.lookup env (Type n) of
                                 Nothing -> Left $ NotInScope n
 unAlias env (Array t n)    = Array <$> unAlias env t <*> pure n
 unAlias env (List t)       = List <$> unAlias env t
-unAlias env (Tuple ts)     = Tuple <$> sequence (unAlias env <$> ts)
-unAlias env (Generic n ts) = Generic n <$> sequence (unAlias env <$> ts)
+unAlias env (Tuple ts)     = Tuple <$> mapM (unAlias env) ts
+unAlias env (Generic n ts) = Generic n <$> mapM (unAlias env) ts
 unAlias _ t                = Right t

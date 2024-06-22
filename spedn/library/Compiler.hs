@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric      #-}
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
 
 module Compiler where
 
@@ -122,4 +123,4 @@ compile vm source code ps = CompiledModule <$> typeDefs <*> templates
     compiled  = Map.map compileIR <$> instantiated
     optimized = Map.map optimize <$> compiled
     templates = Map.intersectionWith Template <$> cs' <*> optimized
-    typeDefs  = Map.mapKeys name <$> (getTypes <$> env)
+    typeDefs  = Map.mapKeys name . getTypes <$> env

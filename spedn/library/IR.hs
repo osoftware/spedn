@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
+
 module IR where
 
 import           Control.Monad
@@ -9,10 +11,10 @@ import           Data.Word
 import           Text.Megaparsec
 
 import           Bytes
-import           Env
+import           Env                  (Env, Symbol (Fun), ctors, unAlias)
 import           Syntax
 import           TypeChecker
-import           Vm (Vm (Vm))
+import           Vm                   (Vm (Vm))
 
 {-# ANN module "HLint: ignore" #-}
 
