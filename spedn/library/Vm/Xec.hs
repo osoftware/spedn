@@ -1,10 +1,10 @@
 module Vm.Xec where
 
-import qualified Data.Map.Lazy        as Map
+import qualified Data.Map.Lazy as Map
 
-import Env
-import Vm
-import Syntax
+import           Env
+import           Syntax
+import           Vm
 
 fixedSizeByteOp :: Type
 fixedSizeByteOp = [Array Byte $ SizeParam "s", Array Byte $ SizeParam "s"] :-> Array Byte (SizeParam "s") :|: [List Byte, List Byte] :-> List Byte
@@ -49,7 +49,7 @@ globals = Map.fromList
       -- Checking
     , (Fun "checkSig",       [Alias "Sig", Alias "PubKey"]                :-> Bool)
     , (Fun "checkMultiSig",  [Array Bit $ SizeParam "k",
-                              Array (Alias "Sig") $ SizeParam "s", 
+                              Array (Alias "Sig") $ SizeParam "s",
                               Array (Alias "PubKey") $ SizeParam "k"]     :-> Bool)
     , (Fun "checkDataSig",   [Alias "DataSig", List Byte, Alias "PubKey"] :-> Bool)
     , (Fun "checkLockTime",  [Alias "Time"]                               :-> Verification)
@@ -72,7 +72,7 @@ globals = Map.fromList
     , (Type "DataSig",   Array Byte $ ConstSize 64)
     , (Type "TimeSpan",  Num)
     , (Type "Time",      Num)
-    
+
     , (Type "Preimage",   List Byte)
     , (Type "NVersion",   Array Byte $ ConstSize 4)
     , (Type "Outpoint",   Array Byte $ ConstSize 36)

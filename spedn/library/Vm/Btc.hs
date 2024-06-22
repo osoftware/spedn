@@ -1,10 +1,10 @@
 module Vm.Btc where
 
-import qualified Data.Map.Lazy        as Map
+import qualified Data.Map.Lazy as Map
 
-import Env
-import Vm
-import Syntax
+import           Env
+import           Syntax
+import           Vm
 
 globals :: SymbolTable
 globals = Map.fromList
@@ -38,7 +38,7 @@ globals = Map.fromList
       -- Checking
     , (Fun "checkSig",       [Alias "Sig", Alias "PubKey"]                :-> Bool)
     , (Fun "checkMultiSig",  [Array Bit $ SizeParam "k",
-                              Array (Alias "Sig") $ SizeParam "s", 
+                              Array (Alias "Sig") $ SizeParam "s",
                               Array (Alias "PubKey") $ SizeParam "k"]     :-> Bool)
     , (Fun "checkLockTime",  [Alias "Time"]                               :-> Verification)
     , (Fun "checkSequence",  [Alias "TimeSpan"]                           :-> Verification)
@@ -56,7 +56,7 @@ globals = Map.fromList
     , (Type "Sig",       Array Byte $ ConstSize 65)
     , (Type "TimeSpan",  Num)
     , (Type "Time",      Num)
-    
+
       -- Type constructors
     , (Fun "PubKey",         [List Byte] :-> Alias "PubKey")
     , (Fun "Ripemd160",      [List Byte] :-> Alias "Ripemd160")

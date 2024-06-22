@@ -232,7 +232,7 @@ typeof _ (BoolConst _ _)            = return Bool
 typeof _ (BinConst bits _)
     | length bits <= 20             = return $ Array Bit $ ConstSize $ length bits
     | otherwise                     = throwError $ Overflow 20 $ length bits
-typeof (Vm (min, max) _) (NumConst n _) = if n <= max && n >= min 
+typeof (Vm (min, max) _) (NumConst n _) = if n <= max && n >= min
                                           then return Num
                                           else throwError $ IntOverflow (min, max) n
 typeof _ (HexConst bs _)
@@ -399,10 +399,10 @@ catArrays _ (Right l) (Right r)
     | otherwise                                        = Left $ TypeMismatch (List Byte) (Right l)
 
 isByteVector :: Type -> Bool
-isByteVector Byte = True
-isByteVector (List Byte) = True
+isByteVector Byte           = True
+isByteVector (List Byte)    = True
 isByteVector (Array Byte _) = True
-isByteVector _ = False
+isByteVector _              = False
 
 matchFn :: Vm -> Name -> Maybe Type -> [Check Type] -> Check Type
 matchFn vm fn (Just (ts :-> t)) argtypes       = typeofCall vm fn ts t argtypes
@@ -434,7 +434,7 @@ checkCall ins out args = do
                 Just t  -> Right t
                 Nothing -> Right Any
             Array t (SizeParam s) -> case Env.lookup env (VarBinding $ '$':s) of
-                Just t'  -> Right t'
+                Just t' -> Right t'
                 Nothing -> Right $ List t
             t                     -> Right t
 

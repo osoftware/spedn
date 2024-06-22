@@ -2,7 +2,6 @@
 
 module Cli where
 
-import           Data.Semigroup      ((<>))
 import           Options.Applicative
 
 import           Parser

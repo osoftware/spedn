@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 import           Control.DeepSeq
 import           Data.Aeson
