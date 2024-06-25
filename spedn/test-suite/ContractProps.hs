@@ -6,7 +6,7 @@ import           Data.Either
 import           Data.Foldable
 
 import           Compiler
-import           Generators           ()
+import           Generators           (uberEnv)
 import           IR
 import           Optimizer
 import           Parser
@@ -14,14 +14,16 @@ import           Script
 import           Syntax
 import           TypeChecker
 import           Util
+import           Vm
 import           Vm.Bch
+
 
 prop_typechecks :: Module' -> Bool
 prop_typechecks c = null errors
   where
     errors = lefts $ fst3 <$> checks
     checks = toList m'
-    m'     = evalState (checkSourceFile c) bch
+    m'     = evalState (checkSourceFile c) (Vm (intRange bch) [uberEnv])
 
 prop_clean_stack :: Contract' -> Bool
 prop_clean_stack = (==1) . length . finalStack . run

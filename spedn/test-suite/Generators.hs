@@ -1,35 +1,37 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Generators where
 
 import           Control.Monad.State
 import qualified Data.Map.Lazy                  as Map
 import           Data.Time
-import           QuickCheck.GenT                (GenT, liftGen, runGenT)
 import qualified QuickCheck.GenT                as GT
+import           QuickCheck.GenT                (GenT, liftGen, runGenT)
 import           Test.QuickCheck
 import           Test.QuickCheck.Instances.Time ()
 import           Text.Megaparsec                (SourcePos, initialPos)
 
 import           Env
-import qualified Env                            as Env
 import           Parser                         (Challenge', Contract', Expr',
                                                  Module', Statement', VarDecl')
 import           Syntax
 import           Vm
 import           Vm.Bch
-
-
+import           Vm.Xpi
 
 type Context = State [[(Symbol, Type)]]
+
+
+uberEnv :: SymbolTable
+uberEnv = Map.union (head . env $ bch) (head . env $ xpi) -- merge XPI and BCH operators, no need to test them separately
 
 sp :: SourcePos
 sp = initialPos ""
 
 runContext :: GenT Context a -> Gen a
-runContext gen = evalState <$> runGenT gen <*> pure [Map.toList $ head $ env bch]
+runContext gen = evalState <$> runGenT gen <*> pure [Map.toList uberEnv]
 
 scale' :: GT.MonadGen m => (Int -> Int) -> m a -> m a
 scale' f g = GT.sized (\n -> GT.resize (f n) g)
@@ -65,7 +67,7 @@ newSymbol t = do
     return name
 
 available :: Type -> Context Bool
-available t = any (isVar t) <$> gets concat
+available t = gets (any (isVar t) . concat)
 
 existingSymbol :: Type -> GenT Context Symbol
 existingSymbol t = do
@@ -73,8 +75,8 @@ existingSymbol t = do
     GT.elements $ fst <$> filter (isVar t) (concat ctx)
 
 isVar :: Type -> (Symbol, Type) -> Bool
-isVar t ((VarBinding n), t') = t == t'
-isVar _ _                    = False
+isVar t (VarBinding _, t') = t == t'
+isVar _ _                  = False
 
 arbitraryConst :: Arbitrary a => (a -> SourcePos -> b) -> Gen b
 arbitraryConst a = a <$> arbitrary <*> pure sp
@@ -89,7 +91,7 @@ indexConst :: Int -> Gen Expr'
 indexConst l = NumConst <$> arbitrary `suchThat` (\n -> n >= 0 && n <= l)  <*> pure sp
 
 timeConst :: Gen Expr'
-timeConst =  MagicConst <$> (formatTime defaultTimeLocale "%Y-%-m-%-d %T" <$> (arbitrary :: Gen UTCTime)) <*> pure sp
+timeConst =  (MagicConst . formatTime defaultTimeLocale "%Y-%-m-%-d %T" <$> (arbitrary :: Gen UTCTime)) <*> pure sp
 
 timeSpanConst :: Gen Expr'
 timeSpanConst =  arbitraryConst TimeSpanConst
@@ -173,10 +175,10 @@ binExpr = GT.sized $ \n -> GT.oneof
     , liftGen $ BinaryExpr <$> GT.elements [And, Or, Xor] <*> hexConst n <*> hexConst n <*> pure sp
     , liftGen $ BinaryExpr Cat <$> hexConst (n `div` 2) <*> hexConst (n - n `div` 2) <*> pure sp
     , liftGen $ BinaryExpr LShift <$> hexConst n <*> indexConst ((520 - n) * 8) <*> pure sp
-    , liftGen $ BinaryExpr RShift <$> hexConst n <*> indexConst (n * 8) <*> pure sp 
+    , liftGen $ BinaryExpr RShift <$> hexConst n <*> indexConst (n * 8) <*> pure sp
     , TernaryExpr <$> boolExpr <*> liftGen (hexConst n) <*> liftGen (hexConst n) <*> pure sp
     ]
-    
+
 exprOf :: Type -> GenT Context Expr'
 exprOf Bool                           = boolExpr
 exprOf Num                            = numExpr
@@ -314,7 +316,7 @@ instance Arbitrary Type where
 arbitraryParam :: GenT Context VarDecl'
 arbitraryParam = do
     t <- liftGen arbitrary
-    VarDecl t <$> (name <$> newSymbol t) <*> pure sp
+    (VarDecl t . name <$> newSymbol t) <*> pure sp
 
 arbitraryChallenge :: GenT Context Challenge'
 arbitraryChallenge = GT.resize 2 $ scoped $ do
