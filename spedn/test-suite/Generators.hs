@@ -87,8 +87,8 @@ boolConst = arbitraryConst BoolConst
 numConst :: Gen Expr'
 numConst =  arbitraryConst NumConst
 
-indexConst :: Int -> Gen Expr'
-indexConst l = NumConst <$> arbitrary `suchThat` (\n -> n >= 0 && n <= l)  <*> pure sp
+indexConst :: Integer -> Gen Expr'
+indexConst l = NumConst <$> arbitrary `suchThat` (\n -> n >= 0 && n <= fromIntegral l)  <*> pure sp
 
 timeConst :: Gen Expr'
 timeConst =  (MagicConst . formatTime defaultTimeLocale "%Y-%-m-%-d %T" <$> (arbitrary :: Gen UTCTime)) <*> pure sp
@@ -174,8 +174,8 @@ binExpr = GT.sized $ \n -> GT.oneof
     , callReturning $ List Byte
     , liftGen $ BinaryExpr <$> GT.elements [And, Or, Xor] <*> hexConst n <*> hexConst n <*> pure sp
     , liftGen $ BinaryExpr Cat <$> hexConst (n `div` 2) <*> hexConst (n - n `div` 2) <*> pure sp
-    , liftGen $ BinaryExpr LShift <$> hexConst n <*> indexConst ((520 - n) * 8) <*> pure sp
-    , liftGen $ BinaryExpr RShift <$> hexConst n <*> indexConst (n * 8) <*> pure sp
+    , liftGen $ BinaryExpr LShift <$> hexConst n <*> indexConst ((520 - fromIntegral n) * 8) <*> pure sp
+    , liftGen $ BinaryExpr RShift <$> hexConst n <*> indexConst (fromIntegral n * 8) <*> pure sp
     , TernaryExpr <$> boolExpr <*> liftGen (hexConst n) <*> liftGen (hexConst n) <*> pure sp
     ]
 
@@ -236,7 +236,7 @@ arbitraryAssignment = do
 arbitrarySplit :: GenT Context Statement'
 arbitrarySplit = GT.sized $ \n -> do
     expr <- exprOf $ Array Byte (ConstSize $ n * 2)
-    pos <- liftGen $ indexConst $ n * 2
+    pos <- liftGen $ indexConst $ fromIntegral n * 2
     left <- newSymbol $ List Byte
     right <- newSymbol $ List Byte
     return $ SplitAssign

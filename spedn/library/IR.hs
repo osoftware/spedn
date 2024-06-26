@@ -28,7 +28,7 @@ data OpCode
     | OpPush Name
     | OpPushBool Bool
     | OpPushBits [Bool]
-    | OpPushNum Int
+    | OpPushNum Integer
     | OpPushBytes [Word8]
     | OpIf
     | OpElse
@@ -67,13 +67,13 @@ from name stack = fromJust $ name `elemIndex` stack
 emitPickM :: Name -> Compiler
 emitPickM name = do
     stack <- get
-    emit [OpPushNum $ name `from` stack, OpPick]
+    emit [OpPushNum . fromIntegral $ name `from` stack, OpPick]
     pushM $ "$" ++ name
 
 emitRollM :: Name -> Compiler
 emitRollM name = do
     stack <- get
-    emit [OpPushNum $ name `from` stack, OpRoll]
+    emit [OpPushNum . fromIntegral $ name `from` stack, OpRoll]
     rollM name
 
 emitDropM :: Compiler
@@ -132,7 +132,7 @@ singleChallengeCompiler ps (Challenge _ args s _) = do
     mapM_ pushParamM ps
     mapM_ emitPushParamM ps
     stmtCompiler s True
-    replicateM_ (sum $ declHeight <$> args ++ ps) emitNipM
+    replicateM_ (sum  $ declHeight <$> args ++ ps) emitNipM
 
 challengesCompiler :: [VarDecl Ann] -> [Challenge Ann] -> Compiler
 challengesCompiler ps cs = do
@@ -143,7 +143,7 @@ challengesCompiler ps cs = do
     pushM "$default"
     replicateM_ cases $ emit [OpEndIf]
 
-nthChallengeCompiler :: [VarDecl Ann] -> (Challenge Ann, Int) -> Compiler
+nthChallengeCompiler :: [VarDecl Ann] -> (Challenge Ann, Integer) -> Compiler
 nthChallengeCompiler ps (Challenge _ args s _, num) = do
     mapM_ pushParamM args
     pushM "$case"
@@ -251,8 +251,8 @@ exprCompiler (TupleLiteral es _)   = mapM_ exprCompiler es
 exprCompiler (ArrayLiteral es _)   = mapM_ exprCompiler es
 exprCompiler (ArrayAccess (Var name (Right t, Vm _ env, _)) (NumConst i _) _) =
     case unAlias env t of
-        Right (Array Byte _) -> byteAtM name i
-        Right (List Byte)    -> byteAtM name i
+        Right (Array Byte _) -> byteAtM name (fromIntegral i)
+        Right (List Byte)    -> byteAtM name (fromIntegral i)
         _                    -> emitPickM $ name ++ "$" ++ show i
 exprCompiler (ArrayAccess expr@(Var name (Right t, Vm _ env, _)) i _) =
     case unAlias env t of
@@ -287,10 +287,10 @@ exprCompiler (TernaryExpr cond t f _) = do
 exprCompiler (Call "checkMultiSig" [checkbits, sigs, keys] _) = do
     exprCompiler checkbits
     exprCompiler sigs
-    emit [OpPushNum $ height sigs]
+    emit [OpPushNum . fromIntegral $ height sigs]
     pushM "$height"
     exprCompiler keys
-    emit [OpPushNum $ height keys]
+    emit [OpPushNum . fromIntegral $ height keys]
     pushM "$height"
     emit [OpCall "checkMultiSig"]
     replicateM_ (height sigs + height keys + 3) popM
@@ -299,7 +299,7 @@ exprCompiler (Call "checkSize" [arg] _) = do
     exprCompiler arg
     let (Right t, Vm _ env, _) = ann arg
     let Right (Array Byte (ConstSize l)) = unAlias env t
-    emit [OpCall "size", OpPushNum l, OpCall "NumEq"]
+    emit [OpCall "size", OpPushNum (fromIntegral l), OpCall "NumEq"]
     popM
     pushM "$tmp"
 exprCompiler (Call "parse" [arg] _) = do
@@ -388,7 +388,7 @@ exprCompiler _                     = error "AST corrupted"
 byteAtM :: Name -> Int -> Compiler
 byteAtM name i = do
     emitPickM name
-    emit [OpPushNum i, OpCall "Split", OpNip, OpPushNum 1, OpCall "Split", OpDrop]
+    emit [OpPushNum (fromIntegral i), OpCall "Split", OpNip, OpPushNum 1, OpCall "Split", OpDrop]
     popM
     pushM "$tmp"
 
@@ -405,7 +405,7 @@ elemAtM :: Name -> Expr Ann -> Compiler
 elemAtM name expr = do
     stack <- get
     let i = (name ++ "$0") `from` stack + 1
-    emit [OpPushNum i]
+    emit [OpPushNum (fromIntegral i)]
     pushM "$const"
     exprCompiler expr
     emit [OpCall "Sub", OpPick]
@@ -425,7 +425,7 @@ declHeight (VarDecl t _ (_, Vm _ env, _)) = typeHeight env t
 typeHeight :: Env -> Type -> Int
 typeHeight _ (Array Byte _)          = 1
 typeHeight _ (Array Bit _)           = 1
-typeHeight _ (Array _ (ConstSize n)) = n
+typeHeight _ (Array _ (ConstSize n)) = fromIntegral n
 typeHeight env (Tuple ts)            = sum $ typeHeight env <$> ts
 typeHeight env t@(Alias _)           = let (Right t') = unAlias env t
                                        in typeHeight env t'

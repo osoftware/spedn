@@ -1,8 +1,8 @@
 module Parser where
 
-import           Control.Monad()
+import           Control.Monad                  ()
 import           Control.Monad.Combinators.Expr
-import           Data.Bits (shiftL, (.|.))
+import           Data.Bits                      (shiftL, (.|.))
 import           Text.Megaparsec
 
 import           Lexer
@@ -67,7 +67,7 @@ varType = choice [ keyword "bool" >> pure Bool
                  , keyword "byte" >> pure Byte
                  , try $ Generic <$> typeName <*> triangles (sepBy1 varType comma)
                  , Alias <$> typeName
-                 , try . brackets $ Array <$> (varType <* semi) <*> (ConstSize <$> decInt)
+                 , try . brackets $ Array <$> (varType <* semi) <*> (ConstSize . fromIntegral <$> decInt)
                  , try . brackets $ List <$> varType
                  , parens $ Tuple <$> sepBy1 varType comma
                  ]
@@ -250,7 +250,7 @@ strConst = annotate . try $ StrConst <$> strLit '"'
 magicConst :: Parser Expr'
 magicConst = annotate . try $ MagicConst <$> strLit '`'
 
-timeSpanLit :: Parser Int
+timeSpanLit :: Parser Integer
 timeSpanLit = do
     parts <- some . choice $
         [ try $ (*86400) <$> decInt <* symbol "d"
@@ -260,7 +260,7 @@ timeSpanLit = do
         ]
     return $ sum parts `div` 512 .|. (1 `shiftL` 22)
 
-blockSpanLit :: Parser Int
+blockSpanLit :: Parser Integer
 blockSpanLit = decInt <* symbol "b" <* notFollowedBy binBit
 
 timeSpanConst :: Parser Expr'

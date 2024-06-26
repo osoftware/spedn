@@ -101,11 +101,11 @@ class Named a where
 data Expr a
     = BoolConst Bool a
     | BinConst [Bool] a
-    | NumConst Int a
+    | NumConst Integer a
     | HexConst [Word8] a
     | StrConst String a
     | MagicConst String a
-    | TimeSpanConst Int a
+    | TimeSpanConst Integer a
     | Var Name a
     | TupleLiteral [Expr a] a
     | ArrayLiteral [Expr a] a

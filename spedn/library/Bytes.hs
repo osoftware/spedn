@@ -7,7 +7,7 @@ import           Data.ByteString.Builder
 import qualified Data.ByteString.Lazy    as L
 import           Data.Word
 
-serializeInt :: Int -> [Word8]
+serializeInt :: (Bits a, Integral a) => a -> [Word8]
 serializeInt n = serialize (abs n) (n < 0)
   where
     serialize m neg = if next == 0
@@ -26,7 +26,7 @@ serializeStr = L.unpack . toLazyByteString . stringUtf8
 strlen :: String -> Int
 strlen = length . serializeStr
 
-bitsToInt :: [Bool] -> Int
+bitsToInt :: [Bool] -> Integer
 bitsToInt bits = foldr (\(b, i) a -> (if b then setBit else clearBit) a i) 0 $ zip (reverse bits) [0..]
 
 serializeBits :: [Bool] -> [Word8]

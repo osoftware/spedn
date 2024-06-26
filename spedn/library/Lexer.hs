@@ -73,22 +73,22 @@ name = nameStartingWith (letterChar <|> char '_')
 typeName :: Parser Name
 typeName = nameStartingWith upperChar
 
-digits :: Parser Int
+digits :: Parser Integer
 digits = lexeme L.decimal
 
-decInt :: Parser Int
+decInt :: Parser Integer
 decInt = L.signed spaceConsumer digits
 
-hexInt :: Parser Int
+hexInt :: Parser Integer
 hexInt = lexeme L.hexadecimal
 
 hexByte :: Parser Word8
 hexByte = lexeme $ do
-    h <- hexDigitChar 
+    h <- hexDigitChar
     l <- hexDigitChar
     return . fromIntegral $ digitToInt h * 16 + digitToInt l
 
-binInt :: Parser Int
+binInt :: Parser Integer
 binInt = lexeme L.binary
 
 binBit :: Parser Bool

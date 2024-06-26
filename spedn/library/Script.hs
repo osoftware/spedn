@@ -1,6 +1,6 @@
-{-# LANGUAGE DeriveDataTypeable   #-}
-{-# LANGUAGE DeriveGeneric        #-}
-{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric      #-}
+{-# LANGUAGE FlexibleInstances  #-}
 
 
 module Script where
@@ -294,7 +294,7 @@ compileOp (OpPushBool val)                       = if val then [OP_TRUE] else [O
 compileOp (OpPushNum val) | val == -1            = [OP_1NEGATE]
                           | val == 0             = [OP_FALSE]
                           | val == 1             = [OP_TRUE]
-                          | val > 1 && val <= 16 = [OP_N val]
+                          | val > 1 && val <= 16 = [OP_N (fromIntegral val)]
                           | otherwise            = let payload = serializeInt val
                                                    in [OP_PUSHDATA0 (head . serializeInt . length $ payload) payload]
 compileOp (OpPushBytes val)

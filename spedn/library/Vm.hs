@@ -2,11 +2,11 @@
 
 module Vm where
 
-import Env
-import Data.Data
+import           Data.Data
+import           Env
 
-data Vm = Vm 
-    { intRange :: (Int, Int)
-    , env       :: Env
+data Vm = Vm
+    { intRange :: (Integer, Integer)
+    , env      :: Env
     }
     deriving (Show, Data)

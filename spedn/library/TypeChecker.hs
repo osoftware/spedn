@@ -136,10 +136,9 @@ checkExpr t (BoolConst v a) = do
 checkExpr t (BinConst v a) = do
     vm@(Vm _ env) <- get
     return $ BinConst v (expect env t $ Right $ Array Bit (ConstSize $ length v), vm, a)
-checkExpr t (NumConst v a) = do
+checkExpr t c@(NumConst v a) = do
     vm@(Vm _ env) <- get
-    --TODO:check range
-    return $ NumConst v (expect env t $ Right Num, vm, a)
+    return $ NumConst v (expect env t $ typeof vm c, vm, a)
 checkExpr t (HexConst v a) = do
     vm@(Vm _ env) <- get
     return $ HexConst v (expect env t $ Right $ Array Byte (ConstSize $ length v), vm, a)
@@ -328,23 +327,26 @@ typeofTuple ps = Tuple $ partToType <$> ps
 
 typeofElem :: Check Type -> Expr a -> Check Type
 typeofElem (Right (Array t (ConstSize l))) (NumConst i _)
-    | l > i && i >= 0              = Right t
-    | otherwise                    = Left $ OutOfRange l i
+    | fromIntegral l > i && i >= 0              = Right t
+    | otherwise                                 = Left $ OutOfRange l (fromIntegral i)
 typeofElem (Right (List t)) (NumConst i _)
-    | i < maxElementSize && i >= 0 = Right t
-    | otherwise                    = Left $ OutOfRange maxElementSize i
-typeofElem (Right (Array t _)) _   = Right t
-typeofElem (Right (List t)) _      = Right t
-typeofElem t _                     = Left $ TypeMismatch (List Byte :|: List (List Byte)) t
+    | i < fromIntegral maxElementSize && i >= 0 = Right t
+    | otherwise                                 = Left $ OutOfRange maxElementSize (fromIntegral i)
+typeofElem (Right (Array t _)) _                = Right t
+typeofElem (Right (List t)) _                   = Right t
+typeofElem t _                                  = Left $ TypeMismatch (List Byte :|: List (List Byte)) t
 
 toSplitTuple :: Env -> Check Type -> Expr a -> Check Type
 toSplitTuple env (Right l@(Alias _)) r  = toSplitTuple env (unAlias env l) r
 toSplitTuple _ (Right (Array Byte (ConstSize l))) (NumConst pos _)
-    | l >= pos && pos >= 0              = Right $ Tuple [Array Byte (ConstSize pos), Array Byte (ConstSize $ l - pos)]
-    | otherwise                         = Left $ OutOfRange l pos
+    | l >= fromIntegral pos && pos >= 0 = 
+        Right $ Tuple [Array Byte (ConstSize (fromIntegral pos)), Array Byte (ConstSize $ l - fromIntegral pos)]
+    | otherwise                         = Left $ OutOfRange l (fromIntegral pos)
 toSplitTuple _ (Right (List Byte)) (NumConst pos _)
-    | pos <= maxElementSize && pos >= 0 = Right $ Tuple [Array Byte (ConstSize pos), List Byte]
-    | otherwise                         = Left $ OutOfRange maxElementSize pos
+    | pos <= fromIntegral maxElementSize && pos >= 0 = 
+        Right $ Tuple [Array Byte (ConstSize (fromIntegral pos)), List Byte]
+    | otherwise = 
+        Left $ OutOfRange maxElementSize (fromIntegral pos)
 toSplitTuple _ (Right (Array Byte _)) _ = Right $ Tuple [List Byte, List Byte]
 toSplitTuple _ (Right (List Byte)) _    = Right $ Tuple [List Byte, List Byte]
 toSplitTuple _ l@(Right _) _            = Left $ TypeMismatch (List Byte) l
@@ -353,33 +355,33 @@ toSplitTuple _ l _                      = l
 shift :: Vm -> Check Type -> Expr a -> BinaryOp -> Check Type
 shift vm@(Vm _ env) (Right l@(Alias _)) r op = shift vm (unAlias env l) r op
 shift _ (Right (Array Byte (ConstSize l))) (NumConst n _) LShift
-    | l * 8 + n <= maxElementSize * 8        = Right $ List Byte
-    | otherwise                              = Left $ Overflow (maxElementSize * 8) (l * 8 + n)
+    | l * 8 + fromIntegral n <= maxElementSize * 8 = Right $ List Byte
+    | otherwise                                    = Left $ Overflow (maxElementSize * 8) (l * 8 + fromIntegral n)
 shift _ (Right (Array Byte (ConstSize l))) (NumConst n _) RShift
-    | l * 8 >= n                             = Right $ List Byte
-    | otherwise                              = Left $ Overflow (l * 8) (l * 8 - n)
+    | l * 8 >= fromIntegral n                      = Right $ List Byte
+    | otherwise                                    = Left $ Overflow (l * 8) (l * 8 - fromIntegral n)
 shift _ (Right (List Byte)) (NumConst n _) LShift
-    | n <= maxElementSize * 8                = Right $ List Byte
-    | otherwise                              = Left $ Overflow maxElementSize n
+    | fromIntegral n <= maxElementSize * 8         = Right $ List Byte
+    | otherwise                                    = Left $ Overflow maxElementSize (fromIntegral n)
 shift _ (Right (List Byte)) (NumConst n _) RShift
-    | n <= maxElementSize * 8                = Right $ List Byte
-    | otherwise                              = Left $ Overflow maxElementSize n
+    | fromIntegral n <= maxElementSize * 8         = Right $ List Byte
+    | otherwise                                    = Left $ Overflow maxElementSize (fromIntegral n)
 shift _ (Right (Array Bit (ConstSize l))) (NumConst n _) LShift
-    | l + n <= maxBitfieldSize               = Right $ Array Bit (ConstSize (l + n))
-    | otherwise                              = Left $ Overflow maxBitfieldSize (l + n)
+    | l + fromIntegral n <= maxBitfieldSize        = Right $ Array Bit (ConstSize (l + fromIntegral n))
+    | otherwise                                    = Left $ Overflow maxBitfieldSize (l + fromIntegral n)
 shift _ (Right (Array Bit (ConstSize l))) (NumConst n _) RShift
-    | l >= n                                 = Right $ Array Bit (ConstSize (l - n))
-    | otherwise                              = Left $ Overflow maxBitfieldSize (l - n)
+    | l >= fromIntegral n                          = Right $ Array Bit (ConstSize (l - fromIntegral n))
+    | otherwise                                    = Left $ Overflow maxBitfieldSize (l - fromIntegral n)
 shift _ (Right (List Bit)) (NumConst n _) LShift
-    | n <= maxBitfieldSize                   = Right $ List Byte
-    | otherwise                              = Left $ Overflow maxBitfieldSize n
+    | fromIntegral n <= maxBitfieldSize            = Right $ List Byte
+    | otherwise                                    = Left $ Overflow maxBitfieldSize (fromIntegral n)
 shift _ (Right (List Bit)) (NumConst n _) RShift
-    | n <= maxBitfieldSize                   = Right $ List Byte
-    | otherwise                              = Left $ Overflow maxBitfieldSize (-1)
-shift vm (Right _) expr _                    = case typeof vm expr of
-                                                Right Num -> return $ List Byte
-                                                _         -> Left $ TypeMismatch Num (typeof vm expr)
-shift _ (Left e) _ _                         = Left e
+    | fromIntegral n <= maxBitfieldSize            = Right $ List Byte
+    | otherwise                                    = Left $ Overflow maxBitfieldSize (-1)
+shift vm (Right _) expr _                          = case typeof vm expr of
+                                                      Right Num -> return $ List Byte
+                                                      _         -> Left $ TypeMismatch Num (typeof vm expr)
+shift _ (Left e) _ _                               = Left e
 
 catArrays :: Env -> Check Type -> Check Type -> Check Type
 catArrays env (Right l@(Alias _)) r                    = catArrays env (unAlias env l) r

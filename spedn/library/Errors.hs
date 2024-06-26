@@ -4,6 +4,7 @@
 module Errors where
 
 import           Data.Data
+import           Data.Int
 import           Data.List
 import           GHC.Generics
 import           Prelude      hiding (max, min)
@@ -15,7 +16,7 @@ data Error
     | NotInScope String
     | OutOfRange Int Int
     | Overflow Int Int
-    | IntOverflow (Int, Int) Int
+    | IntOverflow (Integer, Integer) Integer
     | NameConflict String
     | SyntaxError String
     | Ambigious String
@@ -30,8 +31,8 @@ instance Show Error where
                                         ++ "` called with `(" ++ intercalate ", " (disp <$> ts) ++ ")`."
     show (NotInScope n)  = "Symbol not found: `" ++ n ++ "`."
     show (OutOfRange bound i) = "Index `" ++ show i ++ "` exceedes the array bounds, which is [0:" ++ show bound ++ "]."
-    show (Overflow bound i) = "The array size is `" ++ show i ++ "`, which exceeds the protocol limit of [0:" ++ show bound ++ "]."
-    show (IntOverflow (min, max) i) = "The integer `" ++ show i ++ "`, which exceeds the protocol limit of [" ++ show min ++ ":" ++ show max ++ "]."
+    show (Overflow bound i) = "The array size `" ++ show i ++ "` exceeds the protocol limit of [0:" ++ show bound ++ "]."
+    show (IntOverflow (min, max) i) = "The integer `" ++ show i ++ "` exceeds the protocol limit of [" ++ show min ++ ":" ++ show max ++ "]."
     show (NameConflict n)  = "Symbol already defined: `" ++ n ++ "``."
     show (SyntaxError descr) = "Syntax error: " ++ descr
     show (Ambigious descr) = "Ambigious expression: " ++ descr

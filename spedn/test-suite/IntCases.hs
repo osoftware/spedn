@@ -8,7 +8,7 @@ import           Data.Foldable
 intCases :: Expectation
 intCases = let assertion (int, arr) = serializeInt int `shouldBe` arr
            in fold $ assertion <$>
-            [ (1                     , [0x01])
+            [ (1 :: Integer          , [0x01])
             , (2                     , [0x02])
             , (3                     , [0x03])
             , (126                   , [0x7e])
