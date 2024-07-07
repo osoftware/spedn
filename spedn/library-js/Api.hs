@@ -1,23 +1,23 @@
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE OverloadedStrings    #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 
 module Main where
 
 import           Control.DeepSeq
-import           Data.JSString
-import qualified Data.Map.Lazy                   as Map
-import           JavaScript.JSON.Types
-import           JavaScript.JSON.Types.Class
-import           JavaScript.JSON.Types.Generic   ()
-import           JavaScript.JSON.Types.Instances
-import           JavaScript.JSON.Types.Internal
+import           Data.Aeson
+import           GHC.JS.Prim
 import           Text.Megaparsec
 
 import           Compiler
 import           Errors
+import           IR              (Ann)
 import           Script
 import           Syntax
+import           Vm              (Vm)
+import           Vm.Bch          (bch)
+import           Vm.Btc          (btc)
+import           Vm.Xec          (xec)
+import           Vm.Xpi          (xpi)
 
 instance ToJSON SourcePos where
     toJSON = toJSON . sourcePosPretty
@@ -25,8 +25,8 @@ instance ToJSON SourcePos where
 instance {-# OVERLAPS #-} ToJSON Ann where
     toJSON (_,_,pos) = toJSON pos
 
-instance ToJSON a => ToJSON (Map.Map Name a) where
-    toJSON x = objectValue . object $ (\ (k, v) -> pack k .= v) <$> Map.toList x
+-- instance ToJSON a => ToJSON (Map.Map Name a) where
+--     toJSON x = objectValue . object $ (\ (k, v) -> toJSString k .= v) <$> Map.toList x
 
 instance ToJSON Size where
     toJSON (ConstSize s) = toJSON s
@@ -53,16 +53,26 @@ instance ToJSON CompiledModule
 instance ToJSON Error
 instance ToJSON OP_CODE
 
-compileModule :: String -> String -> Either Errors CompiledModule
-compileModule source code = compile source code []
+compileModule :: Vm -> String -> String -> Either Errors CompiledModule
+compileModule vm source code = compile vm source code []
 
 main :: IO ()
 main = return ()
 
-compileCode :: JSString -> IO Value
-compileCode code = return . toJSON $ compileModule "<inline>" (unpack code)
+getVm :: String -> Vm
+getVm "bch" = bch
+getVm "btc" = btc
+getVm "xec" = xec
+getVm "xpi" = xpi
+getVm _     = xpi
 
-compileFile :: JSString -> IO Value
-compileFile file = do
-    code <- readFile $ unpack file
-    return . toJSON $ compileModule (unpack file) (force code)
+serialize :: ToJSON a => a -> JSVal
+serialize = toJSString . show . encode . toJSON
+
+compileCode :: JSVal -> JSVal -> IO JSVal
+compileCode vm code = return . serialize $ compileModule (getVm $ fromJSString vm) "<inline>" (fromJSString code)
+
+compileFile :: JSVal -> JSVal -> IO JSVal
+compileFile vm file = do
+    code <- readFile $ fromJSString file
+    return . serialize $ compileModule (getVm $ fromJSString vm) (fromJSString file) (force code)

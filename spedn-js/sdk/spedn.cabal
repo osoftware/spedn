@@ -7,7 +7,7 @@ cabal-version: 1.12
 -- hash: cdacdca15f298e522044a4a951eb7d7a674745d4c5fc7cfa435d63ffbd51b84b
 
 name:           spedn
-version:        0.3.1.0
+version:        0.4.0.0
 synopsis:       Bitcoin Cash smart contracts compiler.
 description:    Spedn is a high-level, strongly typed smart contract language compiled to Bitcoin Script.
 category:       Bitcoin
@@ -38,8 +38,14 @@ library
       Parser
       Script
       Syntax
+      Transformer
       TypeChecker
       Util
+      Vm
+      Vm.Bch
+      Vm.Btc
+      Vm.Xec
+      Vm.Xpi
   other-modules:
       Paths_spedn
   hs-source-dirs:
@@ -48,11 +54,11 @@ library
   build-depends:
       base
     , bytestring
+    , cereal
     , containers
     , megaparsec
     , mtl
     , parser-combinators
-    , persist
     , time
   default-language: Haskell2010
 
@@ -61,15 +67,15 @@ executable spedn
   other-modules:
       Paths_spedn
   hs-source-dirs:
-      ../../spedn/executable-js
+      ../../spedn/library-js
   ghc-options: -Wall -rtsopts -threaded -with-rtsopts=-N -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -fno-warn-unused-top-binds -fno-warn-orphans
   build-depends:
-      base
+      aeson
+    , base
     , base16-bytestring
     , bytestring
     , containers
     , deepseq
-    , ghcjs-base
     , megaparsec
     , spedn
   default-language: Haskell2010
@@ -79,7 +85,9 @@ test-suite spedn-test-suite
   main-is: Main.hs
   other-modules:
       ContractProps
+      EncodingProps
       Generators
+      IntCases
       Paths_spedn
   hs-source-dirs:
       ../../spedn/test-suite
@@ -90,7 +98,9 @@ test-suite spedn-test-suite
     , base
     , containers
     , hspec
+    , megaparsec
     , mtl
+    , quickcheck-instances
     , spedn
     , tasty
     , tasty-hspec
