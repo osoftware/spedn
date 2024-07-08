@@ -1,5 +1,6 @@
-# GHCJS
+# GHC
 spedn.cabal
+cabal.proect
 bundle.sh
 dist-newstyle/
 

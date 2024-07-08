@@ -8,7 +8,7 @@
   },
   "preferGlobal": true,
   "bin": {
-    "spedn": "./spedn"
+    "spedn": "spedn"
   },
   "author": "{o} Software",
   "categories": [
@@ -22,7 +22,7 @@
   "homepage": "https://spedn.pl",
   "repository": {
     "type": "git",
-    "url": "https://bitbucket.org/o-studio/spedn.git"
+    "url": "git+https://bitbucket.org/o-studio/spedn.git"
   },
   "license": "MIT",
   "funding": [
