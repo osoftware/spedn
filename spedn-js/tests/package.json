@@ -18,19 +18,15 @@
   "license": "MIT",
   "homepage": "https://spedn.pl",
   "dependencies": {
+    "@psf/bch-js": "^6.7.4",
+    "@spedn/rts": "../rts",
     "@spedn/rts-bchjs": "../rts-bchjs",
-    "@spedn/rts-bitbox": "../rts-bitbox",
     "@spedn/sdk": "../sdk"
   },
   "devDependencies": {
-    "@types/node": "^14.6.0",
-    "jest": "^26.4.0",
-    "ts-jest": "^26.2.0",
-    "typescript": "^3.9.7",
-    "typescript-tslint-plugin": "^0.5.5"
-  },
-  "resolutions": {
-    "bitcoincashjs-lib": "bitcoin-com/bitcoincashjs-lib#master",
-    "bitcoincash-ops": "christroutner/bitcoincash-ops#master"
+    "@types/jest": "^29.5.12",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.5",
+    "typescript": "^5.5.3"
   }
 }

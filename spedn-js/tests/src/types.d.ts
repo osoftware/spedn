@@ -1,4 +1,4 @@
-declare module "@chris.troutner/bch-js" {
+declare module "@psf/bch-js" {
   export class BCHJS {
     constructor();
     constructor(conf: any);
@@ -33,7 +33,7 @@ declare module "@chris.troutner/bch-js" {
   export default BCHJS;
 }
 
-declare module "bitcoincashjs-lib" {
+declare module "@psf/bitcoincashjs-lib" {
   export interface HDNode {
     keyPair: any;
     getAddress(): any;
