@@ -3,8 +3,8 @@ import { Addresses, Crypto, ModuleFactory, Rts, RtsECPair, RtsTransactionBuilder
 import Bitcoin from "@psf/bitcoincashjs-lib";
 
 const defaultConfigs: { [network: string]: any } = {
-  xec: { restUrl: 'https://abc.fullstack.cash/v5/' },
-  bch: { restUrl: 'https://bchn.fullstack.cash/v5/' },
+  xec: { restURL: 'https://abc.fullstack.cash/v5/' },
+  bch: { restURL: 'https://bchn.fullstack.cash/v5/' },
 };
 
 export class BchJsRts extends Rts {
@@ -32,7 +32,18 @@ export class BchJsRts extends Rts {
   }
 
   get addresses(): Addresses {
-    return this.bchjs.Address;
+    return {
+      fromOutputScript: (script: Buffer, network: string) => {
+        const cashAddr = this.bchjs.Address.fromOutputScript(script, network);
+        return this.network === "xec" ? this.bchjs.Address.toEcashAddress(cashAddr) : cashAddr;
+      },
+      toHash160: (addr: string) => {
+        if (addr.startsWith("ecash:")) {
+          addr = this.bchjs.Address.ecashtoCashAddress(addr);
+        }
+        return this.bchjs.Address.toHash160(addr);
+      },
+    };
   }
 
   get crypto(): Crypto {

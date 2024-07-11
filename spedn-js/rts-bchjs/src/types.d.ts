@@ -1,7 +1,7 @@
 declare module "@psf/bch-js" {
   export class BCHJS {
     constructor();
-    constructor(conf: any);
+    constructor(conf: { restURL: string; apiToken?: string });
     Address: any;
     Crypto: any;
     Electrumx: any;
