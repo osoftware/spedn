@@ -1,8 +1,8 @@
-import { Module } from "@spedn/rts";
 import { BchJsRts } from "@spedn/rts-bchjs";
+import { Module, Rts } from "@spedn/rts";
 import { Spedn } from "@spedn/sdk";
 
-const rts = new BchJsRts("mainnet");
+const rts: Rts = new BchJsRts("bch");
 
 describe("compiler", () => {
   let compiler: Spedn;
@@ -12,13 +12,13 @@ describe("compiler", () => {
   describe("for code file", () => {
     describe("missing", () => {
       it("should return an error", () => {
-        return expect(compiler.compileFile("/x.spedn")).rejects.toHaveProperty("message", "File not found: /x.spedn");
+        return expect(compiler.compileFile("bch", "/x.spedn")).rejects.toHaveProperty("message", "File not found: /x.spedn");
       });
     });
 
     describe("with valid code", () => {
       let mod: Module;
-      beforeAll(async () => (mod = await compiler.compileFile("../../examples/ExpiringTip.spedn", rts)));
+      beforeAll(async () => (mod = await compiler.compileFile("bch", "../../examples/ExpiringTip.spedn", rts)));
       it("should create a contract", () => expect(mod.ExpiringTip).toBeDefined());
       it("should recognize parameters types", () => {
         expect(mod.ExpiringTip.params).toEqual({
@@ -30,7 +30,7 @@ describe("compiler", () => {
 
     describe("with invalid code", () => {
       it("should return a list of errors", () => {
-        return expect(compiler.compileFile("../../examples/Invalid.spedn")).rejects.toHaveLength(1);
+        return expect(compiler.compileFile("bch", "../../examples/Invalid.spedn")).rejects.toHaveLength(1);
       });
     });
   });

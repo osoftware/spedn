@@ -22,7 +22,7 @@ export class Spedn implements Disposable {
   async compileCode(target: Vm, code: string, rts?: Rts): Promise<Module | PortableModule> {
     const output: CompilerOutput = JSON.parse(await this.bridge.request("compileCode", target, code));
     if (output.Left) throw output.Left;
-    return rts ? rts.load(output.Right) : output.Right;
+    return rts ? new ModuleFactory(rts).make(output.Right) : output.Right;
   }
 
   async compileFile(target: Vm, file: string): Promise<PortableModule>;
@@ -33,7 +33,7 @@ export class Spedn implements Disposable {
 
     const output: CompilerOutput = JSON.parse(await this.bridge.request("compileFile", target, absolute));
     if (output.Left) throw output.Left;
-    return rts ? rts.load(output.Right) : output.Right;
+    return rts ? new ModuleFactory(rts).make(output.Right) : output.Right;
   }
 
   dispose() {

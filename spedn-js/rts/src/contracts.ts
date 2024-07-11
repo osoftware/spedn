@@ -49,7 +49,7 @@ function isTuple(tuple: ParamType): tuple is Tuple {
   return (tuple as Tuple).tag === "Tuple";
 }
 
-export type ParamValue = number | boolean | string | Buffer | any[];
+export type ParamValue = number | bigint | boolean | string | Buffer | any[];
 
 export interface ParamTypes {
   [name: string]: ParamType;
@@ -79,6 +79,7 @@ export interface Utxo {
   amount: number;
   satoshis: number;
   height: number;
+  confirmations: number;
 }
 
 export interface Coin {
@@ -224,6 +225,7 @@ export class ModuleFactory {
 
   encodeParam(value: ParamValue): Buffer {
     if (typeof value === "boolean") return this.rts.script.encodeNumber(value ? 1 : 0);
+    if (typeof value === "bigint") return this.rts.script.encodeBigNumber(value);
     if (typeof value === "number") return this.rts.script.encodeNumber(value);
     if (typeof value === "string") return Buffer.from(value, "utf8");
     if (value instanceof Buffer) return value;
@@ -304,7 +306,8 @@ export class ModuleFactory {
     return Class;
   }
 
-  make(mod: PortableModule): Module {
+  make(module: PortableModule | string): Module {
+    const mod = typeof module === "string" ? JSON.parse(module) : module;
     const checker = new SpednTypeChecker(mod.types);
     return mapValues(template => this.makeContractClass(template, checker), mod.templates);
   }

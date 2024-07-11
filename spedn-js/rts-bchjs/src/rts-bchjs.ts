@@ -1,15 +1,14 @@
-import BCHJS from "@chris.troutner/bch-js";
-import { Addresses, Crypto, Rts, RtsECPair, RtsTransactionBuilder, Script, UtxoResult } from "@spedn/rts";
-import Bitcoin from "bitcoincashjs-lib";
+import BCHJS from "@psf/bch-js";
+import { Addresses, Crypto, ModuleFactory, Rts, RtsECPair, RtsTransactionBuilder, Script, UtxoResult } from "@spedn/rts";
+import Bitcoin from "@psf/bitcoincashjs-lib";
 
 const defaultConfigs: { [network: string]: any } = {
-  mainnet: undefined,
-  testnet: { restURL: "https://tapi.fullstack.cash/v3/" }
+  xec: { restUrl: 'https://abc.fullstack.cash/v5/' },
+  bch: { restUrl: 'https://bchn.fullstack.cash/v5/' },
 };
 
 export class BchJsRts extends Rts {
   private readonly bchjs: BCHJS;
-
   constructor(public readonly network: string, bchjs?: BCHJS) {
     super(network);
     this.bchjs = bchjs || new BCHJS(defaultConfigs[network]);
@@ -54,9 +53,11 @@ export class BchJsRts extends Rts {
 }
 
 class BchJsScript implements Script {
-  opcodes: Map<string, number> = this.bchjs.Script.opcodes;
+  opcodes: Map<string, number>;
 
-  constructor(private readonly bchjs: BCHJS, private readonly script: Bitcoin.Script) {}
+  constructor(private readonly bchjs: BCHJS, private readonly script: Bitcoin.Script) {
+    this.opcodes = bchjs.Script.opcodes;
+  }
 
   encode(argStack: Buffer[]): Buffer {
     return this.bchjs.Script.encode(argStack);
@@ -64,6 +65,39 @@ class BchJsScript implements Script {
 
   encodeNumber(integer: number): Buffer {
     return this.script.number.encode(integer);
+  }
+
+  // Taken from @bitauth/libauth
+  encodeBigNumber(integer: bigint): Buffer {
+    if (integer === 0n) {
+      return Buffer.from([]);;
+    }
+
+    const bytes: number[] = [];
+    const isNegative = integer < 0;
+    const byteStates = 0xff;
+    const bitsPerByte = 8;
+    // eslint-disable-next-line functional/no-let
+    let remaining = isNegative ? -integer : integer;
+    // eslint-disable-next-line functional/no-loop-statements
+    while (remaining > 0) {
+      // eslint-disable-next-line functional/no-expression-statements, functional/immutable-data, no-bitwise
+      bytes.push(Number(remaining & BigInt(byteStates)));
+      // eslint-disable-next-line functional/no-expression-statements, no-bitwise
+      remaining >>= BigInt(bitsPerByte);
+    }
+
+    const signFlippingByte = 0x80;
+    // eslint-disable-next-line no-bitwise, functional/no-conditional-statements, @typescript-eslint/no-non-null-assertion
+    if ((bytes[bytes.length - 1]! & signFlippingByte) > 0) {
+      // eslint-disable-next-line functional/no-expression-statements, functional/immutable-data
+      bytes.push(isNegative ? signFlippingByte : 0x00);
+      // eslint-disable-next-line functional/no-conditional-statements
+    } else if (isNegative) {
+      // eslint-disable-next-line functional/no-expression-statements, functional/immutable-data, no-bitwise
+      bytes[bytes.length - 1] |= signFlippingByte;
+    }
+    return Buffer.from(bytes);
   }
 
   decodeNumber(buffer: Buffer, maxLength?: number | undefined, minimal?: boolean | undefined): number {

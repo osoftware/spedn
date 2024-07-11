@@ -1,9 +1,7 @@
 import { Module, ModuleFactory, PortableModule, Utxo } from "./contracts";
 
 export abstract class Rts {
-  private moduleFactory: ModuleFactory;
-  constructor(public readonly network: string = "mainnet") {
-    this.moduleFactory = new ModuleFactory(this);
+  constructor(public readonly network: string = "xec") {
   }
   abstract utxo(addr: string): Promise<UtxoResult>;
   abstract ecPair(ecPair: any): RtsECPair;
@@ -12,10 +10,6 @@ export abstract class Rts {
   abstract get script(): Script;
   abstract transactionBuilder(): RtsTransactionBuilder;
   abstract sendTx(tx: any): Promise<string>;
-  load(mod: PortableModule | string): Module {
-    const module = typeof mod === "string" ? JSON.parse(mod) : mod;
-    return this.moduleFactory.make(module);
-  }
 }
 
 export interface UtxoResult {
@@ -47,6 +41,7 @@ export interface Script {
   opcodes: any;
   encode(argStack: Buffer[]): Buffer;
   encodeNumber(integer: number): Buffer;
+  encodeBigNumber(integer: bigint): Buffer;
   decodeNumber(buffer: Buffer, maxLength?: number, minimal?: boolean): number;
   encodeScriptHashOutput(buffer: Buffer): Buffer;
   encodePubKeyHashOutput(buffer: Buffer): Buffer;

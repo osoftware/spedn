@@ -1,6 +1,5 @@
-import BCHJS from "@chris.troutner/bch-js";
-import { Module, P2PKHFactory, using } from "@spedn/rts";
-import { BchJsRts } from "@spedn/rts-bchjs";
+import BCHJS from "@psf/bch-js";
+import { BchJsRts, Module, ModuleFactory, P2PKHFactory, using } from "@spedn/rts-bchjs";
 import { Spedn } from "@spedn/sdk";
 
 const rts = new BchJsRts("mainnet");
@@ -10,7 +9,7 @@ describe("ExpiringTip contract", () => {
   beforeAll(
     async () =>
       await using(new Spedn(), async compiler => {
-        mod = await compiler.compileFile("../../examples/ExpiringTip.spedn", rts);
+        mod = await compiler.compileFile("xec", "../../examples/ExpiringTip.spedn", rts);
       })
   );
 
@@ -40,6 +39,13 @@ describe("ExpiringTip contract", () => {
     });
   });
 });
+
+describe("BigNum contract", () => {
+  it("should encode int64 parameter", () => {
+    expect(new ModuleFactory(rts).encodeParam(9223372036854775807n)).toEqual(Buffer.from([0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f]));
+  });
+});
+
 
 describe("P2PKH", () => {
   describe("factory methods", () => {
