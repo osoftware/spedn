@@ -1,0 +1,11 @@
+{
+  "name": "spedn",
+  "license": "MIT",
+  "workspaces": [
+    "cli",
+    "rts",
+    "rts-bchjs",
+    "sdk",
+    "tests"
+  ]
+}
