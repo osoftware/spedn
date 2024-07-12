@@ -1,15 +1,12 @@
-import BCHJS from "@chris.troutner/bch-js";
+import BCHJS from "@psf/bch-js";
 import { ContractCoin, Module, P2PKHCoin, P2PKHFactory, SigHash, signWith, TxBuilder, using } from "@spedn/rts";
 import { BchJsRts } from "@spedn/rts-bchjs";
-import { BitboxRts } from "@spedn/rts-bitbox";
 import { Spedn } from "@spedn/sdk";
-import { BITBOX } from "bitbox-sdk";
 
-const bchjs = new BCHJS({ restURL: "https://tapi.fullstack.cash/v3/" });
-const bitbox = new BITBOX({ restURL: "https://tapi.fullstack.cash/v3/" });
+const bchjs = new BCHJS({ restURL: "https://bchn.fullstack.cash/v5/" });
 const mnemonic = "draw parade crater busy book swim soldier tragic exit feel top civil";
 
-describe.each([new BchJsRts("testnet", bchjs), new BitboxRts("testnet", bitbox)])("%s TxBuilder", rts => {
+describe.each([new BchJsRts("bch", bchjs)])("%s TxBuilder", rts => {
   const addr = new P2PKHFactory(rts);
   let key0: any;
   let addr0: any;
@@ -19,7 +16,7 @@ describe.each([new BchJsRts("testnet", bchjs), new BitboxRts("testnet", bitbox)]
   let change2: any;
   let coins: any;
   beforeAll(async () => {
-    const hdNode = bchjs.HDNode.fromSeed(await bchjs.Mnemonic.toSeed(mnemonic), "testnet");
+    const hdNode = bchjs.HDNode.fromSeed(await bchjs.Mnemonic.toSeed(mnemonic), "mainnet");
     const wallet = bchjs.HDNode.derivePath(hdNode, "m/44'/145'/0'");
     key0 = bchjs.HDNode.derivePath(wallet, "0/0").keyPair;
     addr0 = addr.fromKeyPair(key0);
@@ -37,7 +34,6 @@ describe.each([new BchJsRts("testnet", bchjs), new BitboxRts("testnet", bitbox)]
           amount: 100000,
           satoshis: 100000,
           height: 12345,
-          confirmations: 30
         },
         addr0.redeemScript
       ),
@@ -49,7 +45,6 @@ describe.each([new BchJsRts("testnet", bchjs), new BitboxRts("testnet", bitbox)]
           amount: 100000,
           satoshis: 100000,
           height: 12345,
-          confirmations: 30
         },
         addr1.redeemScript
       ),
@@ -61,7 +56,6 @@ describe.each([new BchJsRts("testnet", bchjs), new BitboxRts("testnet", bitbox)]
           amount: 100000,
           satoshis: 100000,
           height: 12345,
-          confirmations: 30
         },
         change2.redeemScript
       )
@@ -74,6 +68,7 @@ describe.each([new BchJsRts("testnet", bchjs), new BitboxRts("testnet", bitbox)]
     beforeAll(async () => {
       await using(new Spedn(), async compiler => {
         mod = await compiler.compileCode(
+          "bch",
           `
             contract X() {
               challenge spend(Ripemd160 hash, [byte;4] bytes4, [byte] bytes, int integer) {
@@ -90,7 +85,6 @@ describe.each([new BchJsRts("testnet", bchjs), new BitboxRts("testnet", bitbox)]
             vout: 0,
             amount: 5000000,
             satoshis: 5000000,
-            confirmations: 10,
             height: 100
           },
           (address as any).challenges,
@@ -129,7 +123,7 @@ describe.each([new BchJsRts("testnet", bchjs), new BitboxRts("testnet", bitbox)]
     });
 
     it("should protect from overpaying", () => {
-      expect(() => builder.to(addr0.getAddress("testnet"), 100000).build()).toThrowError("Fee is unreasonably high.");
+      expect(() => builder.to(addr0.getAddress("testnet"), 100000).build()).toThrow("Fee is unreasonably high.");
     });
 
     it("should allow overpaying if expicitly requested", () => {
@@ -168,7 +162,7 @@ describe.each([new BchJsRts("testnet", bchjs), new BitboxRts("testnet", bitbox)]
     beforeAll(
       async () =>
         await using(new Spedn(), async compiler => {
-          mod = await compiler.compileFile("../../examples/PayToPublicKeyHash.spedn", rts);
+          mod = await compiler.compileFile("bch", "../../examples/PayToPublicKeyHash.spedn", rts);
         })
     );
 
@@ -180,7 +174,6 @@ describe.each([new BchJsRts("testnet", bchjs), new BitboxRts("testnet", bitbox)]
           vout: 0,
           amount: 5000000,
           satoshis: 5000000,
-          confirmations: 10,
           height: 100
         },
         (address as any).challenges,
@@ -193,7 +186,6 @@ describe.each([new BchJsRts("testnet", bchjs), new BitboxRts("testnet", bitbox)]
           vout: 1,
           amount: 4999700,
           satoshis: 4999700,
-          confirmations: 10,
           height: 100
         },
         change2.redeemScript
@@ -202,10 +194,10 @@ describe.each([new BchJsRts("testnet", bchjs), new BitboxRts("testnet", bitbox)]
       const tx = new TxBuilder(rts)
         .from(utxo0, (i, c) => i.spend({ pubKey: key1.getPublicKeyBuffer(), sig: c.sign(key1) }))
         .from(utxo1, signWith(key2))
-        .to(addr1.getAddress("testnet"), 9999300)
+        .to(addr1.getAddress("mainnet"), 9999300)
         .build();
 
-      expect(tx.getId()).toEqual("ad70c931d742d6903271d1d3047701fb25b6859c440aeacf774d242f74f10738");
+      expect(tx.getId()).toEqual("5c6b557c1d9fa8c7255a2f7bb8edf35915743e963c81734f40c3a8e443720004");
     });
   });
 });
