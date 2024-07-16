@@ -55,7 +55,8 @@ export class BchJsRts extends Rts {
   }
 
   transactionBuilder(): RtsTransactionBuilder {
-    return new this.bchjs.TransactionBuilder(this.network);
+    const network = this.network === "xec" || this.network === "bch" || this.network === "xpi" ? "mainnet" : this.network;
+    return new this.bchjs.TransactionBuilder(network);
   }
 
   async sendTx(tx: any): Promise<string> {

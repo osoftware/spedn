@@ -88,7 +88,7 @@ export interface Coin {
 }
 
 export class ContractCoin implements Coin {
-  constructor(public utxo: Utxo, public challenges: Challenges, public redeemScript: Buffer) {}
+  constructor(public utxo: Utxo, public challenges: Challenges, public redeemScript: Buffer) { }
 }
 
 export interface Instance {
@@ -101,52 +101,139 @@ export interface Instance {
 
 export interface Contract {
   params: ParamTypes;
-  new (params: ParamValues): Instance;
+  new(params: ParamValues): Instance;
 }
 
 export interface Module {
   [name: string]: Contract;
 }
 
-export const stdlib: PortableModule = {
-  templates: {},
-  types: {
-    DataSig: { tag: "Array", contents: ["byte", 64] },
-    PubKey: { tag: "Array", contents: ["byte", 33] },
-    Ripemd160: { tag: "Array", contents: ["byte", 20] },
-    Sha1: { tag: "Array", contents: ["byte", 16] },
-    Sha256: { tag: "Array", contents: ["byte", 32] },
-    Sig: { tag: "Array", contents: ["byte", 65] },
-    Preimage: { tag: "List", contents: "byte" },
-    NVersion: { tag: "Array", contents: ["byte", 4] },
-    Outpoint: { tag: "Array", contents: ["byte", 36] },
-    ScriptCode: { tag: "List", contents: "byte" },
-    Value: { tag: "Array", contents: ["byte", 8] },
-    NSequence: { tag: "Array", contents: ["byte", 4] },
-    NLocktime: { tag: "Array", contents: ["byte", 4] },
-    Sighash: { tag: "Array", contents: ["byte", 4] },
-    TxState: {
-      tag: "Tuple",
-      contents: [
-        "NVersion",
-        "Sha256",
-        "Sha256",
-        "Outpoint",
-        "ScriptCode",
-        "Value",
-        "NSequence",
-        "Sha256",
-        "NLocktime",
-        "Sighash"
-      ]
+export const stdlib: { [vm: string]: PortableModule } = {
+  "xec": {
+    templates: {},
+    types: {
+      DataSig: { tag: "Array", contents: ["byte", 64] },
+      PubKey: { tag: "Array", contents: ["byte", 33] },
+      Ripemd160: { tag: "Array", contents: ["byte", 20] },
+      Sha1: { tag: "Array", contents: ["byte", 16] },
+      Sha256: { tag: "Array", contents: ["byte", 32] },
+      Sig: { tag: "Array", contents: ["byte", 65] },
+      Preimage: { tag: "List", contents: "byte" },
+      NVersion: { tag: "Array", contents: ["byte", 4] },
+      Outpoint: { tag: "Array", contents: ["byte", 36] },
+      ScriptCode: { tag: "List", contents: "byte" },
+      Value: { tag: "Array", contents: ["byte", 8] },
+      NSequence: { tag: "Array", contents: ["byte", 4] },
+      NLocktime: { tag: "Array", contents: ["byte", 4] },
+      Sighash: { tag: "Array", contents: ["byte", 4] },
+      TxState: {
+        tag: "Tuple",
+        contents: [
+          "NVersion",
+          "Sha256",
+          "Sha256",
+          "Outpoint",
+          "ScriptCode",
+          "Value",
+          "NSequence",
+          "Sha256",
+          "NLocktime",
+          "Sighash"
+        ]
+      },
+      Time: "int",
+      TimeSpan: "int"
+    }
+  },
+  "btc": {
+    templates: {},
+    types: {
+      PubKey: { tag: "Array", contents: ["byte", 33] },
+      Ripemd160: { tag: "Array", contents: ["byte", 20] },
+      Sha1: { tag: "Array", contents: ["byte", 16] },
+      Sha256: { tag: "Array", contents: ["byte", 32] },
+      Sig: { tag: "List", contents: "byte" },
+      Time: "int",
+      TimeSpan: "int"
+    }
+  },
+  "bch": {
+    templates: {},
+    types: {
+      DataSig: { contents: ["byte", 64], tag: "Array" },
+      NLocktime: { contents: ["byte", 4], tag: "Array" },
+      NSequence: { contents: ["byte", 4], tag: "Array" },
+      NVersion: { contents: ["byte", 4], tag: "Array" },
+      Outpoint: { contents: ["byte", 36], tag: "Array" },
+      Preimage: { contents: "byte", tag: "List" },
+      PubKey: { contents: ["byte", 33], tag: "Array" },
+      Ripemd160: { contents: ["byte", 20], tag: "Array" },
+      ScriptCode: { contents: "byte", tag: "List" },
+      Sha1: { contents: ["byte", 16], tag: "Array" },
+      Sha256: { contents: ["byte", 32], tag: "Array" },
+      Sig: { contents: ["byte", 65], tag: "Array" },
+      Sighash: { contents: ["byte", 4], tag: "Array" },
+      Time: "int",
+      TimeSpan: "int",
+      TokenCategory: { contents: "byte", tag: "List" },
+      TxState: {
+        contents: [
+          "NVersion",
+          "Sha256",
+          "Sha256",
+          "Outpoint",
+          "ScriptCode",
+          "Value",
+          "NSequence",
+          "Sha256",
+          "NLocktime",
+          "Sighash"
+        ],
+        tag: "Tuple"
+      },
+      Value: { contents: ["byte", 8], tag: "Array" }
     },
-    Time: "int",
-    TimeSpan: "int"
+  },
+  "xpi": {
+    templates: {},
+    types: {
+      DataSig: { tag: "Array", contents: ["byte", 64] },
+      PubKey: { tag: "Array", contents: ["byte", 33] },
+      Ripemd160: { tag: "Array", contents: ["byte", 20] },
+      Sha1: { tag: "Array", contents: ["byte", 16] },
+      Sha256: { tag: "Array", contents: ["byte", 32] },
+      Sig: { tag: "Array", contents: ["byte", 65] },
+      Preimage: { tag: "List", contents: "byte" },
+      NVersion: { tag: "Array", contents: ["byte", 4] },
+      Outpoint: { tag: "Array", contents: ["byte", 36] },
+      ScriptCode: { tag: "List", contents: "byte" },
+      Value: { tag: "Array", contents: ["byte", 8] },
+      NSequence: { tag: "Array", contents: ["byte", 4] },
+      NLocktime: { tag: "Array", contents: ["byte", 4] },
+      Sighash: { tag: "Array", contents: ["byte", 4] },
+      TxState: {
+        tag: "Tuple",
+        contents: [
+          "NVersion",
+          "Sha256",
+          "Sha256",
+          "Outpoint",
+          "ScriptCode",
+          "Value",
+          "NSequence",
+          "Sha256",
+          "NLocktime",
+          "Sighash"
+        ]
+      },
+      Time: "int",
+      TimeSpan: "int"
+    }
   }
 };
 
 export class SpednTypeChecker {
-  constructor(private types: ParamTypes) {}
+  constructor(private types: ParamTypes) { }
 
   typeMatches(spednType: ParamType, arg: ParamValue): boolean {
     if (spednType === "bool") return typeof arg === "boolean";
@@ -193,7 +280,7 @@ export class SpednTypeChecker {
 }
 
 export class ModuleFactory {
-  constructor(private rts: Rts) {}
+  constructor(private rts: Rts) { }
 
   makeParams = (astParams: string[][]) => fromPairs(astParams.map(dropRight(1)).map(reverse)) as ParamTypes;
 

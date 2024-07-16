@@ -76,7 +76,7 @@ describe.each([new BchJsRts("bch", bchjs)])("%s TxBuilder", rts => {
               }
             }
           `,
-          new BchJsRts("testnet", bchjs)
+          new BchJsRts("bch", bchjs)
         );
         const address = new mod.X({});
         utxo = new ContractCoin(
@@ -133,7 +133,7 @@ describe.each([new BchJsRts("bch", bchjs)])("%s TxBuilder", rts => {
     it("should protect from dust output", () => {
       expect(() =>
         builder.to(addr0.getAddress("testnet"), 199990).to(change2.getAddress("testnet")).build()
-      ).toThrowError("Change output is below dust level.");
+      ).toThrow("Change output is below dust level.");
     });
   });
 

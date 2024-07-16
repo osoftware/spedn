@@ -11,10 +11,8 @@ import {
 } from "./contracts";
 import { Rts, RtsECPair } from "./rts";
 
-const checker = new SpednTypeChecker(stdlib.types);
-
 export class P2PKHFactory {
-  constructor(private rts: Rts) {}
+  constructor(private rts: Rts) { }
   fromPubKey = (pubKey: Buffer) => new P2PKH(this.rts, this.rts.crypto.hash160(pubKey));
   fromKeyPair = (keyPair: RtsECPair) => this.fromPubKey(keyPair.getPublicKeyBuffer());
   fromAddress = (address: string, network = "mainnet") =>
@@ -42,15 +40,18 @@ export class P2PKH implements Instance {
 }
 
 export class P2PKHCoin implements Coin {
+  checker: SpednTypeChecker;
   challenges = {
     spend: ({ sig, pubKey }: ParamValues) => {
       const std = new ModuleFactory(this.rts);
-      checker.validateParamValues({ sig, pubKey }, { sig: "Sig", pubKey: "PubKey" });
+      this.checker.validateParamValues({ sig, pubKey }, { sig: "Sig", pubKey: "PubKey" });
       return this.rts.script.encodePubKeyHashInput(std.encodeParam(sig), std.encodeParam(pubKey));
     }
   };
 
-  constructor(private rts: Rts, public utxo: Utxo, public redeemScript: Buffer) {}
+  constructor(private rts: Rts, public utxo: Utxo, public redeemScript: Buffer) {
+    this.checker = new SpednTypeChecker(stdlib[rts.network].types);
+  }
 }
 
 export function signWith(key: RtsECPair): SigningCallback {

@@ -12,15 +12,16 @@ import {
 } from "./contracts";
 import { Rts } from "./rts";
 
-const checker = new SpednTypeChecker(stdlib.types);
 
 export class GenericP2SH implements Instance {
+  checker: SpednTypeChecker;
   paramValues: ParamValues = {};
   public challengeSpecs: ChallengeSpecs;
   public challenges: Challenges = {
     spend: params => {
       const factory = new ModuleFactory(this.rts);
-      checker.validateParamValues(params, this.challengeSpecs.spend);
+
+      this.checker.validateParamValues(params, this.challengeSpecs.spend);
       const argStack = Object.keys(this.challengeSpecs.spend).map((n: string) => factory.encodeParam(params[n]));
       argStack.push(factory.encodeParam(this.redeemScript));
       return this.rts.script.encode(argStack);
@@ -28,6 +29,7 @@ export class GenericP2SH implements Instance {
   };
 
   constructor(private rts: Rts, public redeemScript: Buffer, public redeemArgs: ParamTypes) {
+    this.checker = new SpednTypeChecker(stdlib[rts.network].types);
     this.challengeSpecs = {
       spend: redeemArgs
     };

@@ -1,4 +1,4 @@
-import { Module, ModuleFactory, PortableModule, Utxo } from "./contracts";
+import { Utxo } from "./contracts";
 
 export abstract class Rts {
   constructor(public readonly network: string = "xec") {
