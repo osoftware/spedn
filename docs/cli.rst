@@ -35,3 +35,15 @@ allowing it to be instantiated in runtime libraries.
 To compile a contract to Spedn Portable format, use::
 
     $ spedn compile -f portable -c MyContract.spedn > MyCompiledContract.json
+
+
+Targets
+=======
+
+By default, spedn compiles to Script dialect used by eCash (XEC). 
+Alternatively you can target your contract to Bitcoin Cash (BCH), Lotus (XPI) and Bitcoin (BTC).
+Each target has slightly different set of :doc:`types`, :doc:`operators` and :doc:`functions` available.
+
+To compile a contract to a specified target use::
+
+    $ spedn compile -c MyContract.spedn -t bch

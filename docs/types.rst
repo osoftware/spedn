@@ -156,6 +156,8 @@ They must be explicitly casted from ``[byte]`` with a type constructor.
 
 * **DataSig** - represents a data signature (which can be checked with ``checkDataSig``).
 
+    *Not available in BTC*
+
     .. code-block:: c
 
         DataSig alice = DataSig(0x11223344556677889900aabbccddee);
@@ -180,6 +182,8 @@ They must be explicitly casted from ``[byte]`` with a type constructor.
         Sha256 x = hash256(secret);
 
 * **Preimage** - represents a raw transaction preimage. You can break it down to components with ``parse`` function.
+
+    *Not available in BTC*
 
     .. code-block:: guess
 
@@ -208,6 +212,8 @@ They must be explicitly casted from ``[byte]`` with a type constructor.
 
     10. **Sighash** - sighash type of the signature (4-byte little endian)
 
+    *Not available in BTC*
+
     .. code-block:: guess
 
         (NVersion v, Sha256 hp, Sha256 hs, Outpoint o, 
@@ -228,6 +234,15 @@ They must be explicitly casted from ``[byte]`` with a type constructor.
         Sha256 ho = hashOutputs(preimage);
         NLocktime l = nLocktime(preimage);
         Sighash sh = sighash(preimage);
+
+* **TokenCategory** - CashToken category identifier.
+
+    *Only available in BCH*
+
+    .. code-block:: guess
+
+        TokenCategory v = utxoTokenCategory(0);
+
 
 
 Hidden types

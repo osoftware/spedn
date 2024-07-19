@@ -3,12 +3,12 @@ Understanding Script
 ====================
 
 Before developing contracts with Spedn it is worth understanding what they are compiled to
-and how Bitcoin Cash transactions internally work.
+and how Bitcoin (and Bitcoin Cash, eCash, Lotus, Dogecoin, and similar blockchains) transactions internally work.
 
 There is no spoon...
 ====================
 
-From a user perspective it's convenient to perceive a Bitcoin Cash address as a kind of account with a balance.
+From a user perspective it's convenient to perceive a Bitcoin address as a kind of account with a balance.
 But this is just a nice abstraction over a mechanism that works in slightly more complicated way.
 
 There is no account. Every transaction contains inputs and outputs. An output consists of an amount of bitcoins
@@ -26,7 +26,7 @@ An address is a user readable representation of a standard scriptPubKey. There c
 Kinds of boxes
 ==============
 
-You can spot two kinds of addresses in Bitcoin Cash:
+You can spot two kinds of addresses in Bitcoin Cash, eCash and Lotus:
 
 Pay To Public Key Hash (P2PKH)
 ------------------------------
@@ -36,6 +36,8 @@ This is an "ordinary" address representing a very simple script that checks two 
 * If the public key provided in scriptSig matches the hash in scriptPubKey when hashed with SHA-256 and then RIPEMD-160.
 * If the signature provided in scriptSig is valid for that key.
 
+This is how simple payments, the majority of transactions work.
+
 Pay To Script Hash (P2SH)
 -------------------------
 
@@ -43,10 +45,13 @@ This is a "smart contract" address.
 Instead of public key hash it cointains a hash of an entire script that is called a ``redeem script``.
 The scriptSig is supposed to provide the actual script that matches this hash and arguments to it.
 
+*Bitcoin also introduced new address types: SegWit (P2WPKH, Pay To Withess Public Key Hash) and Taproot (P2TR, Pay To Taproot).
+While they provide certain improvements - conceptually they work the same way as the 2 types described above.*
+
 Making fancy boxes
 ==================
 
-All those scripts are bytecode that run in a stack machine.
+All those scripts are a bytecode that runs in a stack machine.
 A human readable representation (assembly language) of this bytecode is called... Script.
 Script is a FORTH-like, stack oriented language containing numerous opcodes, some generic (like ``OP_ADD``),
 some very Bitcoin-specific (like ``OP_CHECKSIG``).

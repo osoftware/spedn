@@ -2,7 +2,48 @@
 Migration Guide
 ===============
 
-Migrationg from v0.3 to v0.3.1
+Migrating from v0.3 to v.0.4
+============================
+
+BITBOX backend support, previously deprecated, has been now dropped entirely. Use BCH-JS backend instead.
+
+When creating a ``BchjsRts`` instance, specify the network as ``bch`` or ``xpi``.
+
+.. code-block:: TypeScript
+
+   import { BchjsRts } from "@spedn/rts-bchjs";
+   import BCHJS from "@psf/bch-js";
+
+   const bitcoinCashRts = new BchjsRts("bch")
+   const eCashRts = new BchjsRts("xpi", new BCHJS({ restURL: "https://abc.fullstack.cash/v5/" }));
+
+When compiling contracts with sdk, specify the target as ``xec``, ``xpi``, ``bch``, ``btc``.
+
+.. code-block:: TypeScript
+
+   import { Spedn } from "@spedn/sdk";
+   import { BchjsRts } from "@spedn/rts-bchjs";
+
+   const compiler = new Spedn();
+   const rts = new BchjsRts("bch")
+   const { MyContract } = await compiler.compileFile("xpi", "./MyContract.spedn", rts);
+
+To load a contract compiled to the portable format, use ``ModuleFactory`` instead of ``Rts``.
+
+.. code-block:: TypeScript
+
+   import { readFileSync } from "fs";
+   import { ModuleFactory } from "@spedn/rts";
+   import { BchjsRts } from "@spedn/rts-bchjs";
+
+   const rts = new BchjsRts("xec")
+   const factory = new ModuleFactory(rts);
+
+   const portableModule = readFileSync(filePath, 'utf8');
+   const mod = factory.make(portableModule);
+
+
+Migrating from v0.3 to v0.3.1
 ==============================
 
 Javascript SDK in this release has been decoupled into several smaller components.

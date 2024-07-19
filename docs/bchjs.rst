@@ -74,15 +74,15 @@ Runtime
 Spedn RTS provides a way to interact with compiled smart contracts and with the blockchain
 via an adapter of an external library, in this case - BCH-JS.
 
-You can use the default BCHJS instance for mainnet or provide a customized one.
+You can use the default BCHJS instance for bch or provide a customized one.
 
 .. code-block:: TypeScript
 
    import { BchjsRts } from "@spedn/rts-bchjs";
-   import BCHJS from "@chris.troutner/bch-js";
+   import BCHJS from "@psf/bch-js";
 
-   const rts = new BchjsRts("mainnet");
-   const testRts = new BchjsRts("testnet", new BCHJS({ restURL: "https://tapi.fullstack.cash/v3/" }));
+   const bchRts = new BchjsRts("bch");
+   const xecRts = new BchjsRts("xec", new BCHJS({ restURL: "https://abc.fullstack.cash/v5/" }));
 
 Compiling modules
 =================
@@ -92,9 +92,9 @@ To compile source code in a string, use ``compileCode``.
 
 .. code-block:: TypeScript
 
-   const BlindEscrowPortableModule = await compiler.compileFile("./BlindEscrow.spedn");
+   const BlindEscrowPortableModule = await compiler.compileFile("xec", "./BlindEscrow.spedn");
 
-   const { ExpiringTip } = await compiler.compileCode(::`
+   const { ExpiringTip } = await compiler.compileCode("xec", ::`
       contract ExpiringTip(Ripemd160 alice, Ripemd160 bob) {
          challenge receive(Sig sig, PubKey pubKey) {
             verify hash160(pubKey) == bob;
@@ -123,18 +123,20 @@ If RTS is not provided, the method returns a *portable module* that can be saved
 .. code-block:: TypeScript
 
    import { readFileSync, writeFileSync } from "fs";
+   import { ModuleFactory } from "@spedn/rts";
 
    writeFileSync("blind_escrow.json", JSON.stringify(BlindEscrowPortableModule));
 
-   const mod = rts.load(BlindEscrowPortableModule);
+   const activator = new ModuleFactory(rts);
+   const mod = activator.make(BlindEscrowPortableModule);
 
 
 Instantiating contracts
 =======================
 
-To instantiate the template, just create an object of the contract class, providing parameters values.
+To instantiate the template, create an object of the contract class, providing parameters values.
 Parameters are passed as an object literal explicitly assigning values by names. Values of ``bool`` and ``int``
-*Spedn* type can be passed as ordinary *JS* booleans and numbers. ``Time`` and ``TimeSpan`` are also passed as numbers
+*Spedn* type can be passed as ordinary *JS* ``boolean``, ``number`` and ``bigint`` values. ``Time`` and ``TimeSpan`` are also passed as numbers
 (see BIP65_ and BIP112_ for value interpretation details).
 All the other types should be passed as *JS* ``Buffer``.
 
@@ -142,7 +144,7 @@ In case of ``ExpiringTip`` you'll need 2 public keys which you can generate with
 
 .. code-block:: TypeScript
 
-   import BCHJS from "@chris.troutner/bch-js";
+   import BCHJS from "@psf/bch-js";
 
    const bchjs = new BCHJS({ restURL: "https://tapi.fullstack.cash/v3/" });
    const mnemonic = "draw parade crater busy book swim soldier tragic exit feel top civil";
@@ -187,7 +189,7 @@ and the actual signing is deferred to the moment of calling ``build``/``broadcas
 ``SigningCallback`` accepts 2 parameters. The first one is an object containing contract challenges.
 The second one is a ``SigningContext`` which provides methods necessary for signing:
 
-   * ``sign(keyPair, hashType)`` - generates a siggnature valid for ``OP_CHECKSIG``.
+   * ``sign(keyPair, hashType)`` - generates a signature valid for ``OP_CHECKSIG``.
    * ``signData(keyPair, data)`` - generates a signature valid for ``OP_CHECKDATASIG``.
    * ``preimage(hashType)`` - generates the same preimage_ as one used by ``sign(keyPair, hashType)``
      (useful for ``OP_CHECKDATASIG`` covenants).

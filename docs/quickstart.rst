@@ -5,7 +5,7 @@ Quick start guide
 Build from sources
 ==================
 
-1. Intsall `Haskell Tool Stack <https://docs.haskellstack.org/en/stable/README/#how-to-install>`_.
+1. Intsall `Haskell Tool Stack <https://www.haskell.org/ghcup/>`_. You'll need Stack 2.15, cabal 3.10, and GHC 9.6.
 
 2. Download Spedn `sources <https://bitbucket.org/o-studio/spedn/src>`_.
 
