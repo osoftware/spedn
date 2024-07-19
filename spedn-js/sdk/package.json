@@ -1,6 +1,6 @@
 {
   "name": "@spedn/sdk",
-  "version": "4.0.0-rc.0",
+  "version": "4.0.0-rc.1",
   "description": "Spedn compiler SDK",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -28,7 +28,7 @@
   "author": "{o} Software",
   "license": "MIT",
   "dependencies": {
-    "@spedn/rts": "^4.0.0-rc.0"
+    "@spedn/rts": "^4.0.0-rc.1"
   },
   "devDependencies": {
     "@types/node": "^20.14.9",
